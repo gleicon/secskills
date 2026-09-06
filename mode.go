@@ -182,7 +182,7 @@ func goProbe(hosts []string, workers int) []LiveHost {
 			srv := resp.Header.Get("Server")
 			resp.Body.Close()
 			mu.Lock()
-			out = append(out, LiveHost{URL: u, Status: resp.StatusCode, Server: srv})
+			out = append(out, LiveHost{URL: u, Status: resp.StatusCode, Server: safeField(srv)})
 			mu.Unlock()
 			return
 		}
@@ -322,6 +322,21 @@ func cmdTest(args []string) error {
 		}
 	}
 	total := seq
+
+	// prompt-injection defense: scan collected artifacts (target output) for
+	// content engineered to hijack the reading LLM; emit a finding if detected.
+	for _, art := range []struct{ path, label string }{
+		{filepath.Join(wd, "live_hosts.json"), "live-host titles/headers"},
+		{filepath.Join(wd, "nuclei.jsonl"), "nuclei output"},
+		{filepath.Join(wd, "subs.txt"), "subdomain names"},
+	} {
+		if f := scanArtifactForInjection(art.path, art.label); f != nil {
+			seq++
+			f.ID = fmt.Sprintf("F%03d", seq)
+			addFinding(wd, *f)
+			fmt.Printf("  [prompt-injection] flagged in %s — recorded as finding\n", art.label)
+		}
+	}
 
 	fmt.Printf("\n%d findings -> %s\n", total, workFindings(wd))
 	fmt.Println("Remediation per finding: secskills kb <class>. Report: secskills report --render", target)

@@ -135,8 +135,8 @@ func runNucleiBatch(wd string, urls []string) []Finding {
 			sev = "LOW"
 		}
 		f := Finding{
-			Title:        "nuclei: " + n.Info.Name + " (" + n.TemplateID + ")",
-			Host:         n.MatchedAt,
+			Title:        "nuclei: " + safeField(n.Info.Name) + " (" + safeField(n.TemplateID) + ")",
+			Host:         safeField(n.MatchedAt),
 			Severity:     sev,
 			Status:       "open",
 			EvidenceCmd:  fmt.Sprintf("nuclei -u %s -id %s -silent | grep -q . && echo HIT", shellQuote(n.MatchedAt), shellQuote(n.TemplateID)),
