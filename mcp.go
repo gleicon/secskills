@@ -151,9 +151,18 @@ func mcpCall(params json.RawMessage) map[string]any {
 	case "source_scan":
 		return textResult(sourceScanText(str("path")))
 	case "fetch":
-		body, err := httpDo(str("source"), "GET", str("url"), "", 4)
+		url := str("url")
+		// SSRF guard: http/https only, and reject hosts resolving to
+		// private/loopback/link-local/reserved ranges (defeats DNS rebinding).
+		if err := ssrfSafeURL(url); err != nil {
+			return textResult("refused: " + err.Error())
+		}
+		body, err := httpDo(str("source"), "GET", url, "", 4)
 		if err != nil {
 			return textResult("error: " + err.Error())
+		}
+		if len(body) > 512*1024 { // cap response size
+			body = body[:512*1024]
 		}
 		return textResult(string(body))
 	default:

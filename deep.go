@@ -65,7 +65,7 @@ func runContentDiscovery(urls []string) []Finding {
 					Host:         base + p,
 					Severity:     "MEDIUM",
 					Status:       "open",
-					EvidenceCmd:  fmt.Sprintf("curl -sk -o /dev/null -w '%%{http_code}' %q", base+p),
+					EvidenceCmd:  fmt.Sprintf("curl -sk -o /dev/null -w '%%{http_code}' %s", shellQuote(base+p)),
 					ExpectedOpen: "200",
 				}
 				classify(&f)
@@ -138,7 +138,7 @@ func runNucleiBatch(wd string, urls []string) []Finding {
 			Host:         n.MatchedAt,
 			Severity:     sev,
 			Status:       "open",
-			EvidenceCmd:  fmt.Sprintf("nuclei -u %q -id %q -silent | grep -q . && echo HIT", n.MatchedAt, n.TemplateID),
+			EvidenceCmd:  fmt.Sprintf("nuclei -u %s -id %s -silent | grep -q . && echo HIT", shellQuote(n.MatchedAt), shellQuote(n.TemplateID)),
 			ExpectedOpen: "HIT",
 		}
 		classify(&f)
@@ -221,7 +221,7 @@ func sslscanHost(host string) *Finding {
 		Host:         "https://" + host,
 		Severity:     sev,
 		Status:       "open",
-		EvidenceCmd:  fmt.Sprintf("sslscan --no-colour %s:443 | grep -E 'Accepted (SSLv|TLSv1.0|TLSv1.1)|RC4|3DES|NULL|EXPORT'", host),
+		EvidenceCmd:  fmt.Sprintf("sslscan --no-colour %s:443 | grep -E 'Accepted (SSLv|TLSv1.0|TLSv1.1)|RC4|3DES|NULL|EXPORT'", shellQuote(host)),
 		ExpectedOpen: "Accepted",
 	}
 	classify(f)

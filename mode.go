@@ -98,10 +98,12 @@ func cmdDiscover(args []string) error {
 			fmt.Printf("[crt.sh] %d names\n", len(subs))
 		}
 	}
-	// confirm scope = target apex + its subdomains only
+	// confirm scope = target apex + its subdomains only. Reject any name with
+	// shell/URL-unsafe characters so a crafted DNS entry can never reach an
+	// evidence command or the shell.
 	var subList []string
 	for s := range subs {
-		if s == host || strings.HasSuffix(s, "."+host) {
+		if (s == host || strings.HasSuffix(s, "."+host)) && validHost(s) {
 			subList = append(subList, s)
 		}
 	}

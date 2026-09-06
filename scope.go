@@ -88,8 +88,18 @@ func loadScopeFile(path string) (*scopeFile, error) {
 }
 
 // scopeAuthorizes reports whether an unexpired, confirmed scope file covers host.
+// A scope file only authorizes when it is owned by the invoking user and not
+// group/other-writable — so a scope file planted in a repo you cd into cannot
+// silently authorize testing. An explicit SECSKILLS_SCOPE path is honored first.
 func scopeAuthorizes(host string) (bool, string) {
-	for _, path := range []string{".secskills-scope.yml", ".secskills-scope.yaml"} {
+	paths := []string{".secskills-scope.yml", ".secskills-scope.yaml"}
+	if env := os.Getenv("SECSKILLS_SCOPE"); env != "" {
+		paths = []string{env}
+	}
+	for _, path := range paths {
+		if !scopeFileTrusted(path) {
+			continue
+		}
 		s, err := loadScopeFile(path)
 		if err != nil {
 			continue
@@ -114,6 +124,25 @@ func scopeAuthorizes(host string) (bool, string) {
 		return false, "host not listed in scope file targets"
 	}
 	return false, "no scope file"
+}
+
+// scopeFileTrusted requires the scope file to exist, be owned by the invoking
+// user, and not be writable by group or other. A world/group-writable or
+// foreign-owned file is ignored (and warned) so it cannot silently authorize.
+func scopeFileTrusted(path string) bool {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	if fi.Mode().Perm()&0o022 != 0 {
+		fmt.Fprintf(os.Stderr, "[gate] ignoring %s — group/other-writable (chmod 600)\n", path)
+		return false
+	}
+	if uid, ok := fileUID(fi); ok && uid != os.Getuid() {
+		fmt.Fprintf(os.Stderr, "[gate] ignoring %s — not owned by you\n", path)
+		return false
+	}
+	return true
 }
 
 func cmdScope(args []string) error {

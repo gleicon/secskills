@@ -149,6 +149,10 @@ func doRetest(target string) error {
 		if f.Status == "manual" || f.EvidenceCmd == "" {
 			f.Status = "manual"
 		} else {
+			// EvidenceCmd is produced only by secskills' own emitters, which
+			// shell-quote every target-derived value (shellQuote) and validate
+			// hostnames at discovery; the findings store is operator-owned. Retest
+			// runs against your own store — never an untrusted run file.
 			out, _ := exec.Command("sh", "-c", f.EvidenceCmd).CombinedOutput()
 			nh := fmt.Sprintf("sha256:%x", sha256.Sum256(out))[:15]
 			matches := f.ExpectedOpen != "" && containsStr(string(out), f.ExpectedOpen)
