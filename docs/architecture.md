@@ -56,8 +56,11 @@ partial results.
   second confirmation. DoS and mass third-party scanning are always refused.
 - **Scope confinement**: every probe checks the confirmed scope; out-of-scope
   hosts are skipped.
-- **Untrusted target output**: scanned for prompt injection (`check_prompt_injection`
-  + tldt), treated as data, never followed.
+- **Untrusted target output**: every target-derived string is run through
+  `neutralizeUntrusted` (strip invisible/bidi/control unicode, redact injection
+  patterns, collapse newlines) before it reaches a finding, report, or stdout;
+  injection content is recorded as a finding; tldt adds a second detection layer.
+  See `SECURITY.md`.
 
 ## Classification
 
