@@ -67,6 +67,7 @@ func runContentDiscovery(urls []string) []Finding {
 					Status:       "open",
 					EvidenceCmd:  fmt.Sprintf("curl -sk -o /dev/null -w '%%{http_code}' %s", shellQuote(base+p)),
 					ExpectedOpen: "200",
+					ProbeKind:    "status", ProbeURL: base + p,
 				}
 				classify(&f)
 				mu.Lock()
@@ -140,6 +141,7 @@ func runNucleiBatch(wd string, urls []string) []Finding {
 			Status:       "open",
 			EvidenceCmd:  fmt.Sprintf("nuclei -u %s -id %s -silent | grep -q . && echo HIT", shellQuote(n.MatchedAt), shellQuote(n.TemplateID)),
 			ExpectedOpen: "HIT",
+			ProbeKind:    "manual",
 		}
 		classify(&f)
 		fnd = append(fnd, f)
@@ -223,6 +225,7 @@ func sslscanHost(host string) *Finding {
 		Status:       "open",
 		EvidenceCmd:  fmt.Sprintf("sslscan --no-colour %s:443 | grep -E 'Accepted (SSLv|TLSv1.0|TLSv1.1)|RC4|3DES|NULL|EXPORT'", shellQuote(host)),
 		ExpectedOpen: "Accepted",
+		ProbeKind:    "manual",
 	}
 	classify(f)
 	return f

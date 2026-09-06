@@ -60,12 +60,13 @@ gate and rate limiting built into the core.
   mode/category), prints the install command, and detects build collisions
   (e.g. Python `httpx` shadowing projectdiscovery). Absent tools are skipped,
   never fatal.
-- **OWASP-mapped findings** — every finding carries an OWASP category (Web /
-  Mobile / LLM), CWE, OSV CVEs, an owning team, and SOC 2 / ISO / PCI controls.
+- **OWASP-grounded findings** — every finding carries an OWASP category (Web /
+  Mobile / LLM), CWE, OSV CVEs, an owning team, and SOC 2 / ISO / PCI controls;
+  remediation text is pulled from the embedded OWASP cheat sheets, not a template.
 - **Offline knowledge base** — 40+ cheat sheets embedded via `go:embed`;
   `secskills kb <class>` and `secskills recipes <class>` (Node/Python/Go).
-- **Findings store + re-test** — persistent runs; `report --retest` shows
-  fixed / still-present / regressed.
+- **Findings store + re-test** — persistent runs; `report --retest` re-verifies
+  each finding with a structured Go probe (no shell) → fixed / still-present / regressed.
 - **Token hygiene** — `secskills compress|scrub|scan` (tldt) shrink OSINT, redact
   PII/secrets, and flag prompt injection in untrusted target output.
 

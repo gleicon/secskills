@@ -153,8 +153,12 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		if f.EvidenceCmd != "" {
 			w(`<p><b>Evidence (reproduce).</b></p><pre>%s</pre>`, esc(f.EvidenceCmd))
 		}
-		w(`<p><b>Remediation.</b> %s Reference: OWASP Cheat Sheet <code>%s</code>; secure-code recipe available.</p></div></div>`,
-			esc(remediationFor(f.KBClass)), esc(f.KBClass))
+		rem := kbRemediation(f.KBClass)
+		if rem == "" {
+			rem = remediationFor(f.KBClass)
+		}
+		w(`<p><b>Remediation</b> (from OWASP cheat sheet <code>%s</code>):</p><div class="rem">%s</div></div></div>`,
+			esc(f.KBClass), mdBulletsToHTML(rem))
 	}
 	w(`</section>`)
 
@@ -187,6 +191,48 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 
 	w(`<footer class="doc-foot">secskills v%s — Confidential — generated %s</footer>`, version, date)
 	w(`</body></html>`)
+	return b.String()
+}
+
+// mdBulletsToHTML renders a small markdown excerpt (bullets + inline code) to
+// safe HTML for the report. Escapes everything, then applies minimal formatting.
+func mdBulletsToHTML(md string) string {
+	var b strings.Builder
+	inList := false
+	esc := html.EscapeString
+	code := func(s string) string {
+		for strings.Count(s, "`") >= 2 {
+			i := strings.Index(s, "`")
+			j := strings.Index(s[i+1:], "`") + i + 1
+			s = s[:i] + "\x00" + esc(s[i+1:j]) + "\x01" + s[j+1:]
+		}
+		s = esc(s)
+		s = strings.ReplaceAll(s, "\x00", "<code>")
+		s = strings.ReplaceAll(s, "\x01", "</code>")
+		return s
+	}
+	for _, line := range strings.Split(md, "\n") {
+		t := strings.TrimSpace(line)
+		if t == "" {
+			continue
+		}
+		if strings.HasPrefix(t, "- ") || strings.HasPrefix(t, "* ") {
+			if !inList {
+				b.WriteString("<ul>")
+				inList = true
+			}
+			b.WriteString("<li>" + code(t[2:]) + "</li>")
+		} else {
+			if inList {
+				b.WriteString("</ul>")
+				inList = false
+			}
+			b.WriteString("<p>" + code(t) + "</p>")
+		}
+	}
+	if inList {
+		b.WriteString("</ul>")
+	}
 	return b.String()
 }
 

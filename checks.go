@@ -47,6 +47,7 @@ func checkSecurityHeaders(url string) []Finding {
 			Status:       "open",
 			EvidenceCmd:  fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
 			ExpectedOpen: "MISSING",
+			ProbeKind:    "header-missing", ProbeURL: url, ProbeArg: header,
 		})
 	}
 	if h.Get("Strict-Transport-Security") == "" {
@@ -92,6 +93,7 @@ func checkTLS(url string) []Finding {
 				Status:       "open",
 				EvidenceCmd:  fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", shellQuote(host), strings.ToLower(strings.ReplaceAll(name, " ", ""))),
 				ExpectedOpen: "ACCEPTED",
+				ProbeKind:    "tls-weak", ProbeURL: url, ProbeArg: strings.TrimPrefix(name, "TLS "),
 			})
 		}
 	}
@@ -154,10 +156,18 @@ func checkExposure(url string) []Finding {
 				Status:       "open",
 				EvidenceCmd:  fmt.Sprintf("curl -sk %s | head", shellQuote(base+p)),
 				ExpectedOpen: "200",
+				ProbeKind:    probeKindFor(hasSig), ProbeURL: base + p, ProbeArg: sig.signature,
 			})
 		}
 	}
 	return out
+}
+
+func probeKindFor(hasSig bool) string {
+	if hasSig {
+		return "body-contains"
+	}
+	return "status"
 }
 
 func randToken() string {
@@ -200,6 +210,7 @@ func checkAuthenticated(url string, headers map[string]string) []Finding {
 			Status:       "open",
 			EvidenceCmd:  fmt.Sprintf("curl -sk -o /dev/null -w '%%{http_code}' -H 'Authorization: <redacted>' %s", shellQuote(url)),
 			ExpectedOpen: "",
+			ProbeKind:    "manual",
 		}
 		classify(&f)
 		out = append(out, f)

@@ -206,6 +206,7 @@ func cveLookup(host, serverHeader string) *Finding {
 		EvidenceCmd:  fmt.Sprintf(`curl -s -X POST https://api.osv.dev/v1/query -d '{"version":"%s","package":{"name":"%s","ecosystem":"%s"}}' | jq '[.vulns[]|select(.affected[].ranges[].events[].fixed)]|length'`, ver, pkg, eco),
 		ExpectedOpen: "",
 		CVEs:         ids,
+		ProbeKind:    "manual",
 	}
 	classify(f)
 	return f

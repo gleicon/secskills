@@ -22,9 +22,9 @@ secskills_store_dir() { printf '%s/.secskills-findings/%s' "$HOME" "$1"; }
 emit_finding() {
     local id="$1" title="$2" host="$3" severity="$4" evidence_cmd="$5" expected_pattern="$6"
     local wd="${SECSKILLS_WORKDIR:?set SECSKILLS_WORKDIR}"
-    local response hash
-    response=$(eval "$evidence_cmd" 2>/dev/null)
-    hash="sha256:$(printf '%s' "$response" | shasum -a 256 | cut -c1-8)"
+    # response hash is captured lazily at retest (structured re-probe), not by
+    # executing the stored command at emit time — no eval of stored strings.
+    local response="" hash="pending"
 
     jq -n \
         --arg id "$id" --arg title "$title" --arg host "$host" \
@@ -95,15 +95,28 @@ secskills_retest() {
         if [ "$prev_status" = "manual" ] || [ -z "$cmd" ]; then
             change="—"; new_status="manual"; resp="(manual probe)"; new_hash="$prev_hash"
         else
-            resp=$(eval "$cmd" 2>/dev/null); new_hash="sha256:$(printf '%s' "$resp" | shasum -a 256 | cut -c1-8)"
-            if printf '%s' "$resp" | grep -q "$expected"; then
-                if [ "$prev_status" = "mitigated" ]; then new_status="regressed"; change="↑ REGRESSED"
-                else new_status="open"; change="✗ still open"; fi
-            else
-                new_status="mitigated"
-                [ "$prev_status" = "open" ] || [ "$prev_status" = "regressed" ] && change="✓ MITIGATED" || change="✓ still mitigated"
+            # structured re-probe (no eval): use probe_kind/probe_url, curl as a
+            # plain argument (never eval). Unknown kinds -> manual.
+            local pkind purl parg stillopen
+            pkind=$(jq -r '.probe_kind // "manual"' <<<"$finding")
+            purl=$(jq -r '.probe_url // ""' <<<"$finding")
+            parg=$(jq -r '.probe_arg // ""' <<<"$finding")
+            stillopen=""
+            case "$pkind" in
+              header-missing) curl -skI "$purl" 2>/dev/null | grep -iq "^$parg:" || stillopen=1 ;;
+              body-contains)  curl -sk "$purl" 2>/dev/null | grep -qF "$parg" && stillopen=1 ;;
+              status)         [ "$(curl -sk -o /dev/null -w '%{http_code}' "$purl" 2>/dev/null)" = "200" ] && stillopen=1 ;;
+              tls-weak)       echo | openssl s_client -connect "$(printf '%s' "$purl" | sed -E 's#https?://##; s#/.*##')":443 -tls1_${parg#1.} 2>/dev/null | grep -q 'Cipher is' && stillopen=1 ;;
+              *)              new_status="manual"; change="—"; resp="(manual)"; new_hash="$prev_hash" ;;
+            esac
+            if [ "$pkind" != manual ] && [ -n "${new_status:-}" ] && [ "$new_status" = manual ]; then :; else
+              if [ -n "$stillopen" ]; then
+                if [ "$prev_status" = "mitigated" ]; then new_status="regressed"; change="↑ REGRESSED"; else new_status="open"; change="✗ still open"; fi
+              else
+                new_status="mitigated"; change="✓ mitigated"
+              fi
+              new_hash="$prev_hash"; resp=""
             fi
-            [ "$new_status" = "open" ] && [ "$new_hash" != "$prev_hash" ] && change="~ response changed"
         fi
         echo "| $id | $sev | $new_status | $change | $title |"
         local hist; hist=$(jq -n --arg run_id "$prev_run_id" --arg status "$prev_status" --arg hash "$prev_hash" \

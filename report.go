@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -33,6 +32,11 @@ type Finding struct {
 	KBClass    string   `json:"kb_class,omitempty"`
 	CVEs       []string `json:"cves,omitempty"`
 	References []string `json:"references,omitempty"`
+	// Structured probe — how retest re-verifies the finding in Go, with no shell.
+	// ProbeKind: header-missing | tls-weak | body-contains | status | manual.
+	ProbeKind string `json:"probe_kind,omitempty"`
+	ProbeURL  string `json:"probe_url,omitempty"`
+	ProbeArg  string `json:"probe_arg,omitempty"`
 }
 
 type Run struct {
@@ -146,28 +150,20 @@ func doRetest(target string) error {
 	for i := range prev.Findings {
 		f := &prev.Findings[i]
 		change := "—"
-		if f.Status == "manual" || f.EvidenceCmd == "" {
+		// Structured re-verification in Go — no shell, no eval. EvidenceCmd is a
+		// human-readable reproduction string only and is never executed.
+		stillOpen, testable := reprobe(f)
+		if !testable {
 			f.Status = "manual"
 		} else {
-			// EvidenceCmd is produced only by secskills' own emitters, which
-			// shell-quote every target-derived value (shellQuote) and validate
-			// hostnames at discovery; the findings store is operator-owned. Retest
-			// runs against your own store — never an untrusted run file.
-			out, _ := exec.Command("sh", "-c", f.EvidenceCmd).CombinedOutput()
-			nh := fmt.Sprintf("sha256:%x", sha256.Sum256(out))[:15]
-			matches := f.ExpectedOpen != "" && containsStr(string(out), f.ExpectedOpen)
 			switch {
-			case matches && f.Status == "mitigated":
+			case stillOpen && f.Status == "mitigated":
 				f.Status, change = "regressed", "↑ REGRESSED"
-			case matches:
+			case stillOpen:
 				f.Status, change = "open", "✗ still open"
 			default:
 				f.Status, change = "mitigated", "✓ mitigated"
 			}
-			if f.Status == "open" && nh != f.ResponseHash {
-				change = "~ response changed"
-			}
-			f.ResponseHash = nh
 		}
 		f.LastTestedRun = newID
 		status[f.Status]++
@@ -193,17 +189,4 @@ func doRetest(target string) error {
 		fmt.Printf("%s: %d\n", k, status[k])
 	}
 	return nil
-}
-
-func containsStr(hay, needle string) bool {
-	return len(needle) > 0 && len(hay) >= len(needle) && indexOf(hay, needle) >= 0
-}
-
-func indexOf(hay, needle string) int {
-	for i := 0; i+len(needle) <= len(hay); i++ {
-		if hay[i:i+len(needle)] == needle {
-			return i
-		}
-	}
-	return -1
 }
