@@ -1,0 +1,6 @@
+id: vibe-ts-llm-verbose-production
+language: typescript
+severity: warning
+message: "Vibe: LLM/agent framework verbose:true — prompts and chain internals leak to logs"
+rule:
+  pattern: 'verbose: true'

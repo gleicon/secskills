@@ -1,0 +1,12 @@
+id: rb-injection-public-send-dynamic
+language: ruby
+severity: warning
+message: "Arbitrary dispatch: public_send() with dynamic method name"
+rule:
+  all:
+    - pattern: $OBJ.public_send($METHOD, $$$)
+    - not:
+        pattern: $OBJ.public_send(:$SYMBOL, $$$)
+    - not:
+        pattern: $OBJ.public_send("$LITERAL", $$$)
+

@@ -1,0 +1,16 @@
+id: vibe-js-missing-await-async
+language: javascript
+severity: warning
+message: "Vibe: async function call without await — race condition or unhandled promise (parallel agent gap)"
+rule:
+  all:
+    - pattern: |
+        async function $F($$$) {
+          $$$
+          $ASYNC_FN($$$ARGS)
+          $$$
+        }
+    - not:
+        has:
+          pattern: await $ASYNC_FN($$$ARGS)
+

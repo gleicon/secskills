@@ -1,0 +1,10 @@
+id: ts-xss-outer-html
+language: typescript
+severity: warning
+message: "XSS sink: outerHTML assigned non-literal"
+rule:
+  all:
+    - pattern: $EL.outerHTML = $VALUE
+    - not:
+        pattern: $EL.outerHTML = "$LITERAL"
+

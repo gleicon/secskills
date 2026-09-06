@@ -1,0 +1,9 @@
+id: vibe-js-disabled-csrf
+language: javascript
+severity: error
+message: "Vibe: CSRF protection disabled — LLMs commonly disable this 'for testing'"
+rule:
+  any:
+    - pattern: 'csrf: false'
+    - pattern: 'csrfProtection: false'
+    - pattern: 'csrf: { enabled: false }'

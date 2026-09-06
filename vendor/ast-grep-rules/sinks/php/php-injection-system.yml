@@ -1,0 +1,10 @@
+id: php-injection-system
+language: php
+severity: error
+message: "Command injection: system() with dynamic argument"
+rule:
+  all:
+    - pattern: system($CMD)
+    - not:
+        pattern: system("$LITERAL")
+

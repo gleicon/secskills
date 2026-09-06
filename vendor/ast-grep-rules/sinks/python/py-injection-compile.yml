@@ -1,0 +1,10 @@
+id: py-injection-compile
+language: python
+severity: warning
+message: "Code injection: compile() with dynamic source — potential code execution"
+rule:
+  all:
+    - pattern: compile($SOURCE, $FILENAME, $MODE)
+    - not:
+        pattern: compile("$LITERAL", $FILENAME, $MODE)
+

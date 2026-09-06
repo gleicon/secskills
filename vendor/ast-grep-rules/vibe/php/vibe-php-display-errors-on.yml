@@ -1,0 +1,10 @@
+id: vibe-php-display-errors-on
+language: php
+severity: error
+message: "Vibe: display_errors=On — stack traces and path info exposed to users in production"
+rule:
+  any:
+    - pattern: ini_set("display_errors", "1")
+    - pattern: ini_set('display_errors', '1')
+    - pattern: ini_set("display_errors", 1)
+

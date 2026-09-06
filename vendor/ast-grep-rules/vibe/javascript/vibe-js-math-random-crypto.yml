@@ -1,0 +1,10 @@
+id: vibe-js-math-random-crypto
+language: javascript
+severity: error
+message: "Vibe: Math.random() for security-sensitive value — use crypto.randomBytes() instead"
+rule:
+  all:
+    - pattern: $VAR = Math.random()
+constraints:
+  VAR:
+    regex: "(?i)(token|secret|key|nonce|salt|session)"

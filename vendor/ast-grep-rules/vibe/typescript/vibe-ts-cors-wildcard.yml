@@ -1,0 +1,9 @@
+id: vibe-ts-cors-wildcard
+language: typescript
+severity: error
+message: "Vibe: CORS wildcard origin — any domain can make cross-origin requests"
+rule:
+  any:
+    - pattern: 'cors({ origin: "*" })'
+    - pattern: res.setHeader("Access-Control-Allow-Origin", "*")
+    - pattern: app.use(cors())

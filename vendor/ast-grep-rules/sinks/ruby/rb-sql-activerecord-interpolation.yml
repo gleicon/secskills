@@ -1,0 +1,12 @@
+id: rb-sql-activerecord-interpolation
+language: ruby
+severity: error
+message: "SQL injection: ActiveRecord where() with string interpolation — use parameterized form"
+rule:
+  any:
+    - pattern: where("$$$#{$VAR}$$$")
+    - pattern: joins("$$$#{$VAR}$$$")
+    - pattern: having("$$$#{$VAR}$$$")
+    - pattern: order("#{$VAR}")
+    - pattern: group("#{$VAR}")
+

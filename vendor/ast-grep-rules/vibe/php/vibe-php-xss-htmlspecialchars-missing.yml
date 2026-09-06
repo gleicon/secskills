@@ -1,0 +1,11 @@
+id: vibe-php-xss-htmlspecialchars-missing
+language: php
+severity: warning
+message: "Vibe: direct output of user input without htmlspecialchars() — XSS risk"
+rule:
+  any:
+    - pattern: echo $_GET[$KEY]
+    - pattern: echo $_POST[$KEY]
+    - pattern: echo $_REQUEST[$KEY]
+    - pattern: echo $_COOKIE[$KEY]
+

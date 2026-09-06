@@ -1,0 +1,7 @@
+id: js-xss-postmessage-no-origin
+language: javascript
+severity: warning
+message: "postMessage sent to wildcard origin '*' — any window can receive this message"
+rule:
+  pattern: $TARGET.postMessage($DATA, "*")
+

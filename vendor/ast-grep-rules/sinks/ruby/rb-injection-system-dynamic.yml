@@ -1,0 +1,10 @@
+id: rb-injection-system-dynamic
+language: ruby
+severity: error
+message: "Command injection: system() with dynamic argument"
+rule:
+  all:
+    - pattern: system($CMD)
+    - not:
+        pattern: system("$LITERAL")
+

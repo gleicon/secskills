@@ -1,0 +1,10 @@
+id: php-injection-passthru
+language: php
+severity: error
+message: "Command injection: passthru() with dynamic argument"
+rule:
+  all:
+    - pattern: passthru($CMD)
+    - not:
+        pattern: passthru("$LITERAL")
+

@@ -1,0 +1,6 @@
+id: vibe-ts-langchain-dangerous-deserialization
+language: typescript
+severity: error
+message: "Vibe: LangChain allowDangerousDeserialization:true — arbitrary code execution on malicious input"
+rule:
+  pattern: 'allowDangerousDeserialization: true'

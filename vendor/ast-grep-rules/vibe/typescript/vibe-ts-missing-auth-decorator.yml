@@ -1,0 +1,10 @@
+id: vibe-ts-missing-auth-decorator
+language: typescript
+severity: warning
+message: "Vibe: NestJS HTTP handler — verify @UseGuards() or @Roles() decorator protects this route"
+rule:
+  kind: method_definition
+  has:
+    kind: decorator
+    has:
+      regex: "^(Get|Post|Put|Patch|Delete)$"

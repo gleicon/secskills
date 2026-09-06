@@ -1,0 +1,10 @@
+id: vibe-py-toctou-exists-then-open
+language: python
+severity: warning
+message: "Vibe: TOCTOU race — os.path.exists() check then open() without atomic lock (parallel agent risk)"
+rule:
+  pattern: |
+    if os.path.exists($F):
+      $$$
+      open($F, $$$)
+

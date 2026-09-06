@@ -1,0 +1,10 @@
+id: js-xss-insert-adjacent-html
+language: javascript
+severity: warning
+message: "XSS sink: insertAdjacentHTML() with dynamic content — $HTML written to DOM"
+rule:
+  all:
+    - pattern: $EL.insertAdjacentHTML($POS, $HTML)
+    - not:
+        pattern: $EL.insertAdjacentHTML($POS, "$LITERAL")
+

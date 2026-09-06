@@ -1,0 +1,7 @@
+id: vibe-rb-send-user-controlled-method
+language: ruby
+severity: error
+message: "Vibe: send() dispatching user-controlled method — arbitrary method execution on $OBJ"
+rule:
+  pattern: $OBJ.send(params[$KEY])
+

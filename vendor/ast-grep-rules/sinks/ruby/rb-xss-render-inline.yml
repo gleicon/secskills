@@ -1,0 +1,9 @@
+id: rb-xss-render-inline
+language: ruby
+severity: error
+message: "SSTI: render(inline:) with dynamic template — Server-Side Template Injection via ERB"
+rule:
+  all:
+    - pattern: 'render(inline: $TEMPLATE, $$$)'
+    - not:
+        pattern: 'render(inline: "$LITERAL", $$$)'

@@ -1,0 +1,14 @@
+id: js-postmessage-no-origin-check
+language: javascript
+severity: warning
+message: "postMessage listener without origin check — accepts messages from any origin"
+rule:
+  all:
+    - pattern: |
+        window.addEventListener("message", function ($EVENT) {
+          $$$
+        })
+    - not:
+        has:
+          pattern: $EVENT.origin
+

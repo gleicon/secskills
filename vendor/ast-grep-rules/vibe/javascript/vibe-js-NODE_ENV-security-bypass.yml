@@ -1,0 +1,6 @@
+id: vibe-js-NODE_ENV-security-bypass
+language: javascript
+severity: warning
+message: "Vibe: security gated on NODE_ENV — verify body doesn't skip auth/csrf/validation in non-prod"
+rule:
+  pattern: 'if (process.env.NODE_ENV !== "production") { $$$ }'

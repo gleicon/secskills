@@ -1,0 +1,10 @@
+id: php-injection-assert-string
+language: php
+severity: error
+message: "Code injection: assert() with string arg — executed as PHP code in older versions"
+rule:
+  all:
+    - pattern: assert($CODE)
+    - not:
+        pattern: assert("$LITERAL")
+

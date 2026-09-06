@@ -1,0 +1,10 @@
+id: vibe-py-sql-fstring
+language: python
+severity: error
+message: "Vibe: SQL query built with f-string — SQL injection if $VAR contains user input"
+rule:
+  any:
+    - pattern: cursor.execute(f"$$$")
+    - pattern: cursor.execute(f'$$$')
+    - pattern: db.execute(f"$$$")
+

@@ -1,0 +1,12 @@
+id: js-xss-jquery-html
+language: javascript
+severity: warning
+message: "XSS sink: jQuery .html() with dynamic value — equivalent to innerHTML"
+rule:
+  all:
+    - pattern: $EL.html($VALUE)
+    - not:
+        pattern: $EL.html("$LITERAL")
+    - not:
+        pattern: $EL.html()
+

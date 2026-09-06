@@ -1,0 +1,6 @@
+id: vibe-py-pickle-loads-request
+language: python
+severity: error
+message: "Vibe: pickle.loads() — arbitrary code execution on malicious input"
+rule:
+  pattern: pickle.loads($DATA)

@@ -1,0 +1,9 @@
+id: vibe-py-ssrf-requests-user-url
+language: python
+severity: warning
+message: "Vibe: requests.get() with dynamic URL — SSRF if $URL derives from user input"
+rule:
+  all:
+    - pattern: requests.get($URL)
+    - not:
+        pattern: requests.get("$LITERAL")

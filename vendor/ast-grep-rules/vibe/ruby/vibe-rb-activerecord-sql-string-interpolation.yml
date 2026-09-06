@@ -1,0 +1,11 @@
+id: vibe-rb-activerecord-sql-string-interpolation
+language: ruby
+severity: error
+message: "Vibe: ActiveRecord query with string interpolation — SQL injection risk"
+rule:
+  any:
+    - pattern: where("$$$#{$VAR}$$$")
+    - pattern: find_by_sql("$$$#{$VAR}$$$")
+    - pattern: joins("$$$#{$VAR}$$$")
+    - pattern: order("#{$VAR}")
+

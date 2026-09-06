@@ -1,0 +1,10 @@
+id: py-injection-eval
+language: python
+severity: error
+message: "Code injection: eval() with dynamic value — arbitrary Python execution"
+rule:
+  all:
+    - pattern: eval($CODE)
+    - not:
+        pattern: eval("$LITERAL")
+

@@ -1,0 +1,12 @@
+id: vibe-py-yaml-load-unsafe
+language: python
+severity: error
+message: "Vibe: yaml.load() without SafeLoader — use yaml.safe_load() (common LLM oversight)"
+rule:
+  all:
+    - pattern: yaml.load($DATA)
+    - not:
+        pattern: yaml.load($DATA, Loader=yaml.SafeLoader)
+    - not:
+        pattern: yaml.load($DATA, Loader=SafeLoader)
+

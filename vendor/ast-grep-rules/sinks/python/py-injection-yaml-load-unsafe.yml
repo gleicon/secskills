@@ -1,0 +1,12 @@
+id: py-injection-yaml-load-unsafe
+language: python
+severity: error
+message: "Deserialization: yaml.load() without SafeLoader — use yaml.safe_load() instead"
+rule:
+  all:
+    - pattern: yaml.load($DATA)
+    - not:
+        pattern: yaml.load($DATA, Loader=yaml.SafeLoader)
+    - not:
+        pattern: yaml.load($DATA, Loader=SafeLoader)
+

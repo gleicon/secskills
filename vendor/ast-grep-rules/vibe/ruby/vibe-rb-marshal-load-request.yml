@@ -1,0 +1,10 @@
+id: vibe-rb-marshal-load-request
+language: ruby
+severity: error
+message: "Vibe: Marshal.load() on request/user data — arbitrary code execution via deserialization"
+rule:
+  all:
+    - pattern: Marshal.load($DATA)
+constraints:
+  DATA:
+    regex: "(?i)(params|request|body|input|payload)"

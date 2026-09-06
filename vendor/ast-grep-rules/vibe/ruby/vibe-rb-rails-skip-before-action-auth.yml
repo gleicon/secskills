@@ -1,0 +1,11 @@
+id: vibe-rb-rails-skip-before-action-auth
+language: ruby
+severity: warning
+message: "Vibe: skip_before_action bypasses authentication for listed actions"
+rule:
+  any:
+    - pattern: 'skip_before_action :authenticate_user!, only: [$$$]'
+    - pattern: 'skip_before_action :require_login, only: [$$$]'
+    - pattern: 'skip_before_action :authenticate!, only: [$$$]'
+    - pattern: skip_before_action :authenticate_user!
+    - pattern: skip_before_action :require_login

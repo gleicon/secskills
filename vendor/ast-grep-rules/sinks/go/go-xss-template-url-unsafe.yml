@@ -1,0 +1,7 @@
+id: go-xss-template-url-unsafe
+language: go
+severity: warning
+message: "XSS: template.URL() marks $VALUE as safe URL — javascript: URIs not filtered"
+rule:
+  pattern: template.URL($VALUE)
+

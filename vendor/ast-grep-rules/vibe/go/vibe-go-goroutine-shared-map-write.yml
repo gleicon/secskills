@@ -1,0 +1,12 @@
+id: vibe-go-goroutine-shared-map-write
+language: go
+severity: warning
+message: "Vibe: map write inside goroutine without mutex — concurrent map write causes panic (parallel agent risk)"
+rule:
+  all:
+    - pattern: |
+        go func() {
+          $$$
+        }()
+    - has:
+        pattern: $MAP[$KEY] = $VALUE

@@ -1,0 +1,7 @@
+id: vibe-rb-devise-pepper-literal
+language: ruby
+severity: error
+message: "Vibe: Devise pepper hardcoded in source — password hash weakened if source is leaked"
+rule:
+  pattern: config.pepper = "$PEPPER"
+

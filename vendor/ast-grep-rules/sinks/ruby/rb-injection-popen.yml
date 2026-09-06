@@ -1,0 +1,19 @@
+id: rb-injection-popen
+language: ruby
+severity: error
+message: "Command injection: IO.popen() or Open3 with dynamic command"
+rule:
+  any:
+    - all:
+        - pattern: IO.popen($CMD)
+        - not:
+            pattern: IO.popen("$LITERAL")
+    - all:
+        - pattern: Open3.popen3($CMD)
+        - not:
+            pattern: Open3.popen3("$LITERAL")
+    - all:
+        - pattern: Open3.capture2($CMD)
+        - not:
+            pattern: Open3.capture2("$LITERAL")
+

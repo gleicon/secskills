@@ -1,0 +1,7 @@
+id: rb-injection-backtick
+language: ruby
+severity: error
+message: "Command injection: backtick execution with string interpolation — shell injection via #{...}"
+rule:
+  pattern: "`#{$CMD}`"
+

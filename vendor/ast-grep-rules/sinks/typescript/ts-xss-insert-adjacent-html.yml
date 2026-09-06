@@ -1,0 +1,10 @@
+id: ts-xss-insert-adjacent-html
+language: typescript
+severity: warning
+message: "XSS sink: insertAdjacentHTML() with dynamic content"
+rule:
+  all:
+    - pattern: $EL.insertAdjacentHTML($POS, $HTML)
+    - not:
+        pattern: $EL.insertAdjacentHTML($POS, "$LITERAL")
+

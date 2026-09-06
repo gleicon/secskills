@@ -1,0 +1,7 @@
+id: vibe-rb-ssl-verify-none
+language: ruby
+severity: error
+message: "Vibe: OpenSSL::SSL::VERIFY_NONE — TLS certificate not verified, MITM possible"
+rule:
+  pattern: OpenSSL::SSL::VERIFY_NONE
+

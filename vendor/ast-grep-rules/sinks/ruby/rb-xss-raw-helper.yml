@@ -1,0 +1,9 @@
+id: rb-xss-raw-helper
+language: ruby
+severity: warning
+message: "XSS: raw() or html_safe on dynamic value bypasses Rails auto-escaping"
+rule:
+  any:
+    - pattern: raw($VALUE)
+    - pattern: $VALUE.html_safe
+

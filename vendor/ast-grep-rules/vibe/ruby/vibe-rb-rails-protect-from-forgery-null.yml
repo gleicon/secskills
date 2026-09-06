@@ -1,0 +1,7 @@
+id: vibe-rb-rails-protect-from-forgery-null
+language: ruby
+severity: error
+message: "Vibe: protect_from_forgery with: :null_session disables CSRF token enforcement"
+rule:
+  pattern: 'protect_from_forgery with: :null_session'
+

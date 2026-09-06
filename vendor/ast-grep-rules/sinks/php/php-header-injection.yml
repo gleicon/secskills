@@ -1,0 +1,10 @@
+id: php-header-injection
+language: php
+severity: warning
+message: "Header injection: header() with dynamic value — CRLF injection if $VALUE contains newlines"
+rule:
+  all:
+    - pattern: header($VALUE)
+    - not:
+        pattern: header("$LITERAL")
+

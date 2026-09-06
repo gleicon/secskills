@@ -1,0 +1,15 @@
+id: py-injection-jinja2-from-string
+language: python
+severity: error
+message: "SSTI: jinja2.Template() or from_string() with dynamic template string"
+rule:
+  any:
+    - all:
+        - pattern: jinja2.Template($TEMPLATE)
+        - not:
+            pattern: jinja2.Template("$LITERAL")
+    - all:
+        - pattern: Environment().from_string($TEMPLATE)
+        - not:
+            pattern: Environment().from_string("$LITERAL")
+

@@ -1,0 +1,7 @@
+id: vibe-rb-mass-assignment-permit-all
+language: ruby
+severity: error
+message: "Vibe: params.permit! allows all parameters — mass assignment, no attribute whitelist"
+rule:
+  pattern: params.permit!
+

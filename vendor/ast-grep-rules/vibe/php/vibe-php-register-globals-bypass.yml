@@ -1,0 +1,11 @@
+id: vibe-php-register-globals-bypass
+language: php
+severity: error
+message: "Vibe: extract() on superglobal — variable injection, equivalent to register_globals"
+rule:
+  any:
+    - pattern: extract($_GET)
+    - pattern: extract($_POST)
+    - pattern: extract($_REQUEST)
+    - pattern: extract($_COOKIE)
+

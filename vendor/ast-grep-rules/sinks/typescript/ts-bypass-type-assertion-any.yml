@@ -1,0 +1,7 @@
+id: ts-bypass-type-assertion-any
+language: typescript
+severity: warning
+message: "Type cast to 'any' followed by DOM sink — type safety bypassed, $VALUE unvalidated"
+rule:
+  pattern: ($VALUE as any).innerHTML = $CONTENT
+

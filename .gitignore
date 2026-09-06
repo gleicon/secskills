@@ -1,0 +1,18 @@
+# built binary
+/secskills
+*.test
+/dist/
+
+# engagement data — SENSITIVE, never commit
+/*_report.html
+/*_report.pdf
+/*_report.md
+*.tmp.html
+.secskills-scope.yml
+.secskills-scope.yaml
+ENGAGEMENT.md
+ENGAGEMENT-profile.md
+GRILL.md
+
+# OS
+.DS_Store

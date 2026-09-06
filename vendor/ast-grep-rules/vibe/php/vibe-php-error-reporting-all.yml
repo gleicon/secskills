@@ -1,0 +1,7 @@
+id: vibe-php-error-reporting-all
+language: php
+severity: warning
+message: "Vibe: error_reporting(E_ALL) with display_errors — verbose errors leak path/config info"
+rule:
+  pattern: error_reporting(E_ALL)
+

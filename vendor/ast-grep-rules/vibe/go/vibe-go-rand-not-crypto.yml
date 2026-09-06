@@ -1,0 +1,12 @@
+id: vibe-go-rand-not-crypto
+language: go
+severity: warning
+message: "Vibe: math/rand used for security-sensitive value — use crypto/rand instead"
+rule:
+  pattern: rand.Intn($N)
+inside:
+  pattern: |
+    func $F($$$) $RET {
+      $$$
+    }
+
