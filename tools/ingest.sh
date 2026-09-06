@@ -33,6 +33,14 @@ done
 
 command -v git >/dev/null || { echo "git required"; exit 1; }
 
+# validate REF: allowlist only, reject leading dash (argument injection)
+case "$REF" in
+  -*) echo "invalid --ref (leading dash)"; exit 2 ;;
+esac
+if ! printf '%s' "$REF" | grep -qE '^[A-Za-z0-9._/-]+$'; then
+  echo "invalid --ref: allowed chars are A-Za-z0-9._/-"; exit 2
+fi
+
 echo "== secskills ingest =="
 echo "upstream: $REPO @ $REF"
 echo "snapshot: $SNAP_DIR"

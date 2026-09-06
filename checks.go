@@ -45,7 +45,7 @@ func checkSecurityHeaders(url string) []Finding {
 			Host:         url,
 			Severity:     sev,
 			Status:       "open",
-			EvidenceCmd:  fmt.Sprintf("curl -skI %q | grep -i %q || echo MISSING", url, header),
+			EvidenceCmd:  fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
 			ExpectedOpen: "MISSING",
 		})
 	}
@@ -90,7 +90,7 @@ func checkTLS(url string) []Finding {
 				Host:         url,
 				Severity:     "MEDIUM",
 				Status:       "open",
-				EvidenceCmd:  fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", host, strings.ToLower(strings.ReplaceAll(name, " ", ""))),
+				EvidenceCmd:  fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", shellQuote(host), strings.ToLower(strings.ReplaceAll(name, " ", ""))),
 				ExpectedOpen: "ACCEPTED",
 			})
 		}
@@ -152,7 +152,7 @@ func checkExposure(url string) []Finding {
 				Host:         base + p,
 				Severity:     sev,
 				Status:       "open",
-				EvidenceCmd:  fmt.Sprintf("curl -sk %q | head", base+p),
+				EvidenceCmd:  fmt.Sprintf("curl -sk %s | head", shellQuote(base+p)),
 				ExpectedOpen: "200",
 			})
 		}
@@ -198,7 +198,7 @@ func checkAuthenticated(url string, headers map[string]string) []Finding {
 			Host:         url,
 			Severity:     "INFORMATIONAL",
 			Status:       "open",
-			EvidenceCmd:  fmt.Sprintf("curl -sk -o /dev/null -w '%%{http_code}' -H 'Authorization: <redacted>' %q", url),
+			EvidenceCmd:  fmt.Sprintf("curl -sk -o /dev/null -w '%%{http_code}' -H 'Authorization: <redacted>' %s", shellQuote(url)),
 			ExpectedOpen: "",
 		}
 		classify(&f)

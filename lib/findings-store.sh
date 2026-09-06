@@ -64,6 +64,11 @@ secskills_write_run() {
 
 # Retest: re-run each finding's evidence_cmd, classify open/mitigated/regressed,
 # write a new run file, print a delta table. (loop lifted verbatim, repathed)
+# SECURITY: this reference script re-runs each finding's evidence_cmd. Those
+# commands are emitted by the secskills binary with every target-derived value
+# shell-quoted (shellQuote) and hostnames validated, and the store is operator-
+# owned. Only run retest against a store you produced; never against an untrusted
+# run file. The Go binary is the authoritative, hardened implementation.
 secskills_retest() {
     local target="$1"
     local dir; dir="$(secskills_store_dir "$target")"
