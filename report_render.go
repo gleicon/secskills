@@ -115,8 +115,12 @@ func renderProReport(target, wd string, findings []Finding) string {
 		if f.EvidenceCmd != "" {
 			p("**Evidence (reproduce).**\n```bash\n%s\n```\n\n", f.EvidenceCmd)
 		}
-		p("**Remediation.** %s See `secskills kb %s`; code fix: `secskills recipes %s`.\n\n",
-			remediationFor(f.KBClass), f.KBClass, f.KBClass)
+		rem := kbRemediation(f.KBClass)
+		if rem == "" {
+			rem = remediationFor(f.KBClass)
+		}
+		p("**Remediation** (from OWASP cheat sheet `%s`):\n\n%s\n\n_Full guidance: `secskills kb %s` · code fix: `secskills recipes %s`._\n\n",
+			f.KBClass, rem, f.KBClass, f.KBClass)
 	}
 
 	// ---- 7. OWASP Coverage Matrix --------------------------------------------

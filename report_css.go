@@ -73,6 +73,8 @@ ul.keys .host{color:var(--muted);font-size:9pt}
 .f-meta{margin:10px 12px}
 .f-meta td:first-child{width:180px;color:var(--muted);font-size:9pt;text-transform:uppercase;letter-spacing:.3px}
 .f-body{padding:0 12px 12px}
+.rem{background:var(--soft);border-left:3px solid var(--navy);padding:8px 12px;margin:6px 0;font-size:9.5pt}
+.rem ul{margin:4px 0;padding-left:18px}.rem code{font-size:9pt}
 
 .doc-foot{margin-top:20px;padding:12px 34px;color:var(--muted);font-size:8.5pt;border-top:1px solid var(--line);text-align:center}
 
