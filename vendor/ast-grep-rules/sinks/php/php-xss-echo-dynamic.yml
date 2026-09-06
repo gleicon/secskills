@@ -1,0 +1,10 @@
+id: php-xss-echo-dynamic
+language: php
+severity: warning
+message: "XSS: direct output of superglobal without encoding — potential reflected XSS"
+rule:
+  any:
+    - pattern: 'echo $_GET[$KEY]'
+    - pattern: 'echo $_POST[$KEY]'
+    - pattern: 'echo $_REQUEST[$KEY]'
+    - pattern: 'echo $_COOKIE[$KEY]'

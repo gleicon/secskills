@@ -1,0 +1,10 @@
+id: vibe-py-requests-no-verify
+language: python
+severity: warning
+message: "Vibe: SSL verification disabled (verify=False) — MITM attacks possible"
+rule:
+  any:
+    - pattern: requests.get($URL, verify=False)
+    - pattern: requests.post($URL, $$$, verify=False)
+    - pattern: requests.request($$$, verify=False)
+

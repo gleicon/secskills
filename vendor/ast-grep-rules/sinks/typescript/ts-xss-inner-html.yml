@@ -1,0 +1,10 @@
+id: ts-xss-inner-html
+language: typescript
+severity: warning
+message: "XSS sink: innerHTML assigned non-literal — verify $VALUE is sanitized"
+rule:
+  all:
+    - pattern: $EL.innerHTML = $VALUE
+    - not:
+        pattern: $EL.innerHTML = "$LITERAL"
+

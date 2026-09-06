@@ -1,0 +1,6 @@
+id: vibe-go-tls-insecure-skip-verify
+language: go
+severity: error
+message: "Vibe: InsecureSkipVerify:true — TLS certificate not verified, MITM attacks possible"
+rule:
+  pattern: 'InsecureSkipVerify: true'

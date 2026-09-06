@@ -1,0 +1,14 @@
+id: vibe-go-sql-string-concat
+language: go
+severity: error
+message: "Vibe: SQL query built via string concatenation — use db.Query with ? placeholders"
+rule:
+  any:
+    - pattern: db.Query("SELECT" + $$$)
+    - pattern: db.Query("INSERT" + $$$)
+    - pattern: db.Query("UPDATE" + $$$)
+    - pattern: db.Query("DELETE" + $$$)
+    - pattern: db.Exec("SELECT" + $$$)
+    - pattern: db.Exec("UPDATE" + $$$)
+    - pattern: db.Exec("DELETE" + $$$)
+

@@ -1,0 +1,10 @@
+id: vibe-go-http-timeout-missing
+language: go
+severity: warning
+message: "Vibe: http.DefaultClient used without timeout — susceptible to slowloris/hung connections"
+rule:
+  any:
+    - pattern: http.Get($URL)
+    - pattern: http.Post($URL, $$$)
+    - pattern: http.DefaultClient.Do($REQ)
+

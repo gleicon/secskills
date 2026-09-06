@@ -1,0 +1,7 @@
+id: ts-xss-postmessage-wildcard
+language: typescript
+severity: warning
+message: "postMessage to wildcard origin '*' — any window can receive"
+rule:
+  pattern: $TARGET.postMessage($DATA, "*")
+

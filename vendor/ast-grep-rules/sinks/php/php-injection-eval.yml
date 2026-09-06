@@ -1,0 +1,10 @@
+id: php-injection-eval
+language: php
+severity: error
+message: "Code injection: eval() with dynamic value — arbitrary PHP execution"
+rule:
+  all:
+    - pattern: eval($CODE)
+    - not:
+        pattern: eval("$LITERAL")
+

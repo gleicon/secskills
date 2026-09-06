@@ -1,0 +1,10 @@
+id: vibe-rb-yaml-load-unsafe
+language: ruby
+severity: error
+message: "Vibe: YAML.load() with user input — arbitrary object instantiation via YAML deserialization"
+rule:
+  all:
+    - pattern: YAML.load($DATA)
+    - not:
+        pattern: YAML.safe_load($DATA)
+

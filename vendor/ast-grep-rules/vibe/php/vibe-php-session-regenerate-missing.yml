@@ -1,0 +1,10 @@
+id: vibe-php-session-regenerate-missing
+language: php
+severity: warning
+message: "Vibe: session_start() after login without session_regenerate_id() — session fixation risk"
+rule:
+  all:
+    - pattern: session_start()
+    - not:
+        follows:
+          pattern: session_regenerate_id(true)

@@ -1,0 +1,11 @@
+id: vibe-go-cors-wildcard
+language: go
+severity: error
+message: "Vibe: CORS wildcard — any origin permitted on all routes"
+rule:
+  any:
+    - pattern: AllowOrigins([]string{"*"})
+    - pattern: AllowAllOrigins()
+    - pattern: r.Header.Set("Access-Control-Allow-Origin", "*")
+    - pattern: w.Header().Set("Access-Control-Allow-Origin", "*")
+

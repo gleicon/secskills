@@ -1,0 +1,10 @@
+id: php-injection-popen
+language: php
+severity: error
+message: "Command injection: popen() with dynamic command"
+rule:
+  all:
+    - pattern: popen($CMD, $MODE)
+    - not:
+        pattern: popen("$LITERAL", $MODE)
+

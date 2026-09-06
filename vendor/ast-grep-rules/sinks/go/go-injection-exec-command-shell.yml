@@ -1,0 +1,11 @@
+id: go-injection-exec-command-shell
+language: go
+severity: error
+message: "Command injection: exec.Command with sh -c passes $ARGS to shell — injection risk"
+rule:
+  any:
+    - pattern: exec.Command("sh", "-c", $ARGS)
+    - pattern: exec.Command("/bin/sh", "-c", $ARGS)
+    - pattern: exec.Command("bash", "-c", $ARGS)
+    - pattern: exec.Command("/bin/bash", "-c", $ARGS)
+

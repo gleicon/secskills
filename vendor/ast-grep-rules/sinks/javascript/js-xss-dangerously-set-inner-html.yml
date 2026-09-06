@@ -1,0 +1,9 @@
+id: js-xss-dangerously-set-inner-html
+language: javascript
+severity: error
+message: "XSS sink: dangerouslySetInnerHTML with dynamic __html — React XSS bypass"
+rule:
+  all:
+    - pattern: dangerouslySetInnerHTML
+    - not:
+        pattern: dangerouslySetInnerHTML={{ __html:"$LITERAL" }}

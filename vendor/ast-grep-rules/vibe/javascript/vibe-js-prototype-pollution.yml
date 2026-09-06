@@ -1,0 +1,9 @@
+id: vibe-js-prototype-pollution
+language: javascript
+severity: error
+message: "Vibe: deep merge without prototype check — prototype pollution if source is user-controlled"
+rule:
+  any:
+    - pattern: Object.assign($TARGET, $SOURCE)
+    - pattern: _.merge($TARGET, $SOURCE)
+    - pattern: $.extend(true, $TARGET, $SOURCE)

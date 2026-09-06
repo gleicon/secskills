@@ -1,0 +1,10 @@
+id: py-injection-os-popen
+language: python
+severity: error
+message: "Command injection: os.popen() with dynamic argument"
+rule:
+  all:
+    - pattern: os.popen($CMD)
+    - not:
+        pattern: os.popen("$LITERAL")
+

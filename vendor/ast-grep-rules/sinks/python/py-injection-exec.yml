@@ -1,0 +1,10 @@
+id: py-injection-exec
+language: python
+severity: error
+message: "Code injection: exec() with dynamic value — arbitrary Python execution"
+rule:
+  all:
+    - pattern: exec($CODE)
+    - not:
+        pattern: exec("$LITERAL")
+

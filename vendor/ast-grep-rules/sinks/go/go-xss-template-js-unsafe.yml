@@ -1,0 +1,7 @@
+id: go-xss-template-js-unsafe
+language: go
+severity: warning
+message: "XSS: template.JS() bypasses auto-escaping — $VALUE injected into script context unescaped"
+rule:
+  pattern: template.JS($VALUE)
+

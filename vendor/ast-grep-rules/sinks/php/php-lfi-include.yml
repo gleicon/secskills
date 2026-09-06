@@ -1,0 +1,10 @@
+id: php-lfi-include
+language: php
+severity: error
+message: "File Inclusion: include/require with dynamic path — Local/Remote File Inclusion (LFI/RFI)"
+rule:
+  any:
+    - kind: include_expression
+    - kind: require_expression
+    - kind: include_once_expression
+    - kind: require_once_expression

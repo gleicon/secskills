@@ -1,0 +1,10 @@
+id: rb-injection-exec
+language: ruby
+severity: error
+message: "Command injection: exec() with dynamic argument — replaces process"
+rule:
+  all:
+    - pattern: exec($CMD)
+    - not:
+        pattern: exec("$LITERAL")
+

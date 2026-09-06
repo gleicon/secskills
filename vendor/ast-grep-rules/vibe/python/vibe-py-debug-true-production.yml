@@ -1,0 +1,10 @@
+id: vibe-py-debug-true-production
+language: python
+severity: error
+message: "Vibe: DEBUG=True — exposes stack traces, env vars, and interactive debugger in production"
+rule:
+  any:
+    - pattern: DEBUG = True
+    - pattern: app.run($$$, debug=True)
+    - pattern: app.debug = True
+

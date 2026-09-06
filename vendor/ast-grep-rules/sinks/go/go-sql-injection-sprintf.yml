@@ -1,0 +1,12 @@
+id: go-sql-injection-sprintf
+language: go
+severity: error
+message: "SQL injection: query built with fmt.Sprintf — use parameterized queries instead"
+rule:
+  any:
+    - pattern: db.Query(fmt.Sprintf($$$))
+    - pattern: db.QueryRow(fmt.Sprintf($$$))
+    - pattern: db.Exec(fmt.Sprintf($$$))
+    - pattern: tx.Query(fmt.Sprintf($$$))
+    - pattern: tx.Exec(fmt.Sprintf($$$))
+

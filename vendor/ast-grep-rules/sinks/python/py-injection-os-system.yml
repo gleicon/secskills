@@ -1,0 +1,10 @@
+id: py-injection-os-system
+language: python
+severity: error
+message: "Command injection: os.system() with dynamic argument"
+rule:
+  all:
+    - pattern: os.system($CMD)
+    - not:
+        pattern: os.system("$LITERAL")
+

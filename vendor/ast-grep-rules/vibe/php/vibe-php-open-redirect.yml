@@ -1,0 +1,9 @@
+id: vibe-php-open-redirect
+language: php
+severity: warning
+message: "Vibe: header(Location:) redirect from user input — open redirect if unvalidated"
+rule:
+  any:
+    - pattern: 'header("Location: " . $_GET[$KEY])'
+    - pattern: 'header("Location: " . $_POST[$KEY])'
+    - pattern: 'header("Location: " . $_REQUEST[$KEY])'

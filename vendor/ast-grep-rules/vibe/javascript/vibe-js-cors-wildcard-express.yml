@@ -1,0 +1,10 @@
+id: vibe-js-cors-wildcard-express
+language: javascript
+severity: error
+message: "Vibe: CORS wildcard origin — any domain can make cross-origin requests (common LLM 'fix')"
+rule:
+  any:
+    - pattern: 'cors({ origin: "*" })'
+    - pattern: res.setHeader("Access-Control-Allow-Origin", "*")
+    - pattern: res.header("Access-Control-Allow-Origin", "*")
+    - pattern: app.use(cors())

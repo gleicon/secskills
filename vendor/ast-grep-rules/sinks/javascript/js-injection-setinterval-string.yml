@@ -1,0 +1,12 @@
+id: js-injection-setinterval-string
+language: javascript
+severity: warning
+message: "Code injection: setInterval() with non-function first arg — string is eval'd"
+rule:
+  all:
+    - pattern: setInterval($CODE, $DELAY)
+    - not:
+        pattern: setInterval(function () { $$$ }, $DELAY)
+    - not:
+        pattern: setInterval(() => { $$$ }, $DELAY)
+

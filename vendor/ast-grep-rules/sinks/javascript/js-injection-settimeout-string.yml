@@ -1,0 +1,14 @@
+id: js-injection-settimeout-string
+language: javascript
+severity: warning
+message: "Code injection: setTimeout() with non-function first arg — string is eval'd"
+rule:
+  all:
+    - pattern: setTimeout($CODE, $DELAY)
+    - not:
+        pattern: setTimeout(function () { $$$ }, $DELAY)
+    - not:
+        pattern: setTimeout(() => { $$$ }, $DELAY)
+    - not:
+        pattern: setTimeout(() => $EXPR, $DELAY)
+

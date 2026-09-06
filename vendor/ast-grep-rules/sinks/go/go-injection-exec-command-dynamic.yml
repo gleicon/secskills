@@ -1,0 +1,10 @@
+id: go-injection-exec-command-dynamic
+language: go
+severity: error
+message: "Command injection: exec.Command() with dynamic first argument"
+rule:
+  all:
+    - pattern: exec.Command($CMD, $$$)
+    - not:
+        pattern: exec.Command("$LITERAL", $$$)
+

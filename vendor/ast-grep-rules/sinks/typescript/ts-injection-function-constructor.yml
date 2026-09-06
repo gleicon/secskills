@@ -1,0 +1,10 @@
+id: ts-injection-function-constructor
+language: typescript
+severity: error
+message: "Code injection: new Function() with dynamic body"
+rule:
+  all:
+    - pattern: new Function($$$ARGS, $BODY)
+    - not:
+        pattern: new Function($$$ARGS, "$LITERAL")
+

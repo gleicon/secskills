@@ -1,0 +1,10 @@
+id: rb-injection-eval
+language: ruby
+severity: error
+message: "Code injection: eval() with dynamic value — arbitrary Ruby execution"
+rule:
+  all:
+    - pattern: eval($CODE)
+    - not:
+        pattern: eval("$LITERAL")
+

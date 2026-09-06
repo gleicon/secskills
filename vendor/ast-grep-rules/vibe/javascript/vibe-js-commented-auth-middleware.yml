@@ -1,0 +1,7 @@
+id: vibe-js-commented-auth-middleware
+language: javascript
+severity: warning
+message: "Vibe: commented-out authentication middleware — verify auth is applied to this route"
+rule:
+  kind: comment
+  regex: "(?i)(authenticate|require_login|isAuthenticated|verifyToken|checkAuth|authMiddleware)"

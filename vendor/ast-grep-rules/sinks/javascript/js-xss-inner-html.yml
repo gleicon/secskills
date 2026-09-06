@@ -1,0 +1,10 @@
+id: js-xss-inner-html
+language: javascript
+severity: warning
+message: "XSS sink: innerHTML assigned non-literal — verify $VALUE is sanitized before use"
+rule:
+  all:
+    - pattern: $EL.innerHTML = $VALUE
+    - not:
+        pattern: $EL.innerHTML = "$LITERAL"
+

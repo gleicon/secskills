@@ -1,0 +1,10 @@
+id: js-injection-eval
+language: javascript
+severity: error
+message: "Code injection: eval() with dynamic value — arbitrary JS execution"
+rule:
+  all:
+    - pattern: eval($CODE)
+    - not:
+        pattern: eval("$LITERAL")
+

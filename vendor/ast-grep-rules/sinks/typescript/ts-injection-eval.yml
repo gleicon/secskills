@@ -1,0 +1,10 @@
+id: ts-injection-eval
+language: typescript
+severity: error
+message: "Code injection: eval() with dynamic value"
+rule:
+  all:
+    - pattern: eval($CODE)
+    - not:
+        pattern: eval("$LITERAL")
+

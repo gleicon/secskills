@@ -1,0 +1,276 @@
+{
+  "package": "secskills",
+  "version": "0.3.0",
+  "supersedes": "redteam-pentest",
+  "modes": [
+    "source",
+    "sandbox",
+    "live"
+  ],
+  "skills": [
+    {
+      "name": "secskills",
+      "kind": "router",
+      "mode": "any",
+      "gated": false,
+      "source": "authored"
+    },
+    {
+      "name": "secskills-discover",
+      "kind": "mode",
+      "mode": "live",
+      "gated": true,
+      "source": "vendor/redteam-pentest.md Phases 1-2"
+    },
+    {
+      "name": "secskills-test",
+      "kind": "mode",
+      "mode": "live,sandbox",
+      "gated": true,
+      "source": "vendor/redteam-pentest.md Phases 3-9 + vendor/xss-assist.md"
+    },
+    {
+      "name": "secskills-source",
+      "kind": "mode",
+      "mode": "source",
+      "gated": false,
+      "source": "rules/ (118 ast-grep rules)"
+    },
+    {
+      "name": "secskills-sandbox",
+      "kind": "mode",
+      "mode": "sandbox",
+      "gated": true,
+      "source": "authored (Docker isolation)"
+    },
+    {
+      "name": "secskills-report",
+      "kind": "flow",
+      "mode": "any",
+      "gated": false,
+      "source": "vendor/redteam-pentest.md report + findings store"
+    },
+    {
+      "name": "secskills-kb",
+      "kind": "reference",
+      "mode": "any",
+      "gated": false,
+      "source": "kb/ (OWASP snapshot)"
+    },
+    {
+      "name": "secskills-doctor",
+      "kind": "preflight",
+      "mode": "any",
+      "gated": false,
+      "source": "tools/doctor.sh"
+    }
+  ],
+  "kb_classes": [
+    {
+      "class": "top10",
+      "owasp": "index",
+      "cheatsheets": 0,
+      "note": "Top 10 2021 -> class map"
+    },
+    {
+      "class": "injection",
+      "owasp": "A03",
+      "cheatsheets": 7
+    },
+    {
+      "class": "access-control",
+      "owasp": "A01,A04",
+      "cheatsheets": 4
+    },
+    {
+      "class": "auth-session",
+      "owasp": "A07",
+      "cheatsheets": 7
+    },
+    {
+      "class": "crypto-secrets",
+      "owasp": "A02",
+      "cheatsheets": 5
+    },
+    {
+      "class": "config-exposure",
+      "owasp": "A05,A08",
+      "cheatsheets": 6
+    },
+    {
+      "class": "components-supply-chain",
+      "owasp": "A06",
+      "cheatsheets": 4
+    },
+    {
+      "class": "ssrf-xxe",
+      "owasp": "A10",
+      "cheatsheets": 2
+    },
+    {
+      "class": "files-deserialization",
+      "owasp": "A08",
+      "cheatsheets": 4
+    },
+    {
+      "class": "logging-monitoring",
+      "owasp": "A09",
+      "cheatsheets": 2
+    },
+    {
+      "class": "mobile",
+      "owasp": "Mobile Top 10 2024",
+      "cheatsheets": 3
+    },
+    {
+      "class": "llm-agents",
+      "owasp": "LLM Top 10 2025 + Agentic",
+      "cheatsheets": 3
+    }
+  ],
+  "kb_cheatsheet_total": 46,
+  "kb_license": "CC BY-SA 4.0",
+  "lib": [
+    "safety.sh",
+    "tldt.sh",
+    "throttle.sh",
+    "findings-store.sh",
+    "authz-gate.md",
+    "report-template.md",
+    "osint-sources.md"
+  ],
+  "tools": [
+    "doctor.sh",
+    "ingest.sh"
+  ],
+  "tool_registry": {
+    "total": 62,
+    "categories": [
+      "core",
+      "optimizer",
+      "osint",
+      "dns",
+      "http",
+      "port",
+      "vuln",
+      "cve",
+      "secrets",
+      "content",
+      "params",
+      "tls",
+      "cloud",
+      "exploit",
+      "oob",
+      "source",
+      "sandbox",
+      "report"
+    ],
+    "baseline": [
+      "curl",
+      "dig",
+      "jq",
+      "python3",
+      "git"
+    ],
+    "optimizer": "tldt"
+  },
+  "osint_keyed_sources": [
+    "shodan",
+    "fofax",
+    "github-subdomains",
+    "chaos",
+    "censys",
+    "virustotal",
+    "urlscan"
+  ],
+  "findings_store": "~/.secskills-findings/<target>/  (native: findings add|write-run|list|show, report --render|--retest)",
+  "top10_coverage": [
+    "A01",
+    "A02",
+    "A03",
+    "A04",
+    "A05",
+    "A06",
+    "A07",
+    "A08",
+    "A09",
+    "A10"
+  ],
+  "binary": {
+    "name": "secskills",
+    "lang": "go",
+    "deps": "stdlib-only",
+    "embeds": [
+      "kb",
+      "vendor/ast-grep-rules",
+      "recipes",
+      "tools/registry.tsv"
+    ],
+    "subcommands": [
+      "doctor",
+      "profile",
+      "scope",
+      "source",
+      "discover",
+      "test",
+      "sandbox",
+      "kb",
+      "recipes",
+      "fetch",
+      "post",
+      "compress",
+      "scrub",
+      "scan",
+      "findings",
+      "report",
+      "shodan",
+      "mcp",
+      "selftest"
+    ]
+  },
+  "agents": {
+    "claude-code": "skills/ + .claude-plugin/ or MCP",
+    "opencode": "AGENTS.md + .opencode/command or opencode.json MCP",
+    "mcp": "secskills mcp (JSON-RPC 2.0 stdio)"
+  },
+  "mcp_tools": [
+    "doctor",
+    "kb_list",
+    "kb_get",
+    "recipes_get",
+    "source_scan",
+    "fetch"
+  ],
+  "recipes": [
+    "injection",
+    "access-control",
+    "auth-session",
+    "crypto-secrets",
+    "config-exposure",
+    "ssrf-xxe"
+  ],
+  "frameworks": [
+    "OWASP Top 10 2021 (Web)",
+    "OWASP Mobile Top 10 2024",
+    "OWASP Top 10 for LLM Apps 2025",
+    "OWASP WSTG",
+    "OWASP Cheat Sheet Series",
+    "CWE",
+    "OSV"
+  ],
+  "report_formats": [
+    "markdown (report --render)",
+    "HTML (report --html)",
+    "PDF big-4/SOC2 (report --pdf)"
+  ],
+  "ux": {
+    "intake": "secskills-intake skill \u2014 grill-style pre-engagement interview",
+    "profile": "passive OSINT brief",
+    "scope": ".secskills-scope.yml honored by the gate"
+  },
+  "compliance_mapping": [
+    "SOC 2 TSC",
+    "ISO/IEC 27001:2022",
+    "PCI-DSS 4.0"
+  ]
+}

@@ -1,0 +1,10 @@
+id: vibe-ts-any-cast-security-bypass
+language: typescript
+severity: warning
+message: "Vibe: cast to 'any' near security-sensitive DOM method — TypeScript safety bypassed"
+rule:
+  all:
+    - pattern: ($VALUE as any).$METHOD($$$)
+constraints:
+  METHOD:
+    regex: "(?i)(innerHTML|outerHTML|write|eval|exec|query|execute)"

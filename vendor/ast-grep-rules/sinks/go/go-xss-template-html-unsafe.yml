@@ -1,0 +1,7 @@
+id: go-xss-template-html-unsafe
+language: go
+severity: warning
+message: "XSS: template.HTML() conversion bypasses html/template auto-escaping — $VALUE rendered raw"
+rule:
+  pattern: template.HTML($VALUE)
+

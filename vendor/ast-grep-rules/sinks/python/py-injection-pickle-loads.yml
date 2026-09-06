@@ -1,0 +1,7 @@
+id: py-injection-pickle-loads
+language: python
+severity: error
+message: "Deserialization: pickle.loads() on dynamic data — arbitrary code execution on malicious input"
+rule:
+  pattern: pickle.loads($DATA)
+

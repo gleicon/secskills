@@ -1,0 +1,10 @@
+id: js-xss-document-write
+language: javascript
+severity: warning
+message: "XSS sink: document.write() with dynamic value"
+rule:
+  all:
+    - pattern: document.write($VALUE)
+    - not:
+        pattern: document.write("$LITERAL")
+

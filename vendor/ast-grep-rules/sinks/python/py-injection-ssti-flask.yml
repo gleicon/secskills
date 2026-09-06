@@ -1,0 +1,10 @@
+id: py-injection-ssti-flask
+language: python
+severity: error
+message: "SSTI: render_template_string() with dynamic template — Server-Side Template Injection"
+rule:
+  all:
+    - pattern: render_template_string($TEMPLATE, $$$)
+    - not:
+        pattern: render_template_string("$LITERAL", $$$)
+

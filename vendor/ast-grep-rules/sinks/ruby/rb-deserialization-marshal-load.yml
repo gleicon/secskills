@@ -1,0 +1,7 @@
+id: rb-deserialization-marshal-load
+language: ruby
+severity: error
+message: "Deserialization: Marshal.load() on dynamic data — arbitrary code execution on malicious input"
+rule:
+  pattern: Marshal.load($DATA)
+

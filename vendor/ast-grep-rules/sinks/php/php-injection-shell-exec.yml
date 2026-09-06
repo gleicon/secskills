@@ -1,0 +1,10 @@
+id: php-injection-shell-exec
+language: php
+severity: error
+message: "Command injection: shell_exec() with dynamic argument"
+rule:
+  all:
+    - pattern: shell_exec($CMD)
+    - not:
+        pattern: shell_exec("$LITERAL")
+

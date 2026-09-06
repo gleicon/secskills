@@ -1,0 +1,11 @@
+id: vibe-rb-toctou-file-check-open
+language: ruby
+severity: warning
+message: "Vibe: File.exist? check then File.open without lock — TOCTOU race (parallel agent risk)"
+rule:
+  pattern: |
+    if File.exist?($F)
+      $$$
+      File.open($F, $$$)
+    end
+
