@@ -31,7 +31,7 @@ COMMANDS:
   graph       Cross-domain exploration graph (OSINT pivots; discovered domains NOT tested)
   test        OWASP Top 10 active tests against a surface (authorization-gated)
   sandbox     Build/run an artifact isolated in Docker, then test it
-  report      Assemble findings report / --retest a prior run
+  report      Assemble report (--render|--html|--pdf|--audit) / --retest a prior run
   tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
   compress    Shrink text via tldt (token hygiene)
   scrub       Redact PII/secrets via tldt (for reports)
@@ -39,6 +39,9 @@ COMMANDS:
   findings    Manage the findings store (add | write-run | list | show)
   profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
   scope       Write/validate the engagement scope file (.secskills-scope.yml)
+  override    Record an auditable severity adjudication (reviewed vs automated)
+  attest      Sign (--sign) / verify (--verify) a run's attestation (ed25519)
+  conformance Detector quality scorecard from the offline regression corpus
   shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
   mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
   selftest    End-to-end pipeline test against a local disposable server
