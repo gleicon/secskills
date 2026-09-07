@@ -157,11 +157,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           <tr><td>Confidence / Validation / State</td><td>%s / %s / %s</td></tr>
           <tr><td>OWASP / CWE</td><td>%s / %s</td></tr>
           <tr><td>Detector</td><td><code>%s</code></td></tr>
-          <tr><td>Root finding key</td><td><code>%s</code></td></tr>
+          <tr><td>Control (detector)</td><td><code>%s</code></td></tr>
           <tr><td>CVSS v3.1</td><td><code>%s</code></td></tr>`,
 			ri, strings.ToLower(f.Severity), f.Severity, esc(rootTitle(f)),
 			len(rv.Assets), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(orDash(f.State)),
-			esc(f.OWASP), esc(f.CWE), esc(detectorIDFor(f)), esc(orDash(f.RootKey)), esc(cvssString(f)))
+			esc(f.OWASP), esc(f.CWE), esc(detectorIDFor(f)), esc(detectorIDFor(f)), esc(cvssString(f)))
 		if f.PotentialSeverity != "" {
 			w(`<tr><td>Potential severity (if validated)</td><td>%s — %s</td></tr>`, esc(f.PotentialSeverity), esc(f.EscalationCondition))
 		}
