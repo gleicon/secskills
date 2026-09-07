@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"net/url"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ type crtEntry struct {
 // in issued-certificate SANs for the domain. Parsed with encoding/json rather
 // than by hand, so malformed/edge records don't leak junk hostnames.
 func crtshNames(domain string) []string {
-	body, err := httpDo("crtsh", "GET", "https://crt.sh/?q=%25."+domain+"&output=json", "", 3)
+	body, err := httpDo("crtsh", "GET", "https://crt.sh/?q=%25."+url.QueryEscape(domain)+"&output=json", "", 3)
 	if err != nil {
 		return nil
 	}

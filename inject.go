@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -155,4 +154,3 @@ func tldtDetect(path string) bool {
 	return strings.Contains(s, `"flagged":true`) || strings.Contains(s, `"kind":"injection"`)
 }
 
-var _ = fmt.Sprintf

@@ -67,7 +67,7 @@ func cmdProfile(args []string) error {
 		out, _ := runCmdTimeout(25*time.Second, "shodan", "domain", target)
 		ips, orgs, saas := parseShodanBrief(string(out))
 		if len(ips) > 0 {
-			p("- IP blocks / ASN scope: %s\n", strings.Join(cap8(ips), ", "))
+			p("- IP blocks / ASN scope: %s\n", strings.Join(capList(ips, 8), ", "))
 		}
 		if len(orgs) > 0 {
 			p("- Hosting org(s): %s\n", strings.Join(orgs, ", "))
@@ -233,12 +233,6 @@ func parseShodanBrief(s string) (ips, orgs, saas []string) {
 	return
 }
 
-func cap8(s []string) []string {
-	if len(s) > 8 {
-		return s[:8]
-	}
-	return s
-}
 
 func kvLine(m map[string]int, n int) string {
 	type kv struct {

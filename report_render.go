@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -197,15 +196,6 @@ func riskNarrative(target string, c map[string]int, subs, live int) string {
 	for _, v := range c {
 		total += v
 	}
-	level := "LOW-to-MODERATE"
-	if c["CRITICAL"] > 0 {
-		level = "CRITICAL"
-	} else if c["HIGH"] >= 3 {
-		level = "HIGH"
-	} else if c["HIGH"] > 0 {
-		level = "MODERATE-to-HIGH"
-	}
-	_ = level
 	compromise := "No critical compromise path was demonstrated during this unauthenticated, non-destructive assessment."
 	if c["CRITICAL"] > 0 {
 		compromise = "A critical-severity condition was identified and requires immediate manual validation."
@@ -733,4 +723,3 @@ func setJoin(m map[string]bool, n int) string {
 }
 
 // liveHosts already defined in mode.go; severityCounts/sortFindings here.
-var _ = json.Marshal

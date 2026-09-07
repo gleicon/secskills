@@ -94,8 +94,6 @@ type osvVuln struct {
 	} `json:"affected"`
 }
 
-// cvssBase extracts the numeric CVSS base score from a CVSS_V3 vector, if present.
-var cvssScoreRe = regexp.MustCompile(`CVSS:3\.[01]/`)
 
 // fixedAfter reports whether the vuln has a fixed version strictly greater than
 // ver (i.e. our version is genuinely unpatched for it). If no range data exists,
@@ -181,11 +179,9 @@ func cveLookup(host, serverHeader string) *Finding {
 	}
 
 	count := len(unpatched)
-	confidence := "unpatched"
 	ids := unpatched
 	if count == 0 { // only range-less matches — lower confidence
 		count = len(unranged)
-		confidence = "version-match (no range data — validate)"
 		ids = unranged
 	}
 	// Version→CVE correlation is a LEAD, not a demonstrated vulnerability: the
@@ -217,6 +213,5 @@ func cveLookup(host, serverHeader string) *Finding {
 	classify(f)
 	// override remediation reference: upgrading is the fix; hiding the banner is NOT.
 	f.References = append(f.References, "Remediation: upgrade the component to a fixed release and confirm the running build. Hiding the version banner is fingerprint-reduction, NOT remediation.")
-	_ = confidence
 	return f
 }

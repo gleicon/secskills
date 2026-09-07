@@ -122,24 +122,6 @@ func sortFindings(fs []Finding) {
 	sort.SliceStable(fs, func(i, j int) bool { return rank[fs[i].Severity] < rank[fs[j].Severity] })
 }
 
-// kbClassFor maps a finding title to a KB class for the remediation pointer.
-func kbClassFor(title string) string {
-	t := strings.ToLower(title)
-	switch {
-	case strings.Contains(t, "hsts") || strings.Contains(t, "tls") || strings.Contains(t, "cipher") || strings.Contains(t, "cookie"):
-		return "crypto-secrets"
-	case strings.Contains(t, "csp") || strings.Contains(t, "header") || strings.Contains(t, "cors") || strings.Contains(t, "clickjack") || strings.Contains(t, "exposed") || strings.Contains(t, "metrics") || strings.Contains(t, "actuator"):
-		return "config-exposure"
-	case strings.Contains(t, "xss") || strings.Contains(t, "inject") || strings.Contains(t, "sql"):
-		return "injection"
-	case strings.Contains(t, "ssrf") || strings.Contains(t, "xxe"):
-		return "ssrf-xxe"
-	case strings.Contains(t, "auth") || strings.Contains(t, "session") || strings.Contains(t, "password"):
-		return "auth-session"
-	default:
-		return "top10"
-	}
-}
 
 func doRetest(target string) error {
 	latest := filepath.Join(storeDir(target), "latest")

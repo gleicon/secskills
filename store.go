@@ -52,12 +52,6 @@ func addFinding(wd string, f Finding) error {
 	return os.WriteFile(workFindings(wd), b, 0o600)
 }
 
-func truncate(s string, n int) string {
-	if len(s) > n {
-		return s[:n] + "…"
-	}
-	return s
-}
 
 // writeRun freezes the workdir findings into a persistent run file and updates
 // the `latest` symlink (D-4). Returns the run file path.

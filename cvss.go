@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"strings"
 )
 
 // A real (indicative) CVSS v3.1 base vector + score per finding, computed with the
@@ -79,20 +78,4 @@ func cvssString(f *Finding) string {
 	return s
 }
 
-// severityFromScore maps a computed CVSS base score to the qualitative band.
-func severityFromScore(score float64) string {
-	switch {
-	case score == 0:
-		return "INFORMATIONAL"
-	case score < 4.0:
-		return "LOW"
-	case score < 7.0:
-		return "MEDIUM"
-	case score < 9.0:
-		return "HIGH"
-	default:
-		return "CRITICAL"
-	}
-}
 
-var _ = strings.ToUpper
