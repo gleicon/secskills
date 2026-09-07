@@ -166,6 +166,15 @@ func doRetest(target string) error {
 			}
 		}
 		f.LastTestedRun = newID
+		// close the loop in writing: append a verification note to the finding
+		// rather than issuing a disconnected fresh report (playbook §05).
+		verdict := f.Status
+		if !testable {
+			verdict = "manual-recheck-needed"
+		}
+		f.RetestHistory = append(f.RetestHistory, map[string]string{
+			"run_id": newID, "date": nowRFC(), "status": verdict, "change": strings.TrimSpace(change),
+		})
 		status[f.Status]++
 		fmt.Printf("| %s | %s | %s | %s | %s |\n", f.ID, f.Severity, f.Status, change, f.Title)
 	}
