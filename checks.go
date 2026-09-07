@@ -200,6 +200,19 @@ func checkExposure(url string) []Finding {
 		nread, _ := readFull(resp.Body, buf)
 		resp.Body.Close()
 		body := string(buf[:nread])
+		// environmental ambiguity (CDN challenge / 429 / auth gateway) means we
+		// could not observe the control — do not treat as absent/secure.
+		if amb, why := responseAmbiguity(code, resp.Header, body); amb {
+			out = append(out, Finding{
+				ID: fmt.Sprintf("EXP-%02d", i), Title: "Exposure check inconclusive at " + p,
+				Host: base + p, Severity: "INFORMATIONAL", Status: "open",
+				Confidence: "Low", Validation: "inconclusive",
+				ObservedEvidence: "Could not assess " + p + ": " + why + ".",
+				ImpactText:       "The endpoint could not be evaluated this run (" + why + "); re-test from an unblocked vantage point. Not counted as secure.",
+				ProbeKind: "status", ProbeURL: base + p,
+			})
+			continue
+		}
 		hasSig := strings.Contains(body, sig.signature)
 		if code != 200 || (!hasSig && baseCode == 200) {
 			continue // not exposed, or catch-all 200

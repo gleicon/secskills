@@ -269,6 +269,12 @@ func cmdTest(args []string) error {
 		fnd = append(fnd, checkTLS(u)...)
 		<-tick.C
 		fnd = append(fnd, checkExposure(u)...)
+		<-tick.C
+		fnd = append(fnd, runDetectorPacks(wd, u)...)
+		<-tick.C
+		if f := corsDifferential(wd, u); f != nil {
+			fnd = append(fnd, *f)
+		}
 		if c := cveLookup(u, lh.Server); c != nil {
 			fnd = append(fnd, *c)
 		}
@@ -333,6 +339,9 @@ func cmdTest(args []string) error {
 	}
 
 	writeRunMeta(wd, target, started, loadWorkFindings(wd), *deep, *intrusive)
+	if _, err := signRunManifest(wd); err == nil {
+		fmt.Println("run attestation signed (ed25519): run-attestation.sig")
+	}
 	fmt.Printf("\n%d findings -> %s\n", total, workFindings(wd))
 	fmt.Println("Remediation per finding: secskills kb <class>. Report: secskills report --render", target)
 	if *save {
