@@ -21,6 +21,7 @@ An authorized, unexpired scope file lets `discover`/`test` pass the gate without
 | `secskills test <target> [--confirm] [--deep] [--intrusive --intrusive-confirm] [--auth-token/--cookie/--auth-header]` | Headers, TLS, exposure, OSV CVEs. `--deep`: nuclei + sslscan + content discovery + screenshots. |
 | `secskills source <path>` | Static ast-grep review (embedded rules). No network, no gate. |
 | `secskills sandbox <ctx> --confirm [--port N]` | Docker-isolated build/run, then probe the instance. |
+| `secskills graph <seed...> [--output dir]` | Cross-domain exploration graph (OSINT pivots: cert-SAN/CNAME/shared-infra). Discovered domains are NOT tested; each carries an authorization status. |
 
 Flags work in any position. Live/sandbox refuse without `--confirm` or an
 authorized scope file. `--intrusive` requires `--intrusive-confirm`.

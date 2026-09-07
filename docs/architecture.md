@@ -2,7 +2,7 @@
 
 ## One binary, thin adapters
 
-secskills is a single stdlib-only Go binary. All logic lives there — no LLM
+secskills is a single Go binary (one dep: x/net/publicsuffix). All logic lives there — no LLM
 required. Agents (Claude Code, opencode, any MCP client) are thin adapters that
 call the same CLI. The portable unit across agents is a **CLI**, not any one
 agent's skill format.

@@ -84,19 +84,12 @@ func cmdDiscover(args []string) error {
 		fmt.Printf("[subfinder] %d names\n", len(subs))
 	} else {
 		fmt.Println("[subfinder] absent — crt.sh (throttled)")
-		if body, err := httpDo("crtsh", "GET", "https://crt.sh/?q=%25."+host+"&output=json", "", 4); err == nil {
-			for _, part := range strings.Split(string(body), "\"name_value\":\"") {
-				if i := strings.IndexByte(part, '"'); i > 0 {
-					for _, s := range strings.Split(part[:i], "\\n") {
-						s = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(s), "*."))
-						if strings.HasSuffix(s, host) {
-							subs[s] = true
-						}
-					}
-				}
+		for _, s := range crtshNames(host) {
+			if strings.HasSuffix(s, host) {
+				subs[s] = true
 			}
-			fmt.Printf("[crt.sh] %d names\n", len(subs))
 		}
+		fmt.Printf("[crt.sh] %d names\n", len(subs))
 	}
 	// confirm scope = target apex + its subdomains only. Reject any name with
 	// shell/URL-unsafe characters so a crafted DNS entry can never reach an
