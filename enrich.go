@@ -188,26 +188,35 @@ func cveLookup(host, serverHeader string) *Finding {
 		confidence = "version-match (no range data — validate)"
 		ids = unranged
 	}
+	// Version→CVE correlation is a LEAD, not a demonstrated vulnerability: the
+	// version is banner-inferred, distro backports keep upstream-looking versions,
+	// the OS/build/config/modules are unknown, and exploitability is not proven.
+	// Cap at MEDIUM and mark low confidence + manual-validation-required. Only a
+	// safe validation of an actual applicable CVE against the host justifies HIGH.
 	sev := "MEDIUM"
-	switch {
-	case maxSev >= 4:
-		sev = "CRITICAL"
-	case maxSev == 3 || count > 10:
-		sev = "HIGH"
+	if count <= 5 && len(unpatched) == 0 {
+		sev = "LOW"
 	}
 	if len(ids) > 10 {
 		ids = ids[:10]
 	}
 	f := &Finding{
-		Title:        fmt.Sprintf("Outdated component: %s/%s — %d applicable CVEs (OSV, %s)", name, ver, count, confidence),
+		Title:        fmt.Sprintf("Potentially vulnerable %s version %s — manual validation required (%d CVEs correlate via OSV)", name, ver, count),
 		Host:         host,
 		Severity:     sev,
 		Status:       "open",
+		Confidence:   "Low",
+		Validation:   "version-inferred",
+		ImpactText: fmt.Sprintf("The %s version is inferred from the Server banner. OSV lists %d CVEs for %s/%s in the %s ecosystem, but this does NOT establish that the host runs the vulnerable build/config or that any CVE is remotely exploitable here (backported distro patches keep the same upstream version). Treat as a lead for manual validation, not a confirmed vulnerability.",
+			name, count, name, ver, eco),
 		EvidenceCmd:  fmt.Sprintf(`curl -s -X POST https://api.osv.dev/v1/query -d '{"version":"%s","package":{"name":"%s","ecosystem":"%s"}}' | jq '[.vulns[]|select(.affected[].ranges[].events[].fixed)]|length'`, ver, pkg, eco),
 		ExpectedOpen: "",
 		CVEs:         ids,
 		ProbeKind:    "manual",
 	}
 	classify(f)
+	// override remediation reference: upgrading is the fix; hiding the banner is NOT.
+	f.References = append(f.References, "Remediation: upgrade the component to a fixed release and confirm the running build. Hiding the version banner is fingerprint-reduction, NOT remediation.")
+	_ = confidence
 	return f
 }

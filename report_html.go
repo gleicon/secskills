@@ -35,9 +35,9 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	w(`<section class="cover">
       <div class="cover-top"><div class="brand">secskills</div><div class="classif">CONFIDENTIAL</div></div>
       <div class="cover-mid">
-        <div class="doctype">External Penetration Test Report</div>
+        <div class="doctype">%s</div>
         <h1>%s</h1>
-        <div class="cover-sub">OWASP-aligned external security assessment</div>
+        <div class="cover-sub">External, unauthenticated, non-destructive — attack-surface &amp; vulnerability assessment (no exploitation/authenticated phase)</div>
       </div>
       <table class="cover-meta">
         <tr><td>Report date</td><td>%s</td></tr>
@@ -47,7 +47,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
         <tr><td>Report version</td><td>1.0</td></tr>
       </table>
       <div class="cover-foot">Distribute on a need-to-know basis over encrypted channels. This document contains sensitive security findings.</div>
-    </section>`, esc(target), date, version)
+    </section>`, esc(deliverableTitle(findings)), esc(target), date, version)
 
 	// ---- Document control ----
 	w(`<section class="page"><h2>Document Control</h2>
@@ -72,7 +72,8 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		}
 		w(`<div class="heat-cell sev-%s"><div class="hc-n">%d</div><div class="hc-l">%s</div></div>`, strings.ToLower(s), counts[s], s)
 	}
-	w(`<div class="heat-cell total"><div class="hc-n">%d</div><div class="hc-l">TOTAL</div></div></div>`, total)
+	w(`<div class="heat-cell total"><div class="hc-n">%d</div><div class="hc-l">OBSERVATIONS</div></div></div>`, total)
+	w(`<h3>Root issues (observations collapsed)</h3><div class="rem">%s</div>`, mdBulletsToHTML(rootIssues(findings)))
 
 	w(`<h3>Key findings</h3><ul class="keys">`)
 	kn := 0
@@ -110,9 +111,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
       <table class="grid"><thead><tr><th>Scope item</th><th>Value</th></tr></thead><tbody>
       <tr><td>In-scope apex</td><td>%s</td></tr>
       <tr><td>Rules of engagement</td><td>Non-destructive; rate-limited; scope-confined to the apex and subdomains</td></tr>
+      <tr><td>Provenance of tested hosts</td><td>All tested hosts are subdomains of the authorized apex, discovered via passive DNS / certificate transparency</td></tr>
+      <tr><td>Authorization</td><td>%s</td></tr>
       <tr><td>Authenticated testing</td><td>%s</td></tr>
-      <tr><td>Out of scope</td><td>Denial-of-service; social engineering; physical; destructive exploitation</td></tr>
-      </tbody></table></section>`, esc(target), authLabel(authStatus))
+      <tr><td>Out of scope</td><td>Denial-of-service; social engineering; physical; destructive exploitation; cross-domain pivots (reported separately, require scope confirmation)</td></tr>
+      </tbody></table></section>`, esc(target), esc(scopeAuthLine(target)), authLabel(authStatus))
 
 	// ---- Findings Summary ----
 	w(`<section class="page"><h2>3. Findings Summary</h2>
@@ -136,11 +139,13 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           <div class="f-head"><span class="fid">F-%03d</span><span class="pill sev-%s">%s</span><h3>%s</h3></div>
           <table class="grid f-meta"><tbody>
           <tr><td>Affected asset</td><td>%s</td></tr>
+          <tr><td>Confidence</td><td>%s</td></tr>
+          <tr><td>Validation</td><td>%s</td></tr>
           <tr><td>OWASP</td><td>%s</td></tr>
           <tr><td>CWE</td><td>%s</td></tr>
-          <tr><td>CVSS v3.1 (indicative band)</td><td>%s</td></tr>`,
+          <tr><td>CVSS v3.1</td><td><code>%s</code></td></tr>`,
 			i+1, strings.ToLower(f.Severity), f.Severity, esc(f.Title),
-			esc(f.Host), esc(f.OWASP), esc(f.CWE), cvssBand(f.Severity))
+			esc(f.Host), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(f.OWASP), esc(f.CWE), esc(cvssString(f)))
 		if len(f.CVEs) > 0 {
 			w(`<tr><td>CVEs (OSV)</td><td>%s</td></tr>`, esc(strings.Join(f.CVEs, ", ")))
 		}
@@ -152,7 +157,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           </tbody></table>`, esc(slaFor(f.Severity)), esc(c.SOC2), esc(c.ISO), esc(c.PCI), esc(c.Team))
 		w(`<div class="f-body"><p><b>Business risk.</b> %s</p>`, esc(businessRisk(f.KBClass, f.Severity)))
 		w(`<p><b>Severity rationale.</b> %s</p>`, esc(severityRationale(f)))
-		w(`<p><b>Technical impact.</b> %s</p>`, esc(impactFor(f.KBClass)))
+		impact := f.ImpactText
+		if impact == "" {
+			impact = impactFor(f.KBClass)
+		}
+		w(`<p><b>Technical impact.</b> %s</p>`, esc(impact))
 		if f.EvidenceCmd != "" {
 			w(`<p><b>Evidence (reproduce).</b></p><pre>%s</pre>`, esc(f.EvidenceCmd))
 		}
@@ -221,10 +230,36 @@ func mdBulletsToHTML(md string) string {
 		s = strings.ReplaceAll(s, "\x01", "</code>")
 		return s
 	}
+	inTable := false
 	for _, line := range strings.Split(md, "\n") {
 		t := strings.TrimSpace(line)
 		if t == "" {
 			continue
+		}
+		// pipe table
+		if strings.HasPrefix(t, "|") {
+			cells := strings.Split(strings.Trim(t, "|"), "|")
+			if len(cells) > 0 && strings.Contains(cells[0], "---") {
+				continue // separator row
+			}
+			if inList {
+				b.WriteString("</ul>")
+				inList = false
+			}
+			if !inTable {
+				b.WriteString(`<table class="grid"><tbody>`)
+				inTable = true
+			}
+			b.WriteString("<tr>")
+			for _, cell := range cells {
+				b.WriteString("<td>" + code(strings.TrimSpace(cell)) + "</td>")
+			}
+			b.WriteString("</tr>")
+			continue
+		}
+		if inTable {
+			b.WriteString("</tbody></table>")
+			inTable = false
 		}
 		if strings.HasPrefix(t, "- ") || strings.HasPrefix(t, "* ") {
 			if !inList {
@@ -242,6 +277,9 @@ func mdBulletsToHTML(md string) string {
 	}
 	if inList {
 		b.WriteString("</ul>")
+	}
+	if inTable {
+		b.WriteString("</tbody></table>")
 	}
 	return b.String()
 }
@@ -267,14 +305,19 @@ func execNarrativeHTML(target string, c map[string]int, subs, live int) string {
 	case c["HIGH"] > 0:
 		level = "MODERATE-to-HIGH"
 	}
-	return fmt.Sprintf("This report presents the results of an external penetration test of %s. "+
-		"The assessment enumerated %d subdomains and tested %d live services, identifying %d findings "+
-		"(%d high/critical, %d medium, %d low). Overall external risk is assessed as %s. The findings are "+
-		"predominantly hardening and transport-security gaps, alongside a focused set of higher-impact issues "+
-		"(outdated components with known CVEs and unauthenticated exposure of operational endpoints). "+
-		"Each finding is mapped to OWASP, CWE, and SOC 2 / ISO 27001 / PCI-DSS controls, and assigned an owning "+
-		"team to support remediation across groups.",
-		target, subs, live, total, c["HIGH"]+c["CRITICAL"], c["MEDIUM"], c["LOW"], level)
+	_ = level
+	compromise := "No critical compromise path was demonstrated during this unauthenticated, non-destructive assessment."
+	if c["CRITICAL"] > 0 {
+		compromise = "A critical-severity condition was identified requiring immediate manual validation."
+	}
+	return fmt.Sprintf("%s We enumerated %d subdomains of %s and identified %d externally reachable services, recording %d "+
+		"observations (%d high, %d medium, %d low/info). The broader pattern is inconsistent edge hardening — chiefly legacy TLS and "+
+		"HTTP security-header configuration applied unevenly. Most individual observations do not independently represent a material "+
+		"compromise path and are best addressed as platform/edge configuration issues (see Root issues) rather than application-by-application "+
+		"vulnerabilities. A small number warrant immediate manual validation. Findings carry explicit Confidence and Validation states; those "+
+		"marked version-inferred or config-inferred are leads pending validation, not confirmed vulnerabilities. Exploitation and authenticated "+
+		"testing were out of scope.",
+		compromise, subs, target, live, total, c["HIGH"]+c["CRITICAL"], c["MEDIUM"], c["LOW"]+c["INFORMATIONAL"])
 }
 
 // cmdReportHTML / PDF entrypoints are wired via cmdReport flags.

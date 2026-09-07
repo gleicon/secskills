@@ -37,6 +37,15 @@ type Finding struct {
 	ProbeKind string `json:"probe_kind,omitempty"`
 	ProbeURL  string `json:"probe_url,omitempty"`
 	ProbeArg  string `json:"probe_arg,omitempty"`
+	// Evidence/risk model (separate confidence from severity).
+	// Confidence: Confirmed | High | Medium | Low.
+	// Validation: exploited | behavior-confirmed | version-inferred | config-inferred | passive.
+	Confidence string `json:"confidence,omitempty"`
+	Validation string `json:"validation,omitempty"`
+	// ImpactText is asset-specific, replacing the generic per-class string when set.
+	ImpactText string `json:"impact,omitempty"`
+	// Provenance: how this asset/finding was discovered and whether it is in scope.
+	DiscoveredFrom string `json:"discovered_from,omitempty"`
 }
 
 type Run struct {

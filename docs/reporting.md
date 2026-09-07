@@ -52,6 +52,31 @@ Each finding maps to the controls it is evidence for:
 These references indicate the criteria a finding is relevant to — evidence
 support for an audit, not an audit opinion.
 
+## PLACEHOLDER_REMOVED
+
+## Evidence & risk model (CISO-grade)
+
+secskills separates **severity** from **confidence**, and states how each finding
+was validated — so a reader can trust the rating:
+
+- **Confidence:** Confirmed · High · Medium · Low.
+- **Validation:** exploited · behavior-confirmed · version-inferred · config-inferred · passive.
+- **CVSS v3.1:** a real computed base vector + score (`CVSS:3.1/AV:N/.../ = 5.3`), not a band.
+- **Applicability:** a missing header on a non-HTML/API endpoint is an INFORMATIONAL
+  *hardening deviation*, not a MEDIUM vulnerability. CSP/clickjacking are rated on
+  HTML responses only; `ACAO:*` is elevated only with `Allow-Credentials: true`.
+- **Component CVEs are leads, not proof:** version→CVE correlation is `version-inferred`,
+  capped at MEDIUM, titled "manual validation required" — hiding a banner is not remediation.
+- **/metrics is deep-inspected:** severity follows what actually leaked (internal
+  hostnames, k8s names, versions, secrets → HIGH; generic runtime metrics → LOW).
+- **Root issues:** many per-host observations collapse into a few root issues
+  ("163 observations → a handful of platform/edge issues").
+- **Deliverable naming:** "External Attack Surface & Security Assessment" unless a
+  genuine exploit/validation phase ran (then "Penetration Test").
+- **Provenance & authorization:** every report states how tested hosts were
+  discovered and the authorization basis; cross-domain OSINT pivots are reported
+  separately and require scope confirmation before inclusion.
+
 ## CVSS
 
 secskills reports an **indicative CVSS v3.1 band** per severity (Critical 9.0–10.0,
