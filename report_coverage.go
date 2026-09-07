@@ -44,7 +44,7 @@ func renderCoverageFunnel(wd string, live []LiveHost) string {
 
 // renderCapabilityMatrix states which attack classes were meaningfully exercised
 // and which were out of scope, so "tested" is never read as "everything tested".
-func renderCapabilityMatrix(deep bool) string {
+func renderCapabilityMatrix(deep bool, adversarial bool) string {
 	deepCov := "Not run"
 	deepRes := "Deep phase not selected"
 	if deep {
@@ -55,14 +55,16 @@ func renderCapabilityMatrix(deep bool) string {
 		{"TLS / transport posture", "High — active protocol+cipher negotiation", "Completed"},
 		{"Security headers (HSTS/CSP/XFO/nosniff)", "High — direct response inspection", "Completed"},
 		{"Unauthenticated operational exposure", "High — endpoint discovery + content classifier", "Completed"},
-		{"Cross-origin policy (CORS)", "Medium — unauthenticated origin reflection", "Completed"},
+		{"Cross-origin policy (CORS)", "Medium — unauthenticated origin reflection + differential Origin matrix", "Completed"},
 		{"Component / version CVE correlation", "Low — banner-inferred, OSV lookup", "Leads only (unvalidated)"},
 		{"Known-pattern vulnerability templates (nuclei)", deepCov, deepRes},
-		{"SSRF / injection exploitation", "None — exploitation prohibited", "Not tested"},
-		{"BOLA / IDOR / authz logic", "None — authenticated testing out of scope", "Not tested"},
-		{"OAuth/OIDC / identity surface", "None (this pass)", "Not tested"},
-		{"Cloud object-storage exposure", "None (this pass)", "Not tested"},
-		{"API semantics (OpenAPI/GraphQL)", "None (this pass)", "Not tested"},
+		advRow("SSRF (out-of-band)", "OAST-validated canary callback", adversarial),
+		advRow("Authorization-bypass variants", "read-only header/path/method variants", adversarial),
+		advRow("Open redirect / arithmetic SSTI", "harmless exploit primitives", adversarial),
+		advRow("OAuth/OIDC / identity surface", "well-known discovery + endpoint model", adversarial),
+		advRow("Cloud object-storage exposure", "S3/GCS/Azure anonymous-listing enumeration", adversarial),
+		advRow("API semantics (OpenAPI/GraphQL)", "schema + introspection + verbose-error", adversarial),
+		{"BOLA / IDOR / business logic", "None — requires credentials (authorized-exploit)", "Not tested"},
 	}
 	var b strings.Builder
 	b.WriteString("| Attack class | Coverage / method | Result |\n|--------------|-------------------|--------|\n")
@@ -105,4 +107,13 @@ func screenshotCount(wd string) int {
 		return nil
 	})
 	return n
+}
+
+// advRow marks an attack class covered when the adversarial profile ran, else
+// explicit non-coverage — so "tested" never over-claims.
+func advRow(name, method string, adversarial bool) [3]string {
+	if adversarial {
+		return [3]string{name, "Medium — " + method, "Completed (adversarial-readonly)"}
+	}
+	return [3]string{name, "None — safe-active profile", "Not tested"}
 }

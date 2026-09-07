@@ -191,6 +191,7 @@ func cmdTest(args []string) error {
 	intrusive := fs.Bool("intrusive", false, "enable write/credential tests")
 	intrusiveOK := fs.Bool("intrusive-confirm", false, "second confirmation for intrusive tests")
 	deep := fs.Bool("deep", false, "deep phase: nuclei + sslscan + content-discovery + screenshots (slow)")
+	profileFlag := fs.String("profile", "safe-active", "aggression profile: passive | safe-active | adversarial-readonly | authorized-exploit")
 	authToken := fs.String("auth-token", "", "Bearer token for authenticated testing (optional)")
 	cookie := fs.String("cookie", "", "Cookie header for authenticated testing (optional)")
 	authHeader := fs.String("auth-header", "", "raw 'Name: value' header for authenticated testing (optional)")
@@ -211,6 +212,12 @@ func cmdTest(args []string) error {
 	}
 	wd := workdir(target)
 	started := nowRFC()
+	prof := parseProfile(*profileFlag)
+	if *intrusive && prof < ProfileAuthorizedExploit {
+		prof = ProfileAuthorizedExploit
+	}
+	os.WriteFile(filepath.Join(wd, "profile.txt"), []byte(prof.String()), 0o644)
+	oast := newOAST()
 	if !fileExists(filepath.Join(wd, "scope.txt")) {
 		writeScope(wd, []string{hostOf(target)})
 	}
@@ -275,6 +282,16 @@ func cmdTest(args []string) error {
 		if f := corsDifferential(wd, u); f != nil {
 			fnd = append(fnd, *f)
 		}
+		if prof.adversarial() {
+			<-tick.C
+			fnd = append(fnd, runAdversarial(wd, u, oast)...)
+			if lh.Status == 401 || lh.Status == 403 {
+				<-tick.C
+				if f := bypassProbe(wd, u, lh.Status); f != nil {
+					fnd = append(fnd, *f)
+				}
+			}
+		}
 		if c := cveLookup(u, lh.Server); c != nil {
 			fnd = append(fnd, *c)
 		}
@@ -338,9 +355,13 @@ func cmdTest(args []string) error {
 		}
 	}
 
-	// DNS hygiene runs once per apex (not per host).
+	// DNS hygiene + object-storage enumeration run once per apex (not per host).
 	if apex := registrableDomain(hostOf(target)); apex != "" {
-		for _, f := range dnsHygiene(apex) {
+		apexFindings := dnsHygiene(apex)
+		if prof.adversarial() {
+			apexFindings = append(apexFindings, enumObjectStorage(wd, apex, names)...)
+		}
+		for _, f := range apexFindings {
 			seq++
 			f.ID = fmt.Sprintf("F%03d", seq)
 			classify(&f)

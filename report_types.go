@@ -87,6 +87,9 @@ func remediationByType(f *Finding) string {
 // businessRiskFor returns condition- and confidence-aware business risk. When no
 // impact was demonstrated it says so, instead of inventing dramatic prose.
 func businessRiskFor(f *Finding) string {
+	if isInconclusive(f) {
+		return "Potential risk. If the endpoint is reachable without authentication and returns sensitive operational content, it could disclose internal information — but exposure was **not confirmed** during this run (validation blocked/unreachable). Re-test from an unblocked vantage point to confirm or clear."
+	}
 	if f.Severity == "INFORMATIONAL" {
 		return "No material business impact demonstrated. Defense-in-depth / hardening deviation."
 	}
