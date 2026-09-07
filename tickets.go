@@ -41,6 +41,7 @@ func cmdTickets(args []string) error {
 	}
 
 	type ticket struct {
+		Key         string   `json:"finding_key"`
 		ID          string   `json:"id"`
 		Title       string   `json:"title"`
 		Severity    string   `json:"severity"`
@@ -60,6 +61,7 @@ func cmdTickets(args []string) error {
 			classify(&f)
 		}
 		return ticket{
+			Key:          f.Key,
 			ID:           fmt.Sprintf("F-%03d", i+1),
 			Title:        f.Title,
 			Severity:     f.Severity,
@@ -88,10 +90,10 @@ func cmdTickets(args []string) error {
 
 	w := csv.NewWriter(out)
 	defer w.Flush()
-	w.Write([]string{"id", "title", "severity", "sla", "priority", "affected_asset", "owasp", "cwe", "cves", "assignee_team", "business_risk", "remediation_ref", "labels"})
+	w.Write([]string{"finding_key", "id", "title", "severity", "sla", "priority", "affected_asset", "owasp", "cwe", "cves", "assignee_team", "business_risk", "remediation_ref", "labels"})
 	for i, f := range findings {
 		t := mk(i, f)
-		w.Write([]string{t.ID, t.Title, t.Severity, t.SLA, t.Priority, t.Asset, t.OWASP, t.CWE, t.CVEs, t.Team, t.BusinessRisk, t.Remediation, strings.Join(t.Labels, " ")})
+		w.Write([]string{t.Key, t.ID, t.Title, t.Severity, t.SLA, t.Priority, t.Asset, t.OWASP, t.CWE, t.CVEs, t.Team, t.BusinessRisk, t.Remediation, strings.Join(t.Labels, " ")})
 	}
 	return nil
 }

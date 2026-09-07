@@ -49,6 +49,10 @@ type Finding struct {
 	ObservedEvidence string `json:"observed_evidence,omitempty"`
 	// Provenance: how this asset/finding was discovered and whether it is in scope.
 	DiscoveredFrom string `json:"discovered_from,omitempty"`
+	// Audit identity: DetectorID names the detector; Key is a stable hash so a
+	// finding persists across runs (open→mitigated→regressed) independent of F-NNN.
+	DetectorID string `json:"detector_id,omitempty"`
+	Key        string `json:"finding_key,omitempty"`
 }
 
 type Run struct {
@@ -113,6 +117,7 @@ func doRender(target, output string) error {
 		}
 	}
 	report := renderProReport(target, wd, findings)
+	report += fmt.Sprintf("\n---\n_Report SHA-256: %x_\n", sha256.Sum256([]byte(report)))
 	if output == "" {
 		fmt.Print(report)
 		return nil

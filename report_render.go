@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,6 +38,9 @@ func renderProReport(target, wd string, findings []Finding) string {
 	// ---- 1. Executive Summary -------------------------------------------------
 	p("## 1. Executive Summary\n\n")
 	p("%s\n\n", riskNarrative(target, counts, len(subs), len(live)))
+	if d := retestDeltaSection(target); d != "" {
+		p("%s\n\n", d)
+	}
 	p("### Findings by severity\n\n| Severity | Count |\n|----------|------:|\n")
 	for _, s := range sevOrder {
 		if counts[s] > 0 {
@@ -124,6 +128,8 @@ func renderProReport(target, wd string, findings []Finding) string {
 		p("| CVSS v3.1 | %s |\n", cvssString(f))
 		p("| Remediation SLA | %s |\n", slaFor(f.Severity))
 		p("| Owning team | %s |\n", complianceFor(f.KBClass).Team)
+		p("| Detector | `%s` |\n", detectorIDFor(f))
+		p("| Finding key | `%s` |\n", f.Key)
 		p("| Cheat sheet | `secskills kb %s` |\n", f.KBClass)
 		p("\n**Business risk.** %s\n\n", businessRiskFor(f))
 		p("**Severity rationale.** %s\n\n", severityJustification(f))
@@ -162,12 +168,16 @@ func renderProReport(target, wd string, findings []Finding) string {
 	}
 	p("\n_Export as tickets: `secskills tickets %s`._\n\n---\n\n", target)
 
-	// ---- 12. Appendices ------------------------------------------------------
+	// ---- Control Test Ledger + Run Attestation (audit evidence) ---------------
+	p("## 12. Control Test Ledger\n\n%s\n\n---\n\n", renderLedger(live, findings))
+	p("## 13. Run Attestation\n\n%s\n\n---\n\n", renderAttestation(wd))
+
+	// ---- 14. Appendices ------------------------------------------------------
 	authStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "auth-status.txt"), "not-available"))
-	p("## 12. Appendices & Cleanup Log\n\n%s\n\n", appendices(wd, authStatus))
+	p("## 14. Appendices & Cleanup Log\n\n%s\n\n", appendices(wd, authStatus))
 
 	// ---- 13. Glossary --------------------------------------------------------
-	p("## 13. Glossary\n\n%s\n\n", glossary())
+	p("## 15. Glossary\n\n%s\n\n", glossary())
 	p("### Data artifacts\n\n`data/subs-%s.txt`, `data/live-%s.json`, `data/findings-%s.json`, `data/shodan/`", target, target, target)
 	ss := strings.TrimSpace(readFileOr(filepath.Join(wd, "screenshots-status.txt"), ""))
 	if strings.HasPrefix(ss, "not-available") || ss == "" {
@@ -727,3 +737,35 @@ func setJoin(m map[string]bool, n int) string {
 }
 
 // liveHosts already defined in mode.go; severityCounts/sortFindings here.
+
+// retestDeltaSection renders a delta summary when the latest persisted run is a
+// retest — the distinct "retest report" view: what regressed, mitigated, or
+// stayed open since the previous run (playbook §05, close-the-loop).
+func retestDeltaSection(target string) string {
+	b, err := os.ReadFile(filepath.Join(storeDir(target), "latest"))
+	if err != nil {
+		return ""
+	}
+	var run Run
+	if json.Unmarshal(b, &run) != nil || run.Type != "retest" {
+		return ""
+	}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "### Retest delta (%s → %s)\n\n", run.PreviousRunID, run.RunID)
+	order := []string{"regressed", "open", "mitigated", "accepted", "manual"}
+	for _, k := range order {
+		if n := run.StatusCounts[k]; n > 0 {
+			fmt.Fprintf(&sb, "- **%s:** %d\n", k, n)
+		}
+	}
+	sb.WriteString("\n| ID | Key | Severity | Status | Latest change |\n|----|-----|----------|--------|---------------|\n")
+	for i := range run.Findings {
+		f := &run.Findings[i]
+		change := "—"
+		if h := f.RetestHistory; len(h) > 0 {
+			change = h[len(h)-1]["change"]
+		}
+		fmt.Fprintf(&sb, "| %s | `%s` | %s | %s | %s |\n", f.ID, f.Key, f.Severity, f.Status, orNone(change))
+	}
+	return sb.String()
+}

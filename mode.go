@@ -210,6 +210,7 @@ func cmdTest(args []string) error {
 		return fmt.Errorf("--intrusive requires a second confirmation: add --intrusive-confirm")
 	}
 	wd := workdir(target)
+	started := nowRFC()
 	if !fileExists(filepath.Join(wd, "scope.txt")) {
 		writeScope(wd, []string{hostOf(target)})
 	}
@@ -331,6 +332,7 @@ func cmdTest(args []string) error {
 		}
 	}
 
+	writeRunMeta(wd, target, started, loadWorkFindings(wd))
 	fmt.Printf("\n%d findings -> %s\n", total, workFindings(wd))
 	fmt.Println("Remediation per finding: secskills kb <class>. Report: secskills report --render", target)
 	if *save {
