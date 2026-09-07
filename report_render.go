@@ -778,10 +778,7 @@ func renderRootFindings(findings []Finding) string {
 	groups := map[string]*group{}
 	for i := range findings {
 		f := &findings[i]
-		rk := f.RootKey
-		if rk == "" {
-			rk = rootFindingKey(f)
-		}
+		rk := detectorIDFor(f) // one root finding per control (detector), across assets
 		g := groups[rk]
 		if g == nil {
 			g = &group{rep: *f}
@@ -821,7 +818,7 @@ func renderRootFindings(findings []Finding) string {
 		}
 		fmt.Fprintf(&b, "| Affected endpoints | %d |\n", len(g.assets))
 		fmt.Fprintf(&b, "| Detector | `%s` |\n", detectorIDFor(f))
-		fmt.Fprintf(&b, "| Root finding key | `%s` |\n", rk)
+		fmt.Fprintf(&b, "| Control (detector) | `%s` |\n", rk)
 		fmt.Fprintf(&b, "| OWASP / CWE | %s / %s |\n", f.OWASP, f.CWE)
 		fmt.Fprintf(&b, "| CVSS v3.1 | %s |\n", cvssString(f))
 		fmt.Fprintf(&b, "| Confidence / Validation / State | %s / %s / %s |\n", orDash(f.Confidence), orDash(f.Validation), orDash(f.State))
@@ -902,10 +899,7 @@ func collapseByRoot(findings []Finding) []RootView {
 	m := map[string]*RootView{}
 	for i := range findings {
 		f := findings[i]
-		rk := f.RootKey
-		if rk == "" {
-			rk = rootFindingKey(&f)
-		}
+		rk := detectorIDFor(&f) // primary-report collapse is per CONTROL, across assets
 		g := m[rk]
 		if g == nil {
 			g = &RootView{Rep: f}
