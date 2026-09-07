@@ -150,6 +150,9 @@ func severityJustification(f *Finding) string {
 
 // detectorIDFor names the detector that produced a finding (audit identity).
 func detectorIDFor(f *Finding) string {
+	if f.DetectorID != "" {
+		return f.DetectorID
+	}
 	switch findingType(f) {
 	case "tls-deprecated":
 		return "tls.deprecated-protocol@1"

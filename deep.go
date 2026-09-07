@@ -188,7 +188,7 @@ func sslscanHost(host string) *Finding {
 	defer cancel()
 	out, _ := exec.CommandContext(ctx, "sslscan", "--no-colour", host+":443").CombinedOutput()
 	s := string(out)
-	var weakProto, weakCipher []string
+	var weakProto, weakCipher, weakCipherSuites []string
 	protoState := map[string]string{"SSLv2": "not offered", "SSLv3": "not offered", "TLSv1.0": "not offered", "TLSv1.1": "not offered", "TLSv1.2": "not offered", "TLSv1.3": "not offered"}
 	testedIP := ""
 	for _, line := range strings.Split(s, "\n") {
@@ -212,6 +212,12 @@ func sslscanHost(host string) *Finding {
 		for _, c := range []string{"RC4", "3DES", "DES-CBC", "NULL", "EXPORT", "-ANON", "MD5"} {
 			if strings.Contains(up, c) && !contains(weakCipher, c) {
 				weakCipher = append(weakCipher, c)
+			}
+		}
+		// capture the exact accepted cipher-suite token for weak lines
+		if strings.Contains(up, "RC4") || strings.Contains(up, "3DES") || strings.Contains(up, "NULL") || strings.Contains(up, "EXPORT") {
+			if m := reCipherName.FindString(line); m != "" && !contains(weakCipherSuites, m) {
+				weakCipherSuites = append(weakCipherSuites, m)
 			}
 		}
 	}
@@ -238,6 +244,9 @@ func sslscanHost(host string) *Finding {
 	}
 	if len(weakCipher) > 0 {
 		fmt.Fprintf(&ev, "weak ciphers accepted: %s\n", strings.Join(weakCipher, ", "))
+	}
+	for _, cs := range weakCipherSuites {
+		fmt.Fprintf(&ev, "  cipher suite: %s\n", cs)
 	}
 	if testedIP != "" {
 		fmt.Fprintf(&ev, "resolved IP at test time: %s\n", testedIP)
@@ -336,3 +345,5 @@ func captureScreenshots(wd string, urls []string) {
 	mark(fmt.Sprintf("%d captured", nonEmpty))
 	fmt.Fprintf(os.Stderr, "[deep] screenshots: %d captured -> %s\n", nonEmpty, ssDir)
 }
+
+var reCipherName = regexp.MustCompile(`\b[A-Z0-9]+(?:[-_][A-Z0-9]+)+\b`)

@@ -9,7 +9,7 @@ import "testing"
 func TestStableFindingKeyInvariants(t *testing.T) {
 	base := &Finding{DetectorID: "http.exposure-path@1", ProbeKind: "status",
 		Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics"}
-	k := stableFindingKey(base)
+	k := observationKey(base)
 
 	// must be invariant under these cosmetic variations
 	invariants := []*Finding{
@@ -20,7 +20,7 @@ func TestStableFindingKeyInvariants(t *testing.T) {
 		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics?x=1"},    // query
 	}
 	for i, f := range invariants {
-		if got := stableFindingKey(f); got != k {
+		if got := observationKey(f); got != k {
 			t.Errorf("invariant %d: key changed %s != %s", i, got, k)
 		}
 	}
@@ -32,7 +32,7 @@ func TestStableFindingKeyInvariants(t *testing.T) {
 		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/actuator"},   // control/path
 	}
 	for i, f := range differ {
-		if got := stableFindingKey(f); got == k {
+		if got := observationKey(f); got == k {
 			t.Errorf("differ %d: key collided %s == %s", i, got, k)
 		}
 	}
@@ -40,7 +40,10 @@ func TestStableFindingKeyInvariants(t *testing.T) {
 	// TLS policy: one identity per asset regardless of which weak protocol led
 	tlsA := &Finding{DetectorID: "tls.deprecated-protocol@1", ProbeKind: "tls-weak", Host: "https://h.example.com", ProbeURL: "h.example.com:443", ProbeArg: "1.0"}
 	tlsB := &Finding{DetectorID: "tls.deprecated-protocol@1", ProbeKind: "tls-weak", Host: "https://h.example.com", ProbeURL: "h.example.com:443", ProbeArg: "1.1"}
-	if stableFindingKey(tlsA) != stableFindingKey(tlsB) {
-		t.Error("TLS key should be per-asset, not per-protocol")
+	if observationKey(tlsA) == observationKey(tlsB) {
+		t.Error("TLS observationKey must be per-protocol (distinct conditions)")
+	}
+	if rootFindingKey(tlsA) != rootFindingKey(tlsB) {
+		t.Error("TLS rootKey must be per-asset (one policy), not per-protocol")
 	}
 }

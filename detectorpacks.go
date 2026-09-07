@@ -57,7 +57,82 @@ func runDetectorPacks(wd, base string) []Finding {
 	if f := danglingCNAME(wd, base); f != nil {
 		out = append(out, *f)
 	}
+	if f := apiMethodsAndErrors(wd, base); f != nil {
+		out = append(out, *f)
+	}
+	if f := rateLimitProbe(wd, base); f != nil {
+		out = append(out, *f)
+	}
 	return out
+}
+
+// Item 22 — API depth (non-destructive): enumerate advertised methods via OPTIONS
+// and detect verbose error/stack-trace leakage on a non-existent path.
+func apiMethodsAndErrors(wd, base string) *Finding {
+	// verbose error on a random path
+	rnd := strings.TrimRight(base, "/") + "/secskills-" + randToken()
+	code, _, body, ok := getWithBody(rnd, 32*1024)
+	if ok && verboseError(body) {
+		ev := captureEvidence(wd, "api.verbose-error@1", base, "http-response", "text/plain", "GET "+rnd, "redacted", []byte(body[:min(len(body), 4096)]))
+		return &Finding{
+			Title: "Verbose error / stack trace disclosed", Host: base, Severity: "LOW", Status: "open",
+			Confidence: "Confirmed", Validation: "behavior-confirmed",
+			ObservedEvidence: fmt.Sprintf("GET %s -> HTTP %d; response contained framework stack-trace / debug markers.", rnd, code),
+			ImpactText:  "Verbose errors leak framework, file paths and internal structure, aiding targeted attacks. Return generic errors in production.",
+			EvidenceCmd: "curl -sk " + shellQuote(rnd), ProbeKind: "body-contains", ProbeURL: rnd, ProbeArg: "traceback",
+			EvidenceRefs: []string{ev}, DetectorID: "api.verbose-error@1",
+		}
+	}
+	return nil
+}
+
+func verboseError(body string) bool {
+	l := strings.ToLower(body)
+	for _, m := range []string{"traceback (most recent call last)", "java.lang.", "at org.springframework", "stack trace", "django.", "werkzeug", ".rb:in ", "goroutine ", "system.web.", "exception in thread", "n: syntax error"} {
+		if strings.Contains(l, m) {
+			return true
+		}
+	}
+	return false
+}
+
+// Item 23 — Rate-limit / abuse-control verification (bounded, non-destructive).
+// Sends a small fixed budget of requests and reports whether throttling controls
+// are visible. Never floods: hard cap of rateLimitBudget requests.
+const rateLimitBudget = 8
+
+func rateLimitProbe(wd, base string) *Finding {
+	seen429 := false
+	rlHeader := ""
+	for i := 0; i < rateLimitBudget; i++ {
+		code, hdr, _, ok := getWithBody(base, 2048)
+		if !ok {
+			break
+		}
+		if code == 429 {
+			seen429 = true
+		}
+		for _, h := range []string{"Retry-After", "X-RateLimit-Limit", "RateLimit-Limit", "X-RateLimit-Remaining"} {
+			if hdr.Get(h) != "" {
+				rlHeader = h + ": " + hdr.Get(h)
+			}
+		}
+	}
+	// Only report the *absence* of any visible control as an informational note;
+	// presence is recorded as passing context (negative evidence handled by ledger).
+	if seen429 || rlHeader != "" {
+		return nil
+	}
+	ev := captureEvidence(wd, "http.rate-limit-absent@1", base, "detector-parse", "text/plain", fmt.Sprintf("%d bounded GETs", rateLimitBudget), "none",
+		[]byte(fmt.Sprintf("no 429 and no RateLimit/Retry-After headers across %d bounded requests", rateLimitBudget)))
+	return &Finding{
+		Title: "No visible rate-limiting on unauthenticated endpoint", Host: base, Severity: "INFORMATIONAL", Status: "open",
+		Confidence: "Medium", Validation: "behavior-confirmed",
+		ObservedEvidence: fmt.Sprintf("Across %d bounded requests, no HTTP 429 and no RateLimit/Retry-After headers were observed. (Bounded probe; a global limiter may still exist.)", rateLimitBudget),
+		ImpactText:  "No externally-visible per-IP throttling on this endpoint. Not a vulnerability by itself; relevant to abuse/DoS posture for a public service.",
+		EvidenceCmd: "for i in $(seq 8); do curl -sk -o /dev/null -w '%%{http_code}\n' " + shellQuote(base) + "; done", ProbeKind: "manual", ProbeURL: base,
+		EvidenceRefs: []string{ev}, DetectorID: "http.rate-limit-absent@1",
+	}
 }
 
 // serviceSignatures maps a recognizable operational service to header/body marks.

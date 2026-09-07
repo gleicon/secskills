@@ -338,6 +338,15 @@ func cmdTest(args []string) error {
 		}
 	}
 
+	// DNS hygiene runs once per apex (not per host).
+	if apex := registrableDomain(hostOf(target)); apex != "" {
+		for _, f := range dnsHygiene(apex) {
+			seq++
+			f.ID = fmt.Sprintf("F%03d", seq)
+			classify(&f)
+			addFinding(wd, f)
+		}
+	}
 	writeRunMeta(wd, target, started, loadWorkFindings(wd), *deep, *intrusive)
 	if _, err := signRunManifest(wd); err == nil {
 		fmt.Println("run attestation signed (ed25519): run-attestation.sig")

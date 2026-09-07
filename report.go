@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"crypto/sha256"
 	"encoding/json"
 	"flag"
@@ -51,7 +52,8 @@ type Finding struct {
 	// Audit identity: DetectorID names the detector; Key is a stable hash so a
 	// finding persists across runs (open→mitigated→regressed) independent of F-NNN.
 	DetectorID string `json:"detector_id,omitempty"`
-	Key        string `json:"finding_key,omitempty"`
+	Key        string `json:"finding_key,omitempty"`         // observation identity (asset+detector+condition)
+	RootKey    string `json:"root_finding_key,omitempty"`    // collapse identity (asset+detector family)
 	// Formal evidence state (state machine) + immutable evidence object ids.
 	State        string   `json:"evidence_state,omitempty"`
 	EvidenceRefs []string `json:"evidence_refs,omitempty"`
@@ -59,6 +61,16 @@ type Finding struct {
 	// adjudication is recorded separately, never by mutating Severity.
 	AutomatedSeverity string    `json:"automated_severity,omitempty"`
 	Override          *Override `json:"override,omitempty"`
+	// HIGH-invariant support: when a nominal HIGH lacks a validated exploit
+	// primitive, severity is capped and the escalation condition is recorded.
+	PotentialSeverity   string `json:"potential_severity,omitempty"`
+	EscalationCondition string `json:"escalation_condition,omitempty"`
+	// per-observation time (audit forensics): exact capture time of the evidence.
+	ObservedAt string `json:"observed_at,omitempty"`
+	FirstSeen  string `json:"first_seen,omitempty"`
+	LastSeen   string `json:"last_seen,omitempty"`
+	FixedAt    string `json:"fixed_at,omitempty"`
+	RegressedAt string `json:"regressed_at,omitempty"`
 }
 
 type Run struct {
@@ -93,6 +105,7 @@ func cmdReport(args []string) error {
 	htmlT := fs.String("html", "", "target: render a professional HTML report")
 	pdfT := fs.String("pdf", "", "target: render a professional PDF report (needs headless Chrome)")
 	auditT := fs.String("audit", "", "target: render a concise auditor evidence report (control objectives + ledger + attestation)")
+	lintT := fs.String("lint", "", "target: run the report-generation linter (invariants) and report violations")
 	output := fs.String("output", "", "write rendered report to this path (default stdout/auto)")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -108,6 +121,14 @@ func cmdReport(args []string) error {
 		return writePDFReport(*pdfT, workdir(*pdfT), *output)
 	case *auditT != "":
 		return doAudit(*auditT, *output)
+	case *lintT != "":
+		wd := workdir(*lintT)
+		vs := reportLint(*lintT, wd, normalizedForLint(*lintT, wd, loadOrLatest(*lintT, wd)))
+		if len(vs) == 0 {
+			fmt.Println("report lint: clean")
+			return nil
+		}
+		return fmt.Errorf("report lint: %d violation(s):\n  - %s", len(vs), strings.Join(vs, "\n  - "))
 	default:
 		return fmt.Errorf("usage: secskills report --render|--html|--pdf|--audit <target> [--output f] | --retest <target>")
 	}
@@ -124,6 +145,9 @@ func doRender(target, output string) error {
 			json.Unmarshal(b, &run)
 			findings = run.Findings
 		}
+	}
+	if err := enforceReportLint(target, wd, normalizedForLint(target, wd, findings)); err != nil {
+		return err
 	}
 	report := renderProReport(target, wd, findings)
 	report += fmt.Sprintf("\n---\n_Report SHA-256: %x_\n", sha256.Sum256([]byte(report)))
@@ -171,12 +195,17 @@ func doRetest(target string) error {
 		case "open":
 			if prevStatus == "mitigated" {
 				f.Status, disposition, change = "open", "REGRESSED", "↑ regressed"
+				f.RegressedAt = nowRFC()
 			} else {
 				f.Status, disposition, change = "open", "OPEN", "✗ still open"
 			}
 		default: // mitigated
 			f.Status, disposition, change = "mitigated", "FIXED", "✓ fixed"
+			if f.FixedAt == "" {
+				f.FixedAt = nowRFC()
+			}
 		}
+		f.LastSeen = nowRFC()
 		f.LastTestedRun = newID
 		f.RetestHistory = append(f.RetestHistory, map[string]string{
 			"run_id": newID, "date": nowRFC(), "disposition": disposition,
