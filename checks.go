@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -35,9 +36,11 @@ func checkSecurityHeaders(url string) []Finding {
 	}
 	defer resp.Body.Close()
 	h := resp.Header
+	ct := strings.ToLower(h.Get("Content-Type"))
+	isHTML := strings.Contains(ct, "text/html")
 	var out []Finding
 	n := 0
-	add := func(sev, title, header, remediation string) {
+	add := func(sev, title, header, impact string) {
 		n++
 		out = append(out, Finding{
 			ID:           fmt.Sprintf("HDR-%02d", n),
@@ -45,27 +48,77 @@ func checkSecurityHeaders(url string) []Finding {
 			Host:         url,
 			Severity:     sev,
 			Status:       "open",
+			Confidence:   "Confirmed",   // header absence is directly observed
+			Validation:   "passive",     // observed, not exploited
+			ImpactText:   impact,
 			EvidenceCmd:  fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
 			ExpectedOpen: "MISSING",
 			ProbeKind:    "header-missing", ProbeURL: url, ProbeArg: header,
 		})
 	}
-	if h.Get("Strict-Transport-Security") == "" {
-		add("LOW", "Missing HSTS header", "strict-transport-security", "kb/crypto-secrets")
+
+	// HSTS: relevant to any https service; low on its own.
+	if strings.HasPrefix(url, "https://") && h.Get("Strict-Transport-Security") == "" {
+		add("LOW", "Missing HSTS header", "strict-transport-security",
+			"Without HSTS a network attacker can strip TLS on the first request; low impact on its own, defense-in-depth for the domain.")
 	}
+
+	// CSP / clickjacking: only materially relevant when the response is HTML that a
+	// browser renders. On a JSON/API endpoint these are hardening deviations, not
+	// clickjacking/XSS-mitigation gaps — rate INFORMATIONAL and mark not-applicable.
 	if h.Get("Content-Security-Policy") == "" {
-		add("MEDIUM", "Missing Content-Security-Policy", "content-security-policy", "kb/config-exposure")
+		if isHTML {
+			add("LOW", "Missing Content-Security-Policy (HTML response)", "content-security-policy",
+				"This endpoint returns HTML; without CSP, an XSS elsewhere on the app is not contained. No XSS was demonstrated here — this is a defense-in-depth gap.")
+		} else {
+			f := mkHardening(url, "Missing Content-Security-Policy on non-HTML endpoint", "content-security-policy", ct)
+			out = append(out, f)
+		}
 	}
 	if h.Get("X-Frame-Options") == "" && !strings.Contains(strings.ToLower(h.Get("Content-Security-Policy")), "frame-ancestors") {
-		add("MEDIUM", "Missing clickjacking protection (X-Frame-Options/frame-ancestors)", "x-frame-options", "kb/config-exposure")
+		if isHTML {
+			add("LOW", "Missing clickjacking protection (HTML response)", "x-frame-options",
+				"This endpoint returns HTML and could be framed; clickjacking impact depends on the presence of a sensitive state-changing UI action, which was not verified.")
+		} else {
+			f := mkHardening(url, "Missing X-Frame-Options on non-HTML endpoint", "x-frame-options", ct)
+			out = append(out, f)
+		}
 	}
 	if h.Get("X-Content-Type-Options") == "" {
-		add("LOW", "Missing X-Content-Type-Options: nosniff", "x-content-type-options", "kb/config-exposure")
+		add("LOW", "Missing X-Content-Type-Options: nosniff", "x-content-type-options",
+			"MIME-sniffing protection absent; exploitable only if the app serves user-controlled content with a wrong/absent content type.")
 	}
+
+	// CORS: ACAO:* is only a vulnerability with credentials + sensitive readable data.
 	if aco := h.Get("Access-Control-Allow-Origin"); aco == "*" {
-		add("MEDIUM", "Permissive CORS: Access-Control-Allow-Origin: *", "access-control-allow-origin", "kb/config-exposure")
+		if strings.EqualFold(h.Get("Access-Control-Allow-Credentials"), "true") {
+			add("MEDIUM", "Permissive CORS with credentials (ACAO:* + ACAC:true)", "access-control-allow-origin",
+				"Wildcard origin combined with credentialed requests can let any site read authenticated responses. Confirm the endpoint returns sensitive data to a logged-in user.")
+			out[len(out)-1].Validation = "config-inferred"
+		} else {
+			f := mkHardening(url, "Permissive CORS header (ACAO:* without credentials)", "access-control-allow-origin", ct)
+			f.ImpactText = "ACAO:* without Allow-Credentials does not expose authenticated data; not a CORS vulnerability by itself. Hardening deviation."
+			out = append(out, f)
+		}
 	}
 	return out
+}
+
+// mkHardening builds an INFORMATIONAL, not-applicable "hardening deviation" finding —
+// used when a control is absent but no attack primitive exists for this asset.
+func mkHardening(url, title, header, ct string) Finding {
+	return Finding{
+		Title:        title,
+		Host:         url,
+		Severity:     "INFORMATIONAL",
+		Status:       "open",
+		Confidence:   "Confirmed",
+		Validation:   "passive",
+		ImpactText:   "No direct exploitability demonstrated (endpoint content-type: " + dash(ct) + "). Hardening deviation, not a vulnerability for this asset.",
+		EvidenceCmd:  fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
+		ExpectedOpen: "MISSING",
+		ProbeKind:    "header-missing", ProbeURL: url, ProbeArg: header,
+	}
 }
 
 // checkTLS probes for deprecated TLS 1.0/1.1 acceptance on an https URL (A02).
@@ -91,6 +144,9 @@ func checkTLS(url string) []Finding {
 				Host:         url,
 				Severity:     "MEDIUM",
 				Status:       "open",
+				Confidence:   "Confirmed",           // protocol was actually negotiated
+				Validation:   "behavior-confirmed",  // we completed a handshake at this version
+				ImpactText:   "The server completed a " + name + " handshake. On a hostile network this enables downgrade/interception of sessions to this host. Deprecated by RFC 8996.",
 				EvidenceCmd:  fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", shellQuote(host), strings.ToLower(strings.ReplaceAll(name, " ", ""))),
 				ExpectedOpen: "ACCEPTED",
 				ProbeKind:    "tls-weak", ProbeURL: url, ProbeArg: strings.TrimPrefix(name, "TLS "),
@@ -138,30 +194,92 @@ func checkExposure(url string) []Finding {
 			continue
 		}
 		code := resp.StatusCode
-		body := make([]byte, 4096)
-		n, _ := resp.Body.Read(body)
+		buf := make([]byte, 32768)
+		nread, _ := readFull(resp.Body, buf)
 		resp.Body.Close()
-		hasSig := strings.Contains(string(body[:n]), sig.signature)
-		// real only if: 200 AND (content signature matches OR status differs from catch-all baseline)
-		if code == 200 && (hasSig || baseCode != 200) {
-			sev := "HIGH"
-			if !hasSig {
-				sev = "MEDIUM" // 200 but no signature confirmed — probable, needs eyeball
-			}
-			out = append(out, Finding{
-				ID:           fmt.Sprintf("EXP-%02d", i),
-				Title:        sig.title,
-				Host:         base + p,
-				Severity:     sev,
-				Status:       "open",
-				EvidenceCmd:  fmt.Sprintf("curl -sk %s | head", shellQuote(base+p)),
-				ExpectedOpen: "200",
-				ProbeKind:    probeKindFor(hasSig), ProbeURL: base + p, ProbeArg: sig.signature,
-			})
+		body := string(buf[:nread])
+		hasSig := strings.Contains(body, sig.signature)
+		if code != 200 || (!hasSig && baseCode == 200) {
+			continue // not exposed, or catch-all 200
 		}
+		f := Finding{
+			ID:           fmt.Sprintf("EXP-%02d", i),
+			Title:        sig.title,
+			Host:         base + p,
+			Status:       "open",
+			EvidenceCmd:  fmt.Sprintf("curl -sk %s | head", shellQuote(base+p)),
+			ExpectedOpen: "200",
+			ProbeKind:    probeKindFor(hasSig), ProbeURL: base + p, ProbeArg: sig.signature,
+		}
+		if hasSig {
+			f.Confidence, f.Validation = "Confirmed", "behavior-confirmed"
+		} else {
+			f.Confidence, f.Validation = "Medium", "config-inferred"
+		}
+		// Deep-inspect Prometheus metrics: severity follows what is actually leaked.
+		if p == "/metrics" && hasSig {
+			leaked := inspectMetrics(body)
+			if len(leaked) > 0 {
+				f.Severity = "HIGH"
+				f.ImpactText = "Unauthenticated Prometheus metrics disclose: " + strings.Join(leaked, ", ") +
+					". This provides internal reconnaissance and may include sensitive identifiers."
+			} else {
+				f.Severity = "LOW"
+				f.Title = "Prometheus metrics exposed unauthenticated (generic runtime metrics only)"
+				f.ImpactText = "Endpoint returns generic process/runtime metrics; no internal hostnames, versions, credentials, or topology were observed in the sampled response. Exposure is a hardening/monitoring concern, not a direct compromise path."
+			}
+		} else {
+			// non-metrics exposure: HIGH when a strong signature matched, else MEDIUM
+			if hasSig {
+				f.Severity = "HIGH"
+			} else {
+				f.Severity = "MEDIUM"
+			}
+			f.ImpactText = "Endpoint " + base + p + " is reachable unauthenticated and returned content matching a known-sensitive signature; review the exact content for internal detail before acting."
+		}
+		out = append(out, f)
 	}
 	return out
 }
+
+// readFull reads up to len(buf) bytes.
+func readFull(r interface{ Read([]byte) (int, error) }, buf []byte) (int, error) {
+	total := 0
+	for total < len(buf) {
+		n, err := r.Read(buf[total:])
+		total += n
+		if err != nil || n == 0 {
+			return total, err
+		}
+	}
+	return total, nil
+}
+
+// inspectMetrics classifies what a Prometheus /metrics body actually discloses.
+// Returns human-readable categories of sensitive data observed (empty = generic).
+func inspectMetrics(body string) []string {
+	var found []string
+	add := func(label string, cond bool) {
+		if cond {
+			found = append(found, label)
+		}
+	}
+	l := strings.ToLower(body)
+	add("internal hostnames", reInternalHost.MatchString(body))
+	add("kubernetes namespace/pod/service names", strings.Contains(l, "namespace=") || strings.Contains(l, "pod=") || strings.Contains(l, "kubernetes_") || strings.Contains(l, "kube_"))
+	add("private/internal IP addresses", rePrivateIP.MatchString(body))
+	add("software version/build info", strings.Contains(l, "build_info") || strings.Contains(l, "_version{") || strings.Contains(l, "version_info"))
+	add("database/queue/backend names", strings.Contains(l, "database=") || strings.Contains(l, "db_name") || strings.Contains(l, "queue=") || strings.Contains(l, "upstream="))
+	add("credentials or tokens", reSecretish.MatchString(body))
+	add("cloud region/bucket identifiers", strings.Contains(l, "region=") || strings.Contains(l, "bucket=") || strings.Contains(l, "s3_"))
+	return found
+}
+
+var (
+	reInternalHost = regexp.MustCompile(`(?i)[a-z0-9_.-]+\.(internal|local|svc|cluster\.local|intranet|corp)\b`)
+	rePrivateIP    = regexp.MustCompile(`\b(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b`)
+	reSecretish    = regexp.MustCompile(`(?i)(password|passwd|secret|api[_-]?key|token|bearer|authorization)\s*[=:"']`)
+)
 
 func probeKindFor(hasSig bool) string {
 	if hasSig {

@@ -25,10 +25,10 @@ func renderProReport(target, wd string, findings []Finding) string {
 	ips := readLines(filepath.Join(wd, "ips.txt"))
 
 	// ---- Cover / metadata -----------------------------------------------------
-	p("# Penetration Test Report — %s\n\n", target)
+	p("# %s — %s\n\n", deliverableTitle(findings), target)
 	p("**Classification:** Confidential — Authorized Recipients Only\n")
 	p("**Report date:** %s\n", nowDate())
-	p("**Assessment type:** External black-box — reconnaissance + non-destructive active testing\n")
+	p("**Assessment type:** External, unauthenticated, non-destructive — reconnaissance + active probing (no exploitation/authenticated phase). This is an attack-surface & vulnerability assessment, not a full penetration test.\n")
 	p("**Target(s):** %s (and in-scope subdomains)\n", target)
 	p("**Authorization:** Confirmed by operator prior to testing (see Scope)\n")
 	p("**Assessor tooling:** secskills v%s — subfinder → dnsx → httpx pipeline, native check engine, Shodan OSINT, OSV CVE, OWASP mapping\n", version)
@@ -44,7 +44,8 @@ func renderProReport(target, wd string, findings []Finding) string {
 			p("| %s | %d |\n", s, counts[s])
 		}
 	}
-	p("| **Total** | **%d** |\n\n", len(findings))
+	p("| **Total observations** | **%d** |\n\n", len(findings))
+	p("### Root issues (observations collapsed)\n\n%s\n\n", rootIssues(findings))
 	p("### Security posture — controls that held\n\n%s\n\n", controlsHeld(live))
 	p("### Systemic issues\n\n%s\n\n", systemicIssues(findings))
 	p("### Strategic remediation roadmap\n\n%s\n\n---\n\n", roadmap(findings))
@@ -72,7 +73,10 @@ func renderProReport(target, wd string, findings []Finding) string {
 	p("| Hosts resolved | %d |\n", len(resolved))
 	p("| Live services probed | %d |\n", len(live))
 	p("| Unique IPs observed | %d |\n", len(ips))
-	p("| Rules of engagement | Non-destructive; rate-limited; scope-confined to the apex and its subdomains |\n\n---\n\n")
+	p("| Rules of engagement | Non-destructive; rate-limited; scope-confined to the apex and its subdomains |\n")
+	p("| Provenance of tested hosts | All tested hosts are subdomains of the authorized apex `%s`, discovered via passive DNS / certificate-transparency (subfinder, crt.sh). |\n", target)
+	p("| Authorization | %s |\n", scopeAuthLine(target))
+	p("\n> **Cross-domain note.** Any related external domains surfaced during OSINT (via shared certificates, ASN, or DNS) are **not** tested or included here. They are reported separately as *discovered attack-surface pivots* and require explicit ownership/scope confirmation before being considered part of this target's posture.\n\n---\n\n")
 
 	// ---- 4. Attack Surface Inventory -----------------------------------------
 	p("## 4. Attack Surface Inventory\n\n")
@@ -111,13 +115,19 @@ func renderProReport(target, wd string, findings []Finding) string {
 		if len(f.CVEs) > 0 {
 			p("| CVEs (OSV) | %s |\n", strings.Join(f.CVEs, ", "))
 		}
-		p("| CVSS band | %s |\n", cvssBand(f.Severity))
+		p("| Confidence | %s |\n", orDash(f.Confidence))
+		p("| Validation | %s |\n", orDash(f.Validation))
+		p("| CVSS v3.1 | %s |\n", cvssString(f))
 		p("| Remediation SLA | %s |\n", slaFor(f.Severity))
 		p("| Owning team | %s |\n", complianceFor(f.KBClass).Team)
 		p("| Cheat sheet | `secskills kb %s` |\n", f.KBClass)
 		p("\n**Business risk.** %s\n\n", businessRisk(f.KBClass, f.Severity))
 		p("**Severity rationale.** %s\n\n", severityRationale(f))
-		p("**Technical impact.** %s\n\n", impactFor(f.KBClass))
+		impact := f.ImpactText
+		if impact == "" {
+			impact = impactFor(f.KBClass)
+		}
+		p("**Technical impact.** %s\n\n", impact)
 		if f.EvidenceCmd != "" {
 			p("**Evidence (reproduce).**\n```bash\n%s\n```\n\n", f.EvidenceCmd)
 		}
@@ -195,14 +205,20 @@ func riskNarrative(target string, c map[string]int, subs, live int) string {
 	} else if c["HIGH"] > 0 {
 		level = "MODERATE-to-HIGH"
 	}
+	_ = level
+	compromise := "No critical compromise path was demonstrated during this unauthenticated, non-destructive assessment."
+	if c["CRITICAL"] > 0 {
+		compromise = "A critical-severity condition was identified and requires immediate manual validation."
+	}
 	return fmt.Sprintf(
-		"This assessment of **%s** enumerated **%d subdomains** and probed **%d live services**, "+
-			"producing **%d findings** (%d high, %d medium, %d low). The overall external risk is assessed as **%s**. "+
-			"The posture is dominated by broad, low-complexity hardening gaps (security headers, transport security) "+
-			"with a smaller set of higher-impact issues (outdated components with known CVEs, and unauthenticated "+
-			"exposure of operational endpoints). No exploitation was performed; testing was non-destructive. "+
-			"Identity and secrets-management surfaces were largely authentication-gated — a positive control noted below.",
-		target, subs, live, total, c["HIGH"]+c["CRITICAL"], c["MEDIUM"], c["LOW"], level)
+		"%s We enumerated **%d subdomains** of **%s** and identified **%d externally reachable services**, recording **%d observations** "+
+			"(%d high, %d medium, %d low/info). The broader pattern is **inconsistent edge hardening** — chiefly legacy TLS and HTTP "+
+			"security-header configuration applied unevenly across hosts. Most individual observations do not independently represent a "+
+			"material compromise path and are best addressed as platform/edge configuration issues rather than application-by-application "+
+			"vulnerabilities (see Root issues). A small number of observations warrant immediate manual validation — see the High-severity "+
+			"items, each carrying an explicit confidence and validation state. Exploitation, authenticated testing, and destructive checks "+
+			"were out of scope; findings marked *version-inferred* or *config-inferred* are leads pending validation, not confirmed vulnerabilities.",
+		compromise, subs, target, live, total, c["HIGH"]+c["CRITICAL"], c["MEDIUM"], c["LOW"]+c["INFORMATIONAL"])
 }
 
 func controlsHeld(live []LiveHost) string {
@@ -535,6 +551,109 @@ func dash(s string) string {
 		return "—"
 	}
 	return s
+}
+func orDash(s string) string { return dash(s) }
+
+// scopeAuthLine reports the authorization basis for the target, read from the
+// scope file if one authorizes it, else a neutral statement.
+func scopeAuthLine(target string) string {
+	if ok, why := scopeAuthorizes(target); ok {
+		return "Confirmed — " + why
+	}
+	return "Operator-confirmed at test time (`--confirm`). No persisted scope file; confirm written authorization is on record."
+}
+
+// hasExploited reports whether any finding was actually exploited/validated (drives
+// whether the deliverable may call itself a penetration test vs an assessment).
+func hasExploited(findings []Finding) bool {
+	for _, f := range findings {
+		if f.Validation == "exploited" {
+			return true
+		}
+	}
+	return false
+}
+
+// deliverableTitle: only a genuine exploit/validation phase earns "Penetration Test".
+func deliverableTitle(findings []Finding) string {
+	if hasExploited(findings) {
+		return "External Penetration Test Report"
+	}
+	return "External Attack Surface & Security Assessment"
+}
+
+// rootIssues collapses many per-host observations into a small set of root issues
+// (playbook + CISO feedback: 163 observations → a handful of security issues).
+func rootIssues(findings []Finding) string {
+	type root struct {
+		count, suppressed int
+		sev               string
+	}
+	roots := map[string]*root{}
+	order := []string{}
+	for _, f := range findings {
+		key := rootKey(f)
+		r := roots[key]
+		if r == nil {
+			r = &root{sev: f.Severity}
+			roots[key] = r
+			order = append(order, key)
+		}
+		if f.Severity == "INFORMATIONAL" {
+			r.suppressed++
+		} else {
+			r.count++
+		}
+		if sevRankN(f.Severity) < sevRankN(r.sev) {
+			r.sev = f.Severity
+		}
+	}
+	var b strings.Builder
+	b.WriteString("| Root issue | Highest severity | Affected (applicable) | Non-applicable/suppressed |\n|---|---|--:|--:|\n")
+	shown := 0
+	for _, k := range order {
+		r := roots[k]
+		if r.count == 0 && r.suppressed == 0 {
+			continue
+		}
+		b.WriteString(fmt.Sprintf("| %s | %s | %d | %d |\n", k, r.sev, r.count, r.suppressed))
+		shown++
+	}
+	b.WriteString(fmt.Sprintf("\n**%d observations collapse to %d root issues.** Repeated control failures on many hosts are one platform/edge issue, not many independent vulnerabilities.", len(findings), shown))
+	return b.String()
+}
+
+// rootKey groups observations of the same underlying control failure.
+func rootKey(f Finding) string {
+	t := strings.ToLower(f.Title)
+	switch {
+	case strings.Contains(t, "hsts"):
+		return "Missing HSTS (edge TLS policy)"
+	case strings.Contains(t, "content-security-policy"):
+		return "Missing/weak Content-Security-Policy (edge header policy)"
+	case strings.Contains(t, "clickjack") || strings.Contains(t, "x-frame"):
+		return "Missing clickjacking protection (edge header policy)"
+	case strings.Contains(t, "nosniff") || strings.Contains(t, "x-content-type"):
+		return "Missing X-Content-Type-Options (edge header policy)"
+	case strings.Contains(t, "cors"):
+		return "Permissive/again CORS configuration"
+	case strings.Contains(t, "tls 1.0") || strings.Contains(t, "tls 1.1") || strings.Contains(t, "weak tls") || strings.Contains(t, "3des"):
+		return "Deprecated TLS/cipher support (edge TLS policy)"
+	case strings.Contains(t, "metrics"):
+		return "Unauthenticated operational endpoints exposed"
+	case strings.Contains(t, "potentially vulnerable") || strings.Contains(t, "outdated component"):
+		return "Outdated component versions (version-inferred)"
+	default:
+		return f.KBClass
+	}
+}
+
+func sevRankN(s string) int {
+	m := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
+	if v, ok := m[strings.ToUpper(s)]; ok {
+		return v
+	}
+	return 5
 }
 func dirNonEmpty(p string) bool {
 	e, err := os.ReadDir(p)
