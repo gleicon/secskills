@@ -125,7 +125,7 @@ func dedupeByKey(fs []Finding) []Finding {
 		f := fs[i]
 		k := f.Key
 		if k == "" {
-			k = stableFindingKey(&f)
+			k = observationKey(&f)
 		}
 		if j, ok := best[k]; ok {
 			if rank[f.Severity] < rank[out[j].Severity] {

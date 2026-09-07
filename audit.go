@@ -1,6 +1,9 @@
 package main
 
 import (
+	"net/http"
+	"regexp"
+	"io"
 	"time"
 	"context"
 	"net"
@@ -45,8 +48,17 @@ type RunMeta struct {
 	ConfigSHA    string `json:"config_sha256"`
 	RulesetSHA   string `json:"ruleset_sha256"`
 	EvidenceSHA  string `json:"raw_evidence_bundle_sha256"`
-	SourceIP     string `json:"scanner_source_ip"`
-	ToolVersions map[string]string `json:"tool_versions"`
+	LocalIP      string `json:"scanner_local_ip"`
+	PublicEgress string `json:"scanner_public_egress_ip"`
+	ToolVersions map[string]ToolInfo `json:"tool_versions"`
+}
+
+// ToolInfo identifies an external tool precisely: parsed version plus the SHA-256
+// of the executable (which pins the exact binary better than a version string).
+type ToolInfo struct {
+	Version   string `json:"version"`     // parsed semver, or "unknown"
+	ExeSHA256 string `json:"exe_sha256"`  // hash of the resolved executable
+	Cmd       string `json:"version_cmd"`
 }
 
 func writeRunMeta(wd, target, started string, findings []Finding, deep, intrusive bool) {
@@ -66,7 +78,8 @@ func writeRunMeta(wd, target, started string, findings []Finding, deep, intrusiv
 		ConfigSHA:     configSHA(target, deep, intrusive),
 		RulesetSHA:    rulesetSHA(),
 		EvidenceSHA:   evidenceBundleSHA(wd),
-		SourceIP:      egressIP(),
+		LocalIP:       localIP(),
+		PublicEgress:  publicEgressIP(),
 		ToolVersions:  toolVersions(),
 	}
 	mb, _ := json.MarshalIndent(m, "", "  ")
@@ -110,20 +123,13 @@ func rulesetSHA() string {
 // detectorManifest is the stable list of detector IDs this build ships. Update
 // this alongside detectorIDFor so the ruleset hash tracks detector changes.
 func detectorManifest() []string {
-	return []string{
-		"tls.deprecated-protocol@1",
-		"http.header.hsts-missing@1",
-		"http.header.csp-missing@1",
-		"http.header.nosniff-missing@1",
-		"http.header.xfo-missing@1",
-		"http.cors@1",
-		"http.prometheus.public-metrics@1",
-		"http.exposure-path@1",
-		"component.banner-osv-correlation@1",
-		"content.prompt-injection@1",
-		"nuclei@1",
-		"generic@1",
+	reg := detectorRegistry()
+	out := make([]string, 0, len(reg))
+	for _, d := range reg {
+		out = append(out, d.ID)
 	}
+	sort.Strings(out)
+	return out
 }
 
 // evidenceBundleSHA hashes the raw-evidence artifacts in the workdir (findings,
@@ -152,10 +158,10 @@ func evidenceBundleSHA(wd string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// egressIP returns the scanner's outbound source IP as seen locally. It opens a
-// UDP association to a public address (no packets are sent by connect()) to learn
-// which local interface egress would use. Best-effort; empty on failure.
-func egressIP() string {
+// localIP returns the scanner's local egress interface address (often RFC1918
+// behind NAT). Labeled as local so an auditor does not mistake it for the public
+// source the target observed.
+func localIP() string {
 	c, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		return ""
@@ -167,37 +173,77 @@ func egressIP() string {
 	return ""
 }
 
-// toolVersions records the version of each external tool present, so the
-// attestation captures tool identity (not just names) for reproducibility.
-func toolVersions() map[string]string {
-	out := map[string]string{}
-	probes := map[string][]string{
-		"subfinder": {"-version"}, "dnsx": {"-version"}, "httpx": {"-version"},
-		"nuclei": {"-version"}, "sslscan": {"--version"}, "ast-grep": {"--version"},
-	}
-	for tool, args := range probes {
-		if _, err := exec.LookPath(tool); err != nil {
+// publicEgressIP returns the public source address the target actually observes,
+// via a best-effort HTTPS IP-echo. Empty when offline or the echo fails; never
+// fabricated. This is the provenance value that matters for external assessment.
+func publicEgressIP() string {
+	client := &http.Client{Timeout: 6 * time.Second}
+	for _, u := range []string{"https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"} {
+		resp, err := client.Get(u)
+		if err != nil {
 			continue
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-		b, _ := exec.CommandContext(ctx, tool, args...).CombinedOutput()
-		cancel()
-		v := strings.TrimSpace(firstNonEmptyLine(string(b)))
-		if v == "" {
-			v = "present"
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 64))
+		resp.Body.Close()
+		ip := strings.TrimSpace(string(b))
+		if net.ParseIP(ip) != nil {
+			return ip
 		}
-		out[tool] = v
+	}
+	return ""
+}
+
+var reSemver = regexp.MustCompile(`v?\d+\.\d+(\.\d+)?`)
+
+// toolVersions records each present tool's parsed version and executable SHA-256.
+// The version is extracted with a semver regex; if none is found we store
+// "unknown" rather than injecting CLI usage text into the attestation.
+func toolVersions() map[string]ToolInfo {
+	out := map[string]ToolInfo{}
+	probes := map[string]string{
+		"subfinder": "-version", "dnsx": "-version", "nuclei": "-version",
+		"sslscan": "--version", "ast-grep": "--version", "amass": "-version",
+	}
+	// httpx resolved specially (pd binary, -version) to avoid the Python shadow.
+	for tool, arg := range probes {
+		path, err := exec.LookPath(tool)
+		if err != nil {
+			continue
+		}
+		out[tool] = probeToolInfo(tool, path, arg)
+	}
+	if bin, ok := httpxBin(); ok {
+		out["httpx"] = probeToolInfo("httpx", bin, "-version")
 	}
 	return out
 }
 
-func firstNonEmptyLine(s string) string {
-	for _, l := range strings.Split(s, "\n") {
-		if t := strings.TrimSpace(l); t != "" {
-			return t
+func probeToolInfo(tool, path, arg string) ToolInfo {
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	b, _ := exec.CommandContext(ctx, path, arg).CombinedOutput()
+	cancel()
+	ver := "unknown"
+	// scan lines that mention the tool or "version"; take the first semver token.
+	for _, l := range strings.Split(string(b), "\n") {
+		ll := strings.ToLower(l)
+		if strings.Contains(ll, "usage:") || strings.Contains(ll, "options") {
+			continue
+		}
+		if m := reSemver.FindString(l); m != "" {
+			ver = strings.TrimPrefix(m, "v")
+			break
 		}
 	}
-	return ""
+	return ToolInfo{Version: ver, ExeSHA256: fileSHA(path), Cmd: tool + " " + arg}
+}
+
+func fileSHA(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	sum := sha256.Sum256(b)
+	return fmt.Sprintf("%x", sum[:16])
 }
 
 func osUser() string {
@@ -309,14 +355,16 @@ func renderAttestation(wd string) string {
 	}
 	sort.Strings(tools)
 	for _, t := range tools {
-		fmt.Fprintf(&tv, "%s %s; ", t, m.ToolVersions[t])
+		ti := m.ToolVersions[t]
+		fmt.Fprintf(&tv, "%s %s (sha256:%s); ", t, ti.Version, shortHash(ti.ExeSHA256))
 	}
 	return fmt.Sprintf(
 		"| Field | Value |\n|-------|-------|\n"+
 			"| Run ID | `%s` |\n| Target | %s |\n| Started | %s |\n| Finished | %s |\n"+
 			"| Engine | secskills v%s |\n| Build commit | `%s` |\n| Operator | %s |\n"+
-			"| Scanner source IP | `%s` |\n"+
-			"| Tool versions | %s |\n"+
+			"| Scanner local IP (behind NAT) | `%s` |\n"+
+			"| Scanner public egress IP (target-observed) | `%s` |\n"+
+			"| Tool versions (parsed + exe hash) | %s |\n"+
 			"| Authorization | %s |\n"+
 			"| Scope manifest SHA-256 | `%s` |\n"+
 			"| Config SHA-256 | `%s` |\n"+
@@ -325,7 +373,7 @@ func renderAttestation(wd string) string {
 			"| Raw evidence bundle SHA-256 | `%s` |\n\n"+
 			"_This binds the report to an exact run, engine build, and the normalized scope manifest (hashed above). The findings, evidence bundle, ruleset, and config are each independently hashed; the report's own SHA-256 is printed in the document footer for cross-reference._",
 		m.RunID, m.Target, m.Started, m.Finished, m.EngineVer, m.GitCommit, m.Operator,
-		orNA(m.SourceIP), orNA(tv.String()), m.Authorization,
+		orNA(m.LocalIP), orNA(m.PublicEgress), orNA(tv.String()), m.Authorization,
 		m.ScopeSHA, m.ConfigSHA, m.RulesetSHA, m.FindingsSHA, m.EvidenceSHA)
 }
 
@@ -334,4 +382,14 @@ func orNA(s string) string {
 		return "not recorded"
 	}
 	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(s), ";"))
+}
+
+func shortHash(h string) string {
+	if len(h) > 12 {
+		return h[:12]
+	}
+	if h == "" {
+		return "n/a"
+	}
+	return h
 }

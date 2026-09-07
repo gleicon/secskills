@@ -32,18 +32,49 @@ func addFinding(wd string, f Finding) error {
 		f.Status = "open"
 	}
 	ensureEvidenceFields(&f)
+	enforceSeverityPolicy(&f)
 	// stable audit identity — independent of the display index F-NNN
 	if f.DetectorID == "" {
 		f.DetectorID = detectorIDFor(&f)
 	}
 	if f.Key == "" {
-		f.Key = stableFindingKey(&f)
+		f.Key = observationKey(&f) // unique per (asset, detector, condition)
+	}
+	if f.RootKey == "" {
+		f.RootKey = rootFindingKey(&f) // per (asset, detector family) for collapse
 	}
 	// Note: the response hash is captured lazily at first retest (which re-runs
 	// evidence_cmd) — avoid re-executing every finding's command at write time,
 	// which would add one request per finding.
 	if f.RetestHistory == nil {
 		f.RetestHistory = []map[string]string{}
+	}
+	// Immutable evidence: bind every finding to a content-addressed evidence
+	// object (item: finding -> evidence by ID, not "find the host's screenshot").
+	if f.ObservedAt == "" {
+		f.ObservedAt = nowRFC()
+	}
+	if f.FirstSeen == "" {
+		f.FirstSeen = f.ObservedAt
+	}
+	f.LastSeen = f.ObservedAt
+	if len(f.EvidenceRefs) == 0 && f.ObservedEvidence != "" {
+		typ := "detector-parse"
+		switch f.ProbeKind {
+		case "header-missing":
+			typ = "http-response"
+		case "tls-weak":
+			typ = "tls-transcript"
+		case "status", "body-contains":
+			typ = "http-response"
+		}
+		redaction := "none"
+		if reSecretish.MatchString(f.ObservedEvidence) {
+			redaction = "redacted"
+		}
+		ev := captureEvidence(wd, detectorOf(&f), assetOf(&f), typ, "text/plain",
+			f.ProbeKind+" "+f.ProbeURL+" @"+f.ObservedAt, redaction, []byte(f.ObservedEvidence))
+		f.EvidenceRefs = []string{ev}
 	}
 	existing := loadWorkFindings(wd)
 	replaced := false
@@ -233,25 +264,61 @@ func ensureEvidenceFields(f *Finding) {
 	}
 }
 
-// stableFindingKey derives a finding's audit identity from stable *semantics*,
-// not from scan-output ordering or volatile strings. It must survive: finding
-// reordering, F-number changes, other hosts being added, report date/IP changes,
-// scheme (http/https) and trailing-slash normalization. Identity intentionally
-// changes only when the detector identity (which carries an @version) changes.
-//
-//	identity = detector + normalized asset(host:port) + normalized control/endpoint
-func stableFindingKey(f *Finding) string {
-	det := f.DetectorID
-	if det == "" {
-		det = detectorIDFor(f)
-	}
-	asset := normalizedAsset(f.Host)
-	if f.ProbeURL != "" {
-		asset = normalizedAsset(f.ProbeURL)
-	}
-	control := normalizedControl(f)
-	h := sha256.Sum256([]byte(det + "|" + asset + "|" + control))
+// observationKey is a finding's precise audit identity: detector + normalized
+// asset + the exact *condition* asserted. TLS 1.0 and TLS 1.1 on one host are
+// DISTINCT observations (distinct keys), so a retest can mark one FIXED while the
+// other stays OPEN. Survives finding reordering, F-number, scheme/slash/port/case.
+func observationKey(f *Finding) string {
+	det := detectorOf(f)
+	asset := assetOf(f)
+	h := sha256.Sum256([]byte(det + "|" + asset + "|" + observationControl(f)))
 	return fmt.Sprintf("%x", h[:8])
+}
+
+// rootKey is the collapse identity: detector *family* + normalized asset, with
+// the condition dropped. All deprecated-TLS observations on one host share a
+// rootKey (the host's TLS policy), so the report collapses N observations into
+// one root finding while each observation keeps its own observationKey.
+func rootFindingKey(f *Finding) string {
+	det := detectorOf(f)
+	asset := assetOf(f)
+	h := sha256.Sum256([]byte(det + "|" + asset + "|" + rootControl(f)))
+	return fmt.Sprintf("%x", h[:8])
+}
+
+func detectorOf(f *Finding) string {
+	if f.DetectorID != "" {
+		return f.DetectorID
+	}
+	return detectorIDFor(f)
+}
+
+func assetOf(f *Finding) string {
+	if f.ProbeURL != "" {
+		return normalizedAsset(f.ProbeURL)
+	}
+	return normalizedAsset(f.Host)
+}
+
+// observationControl includes the exact condition (e.g. the TLS protocol version).
+func observationControl(f *Finding) string {
+	if f.ProbeKind == "tls-weak" {
+		arg := strings.TrimSpace(f.ProbeArg)
+		if arg == "" {
+			// derive from title so combined weak-TLS findings still separate
+			arg = strings.ToLower(f.Title)
+		}
+		return "tls:" + arg
+	}
+	return normalizedControl(f)
+}
+
+// rootControl drops the condition so a family collapses to one root per asset.
+func rootControl(f *Finding) string {
+	if f.ProbeKind == "tls-weak" {
+		return "tls-config"
+	}
+	return normalizedControl(f)
 }
 
 // normalizedAsset reduces a URL/host to host[:port], dropping the scheme and any

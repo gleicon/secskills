@@ -23,7 +23,7 @@ func renderCoverageFunnel(wd string, live []LiveHost) string {
 			https++
 		}
 	}
-	shots := dirCount(filepath.Join(wd, "screenshots"))
+	shots := screenshotCount(wd)
 	deep := 0
 	if fileExists(filepath.Join(wd, "nuclei.jsonl")) {
 		deep = reachable
@@ -48,7 +48,7 @@ func renderCapabilityMatrix(deep bool) string {
 	deepCov := "Not run"
 	deepRes := "Deep phase not selected"
 	if deep {
-		deepCov, deepRes = "Medium", "Completed (nuclei templates + sslscan)"
+		deepCov, deepRes = "Medium", "nuclei ruleset executed (pattern coverage only, not exhaustive)"
 	}
 	rows := [][3]string{
 		{"Asset / attack-surface discovery", "High — CT / DNS / OSINT", "Completed"},
@@ -57,7 +57,7 @@ func renderCapabilityMatrix(deep bool) string {
 		{"Unauthenticated operational exposure", "High — endpoint discovery + content classifier", "Completed"},
 		{"Cross-origin policy (CORS)", "Medium — unauthenticated origin reflection", "Completed"},
 		{"Component / version CVE correlation", "Low — banner-inferred, OSV lookup", "Leads only (unvalidated)"},
-		{"Template vulnerability scan", deepCov, deepRes},
+		{"Known-pattern vulnerability templates (nuclei)", deepCov, deepRes},
 		{"SSRF / injection exploitation", "None — exploitation prohibited", "Not tested"},
 		{"BOLA / IDOR / authz logic", "None — authenticated testing out of scope", "Not tested"},
 		{"OAuth/OIDC / identity surface", "None (this pass)", "Not tested"},
@@ -84,5 +84,25 @@ func dirCount(dir string) int {
 			n++
 		}
 	}
+	return n
+}
+
+// screenshotCount is the single source of truth for how many page screenshots a
+// run captured: a recursive count of non-empty .png files under the screenshots
+// tree (httpx nests them as screenshots/screenshot/<host>/<hash>.png). Every
+// place that reports a screenshot count uses this, and the report linter asserts
+// they all agree.
+func screenshotCount(wd string) int {
+	root := filepath.Join(wd, "screenshots")
+	n := 0
+	filepath.Walk(root, func(_ string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(strings.ToLower(info.Name()), ".png") && info.Size() > 0 {
+			n++
+		}
+		return nil
+	})
 	return n
 }

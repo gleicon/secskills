@@ -99,8 +99,14 @@ func assessSeverity(f *Finding) (string, string) {
 	ev := strings.ToLower(f.ObservedEvidence)
 	switch ft {
 	case "metrics-exposed":
-		if strings.Contains(ev, "[x] credential") || strings.Contains(ev, "[x] bearer") {
-			return "HIGH", "confirmed sensitive-data disclosure (credential/token class observed)"
+		// HIGH requires a VALIDATED secret value, not a mere pattern match. A
+		// credential-like *pattern* is an unvalidated hypothesis -> MEDIUM (with a
+		// potential-HIGH escalation recorded by enforceSeverityPolicy).
+		if strings.Contains(ev, "[x] credential value confirmed") || strings.Contains(ev, "[x] bearer token / api key value") {
+			return "HIGH", "validated credential/token value disclosed unauthenticated"
+		}
+		if strings.Contains(ev, "[x] credential-like pattern") {
+			return "MEDIUM", "unvalidated credential-like pattern in unauthenticated metrics (potential HIGH if confirmed a real secret)"
 		}
 		if strings.Contains(ev, "[x] internal hostname") || strings.Contains(ev, "[x] namespace") || strings.Contains(ev, "[x] private/internal ip") {
 			return "MEDIUM", "confirmed unauthenticated exposure of internal-topology data (no credentials observed)"
@@ -179,6 +185,14 @@ func detectorRegistry() []DetectorMeta {
 		{ID: "api.schema-exposure@1", IdentityCompatible: true, Description: "OpenAPI/GraphQL schema exposure"},
 		{ID: "dns.dangling-cname@1", IdentityCompatible: true, Description: "dangling CNAME takeover candidate"},
 		{ID: "storage.public-bucket@1", IdentityCompatible: true, Description: "public object-storage listing"},
+		{ID: "api.verbose-error@1", IdentityCompatible: true, Description: "verbose error / stack trace disclosure"},
+		{ID: "http.rate-limit-absent@1", IdentityCompatible: true, Description: "no visible unauthenticated rate-limiting"},
+		{ID: "dns.spf-missing@1", IdentityCompatible: true, Description: "no SPF record"},
+		{ID: "dns.spf-weak@1", IdentityCompatible: true, Description: "permissive SPF (+all)"},
+		{ID: "dns.dmarc-missing@1", IdentityCompatible: true, Description: "no DMARC record"},
+		{ID: "dns.dmarc-none@1", IdentityCompatible: true, Description: "DMARC p=none"},
+		{ID: "dns.wildcard@1", IdentityCompatible: true, Description: "wildcard DNS"},
+		{ID: "dns.dnssec-unknown@1", IdentityCompatible: true, Description: "DNSSEC not evaluated"},
 		{ID: "nuclei@1", IdentityCompatible: true, Description: "nuclei template match"},
 		{ID: "generic@1", IdentityCompatible: true, Description: "unclassified finding"},
 	}
@@ -210,4 +224,41 @@ func detectorMigrationImpact(prev, cur []DetectorMeta) string {
 		return "No detector-identity changes between the compared manifests."
 	}
 	return strings.Join(lines, "\n")
+}
+
+// hasValidatedPrimitive reports whether a finding carries a demonstrated,
+// validated impact primitive that can justify HIGH under the rubric.
+func hasValidatedPrimitive(f *Finding) bool {
+	if f.Validation == "exploited" {
+		return true
+	}
+	ev := strings.ToLower(f.ObservedEvidence)
+	switch findingType(f) {
+	case "metrics-exposed", "exposure-path":
+		return strings.Contains(ev, "credential value confirmed") ||
+			strings.Contains(ev, "[x] bearer token / api key value") ||
+			strings.Contains(ev, "[x] private key")
+	}
+	return false
+}
+
+// enforceSeverityPolicy makes the rubric authoritative and enforces the HIGH
+// invariant: a HIGH must carry a validated primitive, else it is capped and the
+// escalation condition is recorded. Automation never silently keeps an
+// unsupported HIGH. Called at write time and idempotent.
+func enforceSeverityPolicy(f *Finding) {
+	want, _ := assessSeverity(f)
+	// let the rubric drive known families
+	if want != "" && !strings.EqualFold(want, f.Severity) {
+		if findingType(f) != "" {
+			f.Severity = want
+		}
+	}
+	if strings.EqualFold(f.Severity, "HIGH") && !hasValidatedPrimitive(f) {
+		f.PotentialSeverity = "HIGH"
+		f.Severity = "MEDIUM"
+		if f.EscalationCondition == "" {
+			f.EscalationCondition = "escalates to HIGH if the unvalidated primitive is manually confirmed (e.g. credential-like match verified as a real secret)"
+		}
+	}
 }

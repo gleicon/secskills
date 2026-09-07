@@ -115,54 +115,14 @@ func renderProReport(target, wd string, findings []Finding) string {
 	// ---- 5. OSINT Summary -----------------------------------------------------
 	p("## 5. OSINT Summary (Shodan & public sources)\n\n%s\n\n---\n\n", shodanSummary(wd))
 
-	// ---- 6. Detailed Findings -------------------------------------------------
-	p("## 6. Detailed Findings\n\n")
+	// ---- 6. Root Findings (observations collapsed) ---------------------------
+	p("## 6. Root Findings\n\n")
+	p("Observations are collapsed to **root findings** (one per affected control per asset-group). Each row lists the affected endpoints and the immutable evidence objects; per-observation detail is in Appendix C.\n\n")
 	sortFindings(findings)
-	for i := range findings {
-		f := &findings[i]
-		if f.OWASP == "" {
-			classify(f)
-		}
-		p("### FINDING-%02d — %s\n\n", i+1, f.Title)
-		p("| Field | Value |\n|-------|-------|\n")
-		p("| Host / Location | %s |\n", f.Host)
-		p("| Severity | **%s** |\n", f.Severity)
-		p("| OWASP | %s |\n", f.OWASP)
-		p("| CWE | %s |\n", f.CWE)
-		if len(f.CVEs) > 0 {
-			p("| CVEs (OSV) | %s |\n", strings.Join(f.CVEs, ", "))
-		}
-		p("| Confidence | %s |\n", orDash(f.Confidence))
-		p("| Validation | %s |\n", orDash(f.Validation))
-		p("| Evidence state | %s |\n", orDash(f.State))
-		p("| CVSS v3.1 | %s |\n", cvssString(f))
-		p("| Remediation SLA | %s |\n", slaFor(f.Severity))
-		p("| Owning team | %s |\n", complianceFor(f.KBClass).Team)
-		p("| Detector | `%s` |\n", detectorIDFor(f))
-		p("| Finding key | `%s` |\n", f.Key)
-		if len(f.EvidenceRefs) > 0 {
-			p("| Evidence objects | %s |\n", "`"+strings.Join(f.EvidenceRefs, "`, `")+"`")
-		}
-		p("| Cheat sheet | `secskills kb %s` |\n", f.KBClass)
-		if note := renderOverrideNote(f); note != "" {
-			p("| Adjudication | %s |\n", note)
-		}
-		p("\n**Business risk.** %s\n\n", businessRiskFor(f))
-		p("**Severity rationale.** %s\n\n", severityJustification(f))
-		impact := f.ImpactText
-		if impact == "" {
-			impact = impactFor(f.KBClass)
-		}
-		p("**Technical impact.** %s\n\n", impact)
-		if f.ObservedEvidence != "" {
-			p("**Observed evidence.**\n```\n%s\n```\n\n", f.ObservedEvidence)
-		}
-		if f.EvidenceCmd != "" {
-			p("**Reproduction.**\n```bash\n%s\n```\n\n", f.EvidenceCmd)
-		}
-		p("**Remediation.**\n\n%s\n\n_Reference: `secskills kb %s` · code fix: `secskills recipes %s`._\n\n",
-			remediationByType(f), f.KBClass, f.KBClass)
-	}
+	p("%s\n\n", renderRootFindings(findings))
+
+	// ---- 6b. Observation appendix (compact, one row per observation) ----------
+	p("## 6b. Observation Detail (Appendix C)\n\n%s\n\n---\n\n", renderObservationAppendix(findings))
 
 	// ---- 7. Attack Narrative -------------------------------------------------
 	p("---\n\n## 7. Attack Narrative\n\n%s\n\n---\n\n", attackNarrative(findings, live, subs))
@@ -800,4 +760,175 @@ func retestDeltaSection(target string) string {
 		fmt.Fprintf(&sb, "| `%s` | %s | %s → %s | %s | %s |\n", f.Key, f.Severity, prevStatus, f.Status, disp, safeField(ev))
 	}
 	return sb.String()
+}
+
+// renderRootFindings collapses observations by RootKey into root findings
+// (R-NNN), each with its affected assets, max severity, single remediation, and
+// the evidence objects across the group. This is the primary-report view.
+func renderRootFindings(findings []Finding) string {
+	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
+	type group struct {
+		rep     Finding
+		assets  []string
+		evrefs  []string
+		obsKeys []string
+		count   int
+	}
+	order := []string{}
+	groups := map[string]*group{}
+	for i := range findings {
+		f := &findings[i]
+		rk := f.RootKey
+		if rk == "" {
+			rk = rootFindingKey(f)
+		}
+		g := groups[rk]
+		if g == nil {
+			g = &group{rep: *f}
+			groups[rk] = g
+			order = append(order, rk)
+		}
+		if rank[f.Severity] < rank[g.rep.Severity] {
+			g.rep = *f // representative = highest severity in the group
+		}
+		if !contains(g.assets, f.Host) {
+			g.assets = append(g.assets, f.Host)
+		}
+		for _, e := range f.EvidenceRefs {
+			if !contains(g.evrefs, e) {
+				g.evrefs = append(g.evrefs, e)
+			}
+		}
+		if f.Key != "" && !contains(g.obsKeys, f.Key) {
+			g.obsKeys = append(g.obsKeys, f.Key)
+		}
+		g.count++
+	}
+	var b strings.Builder
+	n := 0
+	for _, rk := range order {
+		g := groups[rk]
+		f := &g.rep
+		n++
+		if f.OWASP == "" {
+			classify(f)
+		}
+		fmt.Fprintf(&b, "### R-%03d — %s\n\n", n, rootTitle(f))
+		fmt.Fprintf(&b, "| Field | Value |\n|-------|-------|\n")
+		fmt.Fprintf(&b, "| Assessment severity | **%s** |\n", f.Severity)
+		if f.PotentialSeverity != "" {
+			fmt.Fprintf(&b, "| Potential severity (if validated) | %s — %s |\n", f.PotentialSeverity, safeField(f.EscalationCondition))
+		}
+		fmt.Fprintf(&b, "| Affected endpoints | %d |\n", len(g.assets))
+		fmt.Fprintf(&b, "| Detector | `%s` |\n", detectorIDFor(f))
+		fmt.Fprintf(&b, "| Root finding key | `%s` |\n", rk)
+		fmt.Fprintf(&b, "| OWASP / CWE | %s / %s |\n", f.OWASP, f.CWE)
+		fmt.Fprintf(&b, "| CVSS v3.1 | %s |\n", cvssString(f))
+		fmt.Fprintf(&b, "| Confidence / Validation / State | %s / %s / %s |\n", orDash(f.Confidence), orDash(f.Validation), orDash(f.State))
+		fmt.Fprintf(&b, "| Owning team | %s |\n", complianceFor(f.KBClass).Team)
+		if len(g.evrefs) > 0 {
+			fmt.Fprintf(&b, "| Evidence objects | `%s` |\n", strings.Join(capList(g.evrefs, 12), "`, `"))
+		}
+		if note := renderOverrideNote(f); note != "" {
+			fmt.Fprintf(&b, "| Adjudication | %s |\n", note)
+		}
+		fmt.Fprintf(&b, "\n**Affected endpoints:** %s\n\n", strings.Join(capList(g.assets, 12), ", "))
+		fmt.Fprintf(&b, "**Business risk.** %s\n\n", businessRiskFor(f))
+		fmt.Fprintf(&b, "**Severity rationale.** %s\n\n", severityJustification(f))
+		impact := f.ImpactText
+		if impact == "" {
+			impact = impactFor(f.KBClass)
+		}
+		fmt.Fprintf(&b, "**Technical impact.** %s\n\n", impact)
+		fmt.Fprintf(&b, "**Remediation.**\n\n%s\n\n_Reference: `secskills kb %s`._\n\n---\n\n", remediationByType(f), f.KBClass)
+	}
+	fmt.Fprintf(&b, "_%d observations collapsed to %d root findings._", len(findings), n)
+	return b.String()
+}
+
+func rootTitle(f *Finding) string {
+	switch findingType(f) {
+	case "tls-deprecated":
+		return "Deprecated TLS / weak cipher policy"
+	case "hsts-missing":
+		return "Missing HSTS policy"
+	case "csp-missing":
+		return "Missing Content-Security-Policy"
+	case "nosniff-missing":
+		return "Missing X-Content-Type-Options"
+	case "xfo-missing":
+		return "Missing clickjacking protection"
+	case "cors":
+		return "Permissive cross-origin policy"
+	case "metrics-exposed":
+		return "Unauthenticated Prometheus metrics"
+	case "exposure-path":
+		return "Unauthenticated sensitive path"
+	}
+	return f.Title
+}
+
+// renderObservationAppendix is the compact one-row-per-observation table, so
+// every observation and its evidence id remains in the report without pages of
+// duplicated prose.
+func renderObservationAppendix(findings []Finding) string {
+	var b strings.Builder
+	b.WriteString("| Obs key | Asset | Severity | State | Detector | Evidence | Observed at |\n|---|---|---|---|---|---|---|\n")
+	for i := range findings {
+		f := &findings[i]
+		ev := "—"
+		if len(f.EvidenceRefs) > 0 {
+			ev = strings.Join(f.EvidenceRefs, " ")
+		}
+		fmt.Fprintf(&b, "| `%s` | %s | %s | %s | `%s` | `%s` | %s |\n",
+			orDash(f.Key), safeField(f.Host), f.Severity, orDash(f.State), detectorIDFor(f), ev, orDash(f.ObservedAt))
+	}
+	return b.String()
+}
+
+// RootView is a collapsed root finding for card rendering (HTML/markdown share).
+type RootView struct {
+	Rep        Finding
+	Assets     []string
+	EvRefs     []string
+	ObsCount   int
+}
+
+// collapseByRoot groups findings by RootKey and returns one RootView per group,
+// severity-ordered, with the highest-severity member as representative.
+func collapseByRoot(findings []Finding) []RootView {
+	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
+	order := []string{}
+	m := map[string]*RootView{}
+	for i := range findings {
+		f := findings[i]
+		rk := f.RootKey
+		if rk == "" {
+			rk = rootFindingKey(&f)
+		}
+		g := m[rk]
+		if g == nil {
+			g = &RootView{Rep: f}
+			m[rk] = g
+			order = append(order, rk)
+		}
+		if rank[f.Severity] < rank[g.Rep.Severity] {
+			g.Rep = f
+		}
+		if !contains(g.Assets, f.Host) {
+			g.Assets = append(g.Assets, f.Host)
+		}
+		for _, e := range f.EvidenceRefs {
+			if !contains(g.EvRefs, e) {
+				g.EvRefs = append(g.EvRefs, e)
+			}
+		}
+		g.ObsCount++
+	}
+	out := make([]RootView, 0, len(order))
+	for _, rk := range order {
+		out = append(out, *m[rk])
+	}
+	sort.SliceStable(out, func(i, j int) bool { return rank[out[i].Rep.Severity] < rank[out[j].Rep.Severity] })
+	return out
 }

@@ -142,42 +142,41 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	}
 	w(`</tbody></table></section>`)
 
-	// ---- Detailed Findings ----
-	w(`<section class="page"><h2>4. Detailed Findings</h2>`)
-	for i := range findings {
-		f := &findings[i]
+	// ---- Root Findings (observations collapsed) ----
+	w(`<section class="page"><h2>4. Root Findings</h2>
+      <p>Observations are collapsed to root findings (one per control per asset-group). Per-observation detail and evidence ids are in the Observation Detail appendix.</p>`)
+	ri := 0
+	for _, rv := range collapseByRoot(findings) {
+		ri++
+		f := &rv.Rep
 		c := complianceFor(f.KBClass)
 		w(`<div class="finding">
-          <div class="f-head"><span class="fid">F-%03d</span><span class="pill sev-%s">%s</span><h3>%s</h3></div>
+          <div class="f-head"><span class="fid">R-%03d</span><span class="pill sev-%s">%s</span><h3>%s</h3></div>
           <table class="grid f-meta"><tbody>
-          <tr><td>Affected asset</td><td>%s</td></tr>
-          <tr><td>Confidence</td><td>%s</td></tr>
-          <tr><td>Validation</td><td>%s</td></tr>
-          <tr><td>OWASP</td><td>%s</td></tr>
-          <tr><td>CWE</td><td>%s</td></tr>
+          <tr><td>Affected endpoints</td><td>%d</td></tr>
+          <tr><td>Confidence / Validation / State</td><td>%s / %s / %s</td></tr>
+          <tr><td>OWASP / CWE</td><td>%s / %s</td></tr>
           <tr><td>Detector</td><td><code>%s</code></td></tr>
-          <tr><td>Finding key</td><td><code>%s</code></td></tr>
-          <tr><td>Evidence state</td><td>%s</td></tr>
+          <tr><td>Root finding key</td><td><code>%s</code></td></tr>
           <tr><td>CVSS v3.1</td><td><code>%s</code></td></tr>`,
-			i+1, strings.ToLower(f.Severity), f.Severity, esc(f.Title),
-			esc(f.Host), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(f.OWASP), esc(f.CWE),
-			esc(detectorIDFor(f)), esc(orDash(f.Key)), esc(orDash(f.State)), esc(cvssString(f)))
-		if len(f.EvidenceRefs) > 0 {
-			w(`<tr><td>Evidence objects</td><td><code>%s</code></td></tr>`, esc(strings.Join(f.EvidenceRefs, ", ")))
+			ri, strings.ToLower(f.Severity), f.Severity, esc(rootTitle(f)),
+			len(rv.Assets), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(orDash(f.State)),
+			esc(f.OWASP), esc(f.CWE), esc(detectorIDFor(f)), esc(orDash(f.RootKey)), esc(cvssString(f)))
+		if f.PotentialSeverity != "" {
+			w(`<tr><td>Potential severity (if validated)</td><td>%s — %s</td></tr>`, esc(f.PotentialSeverity), esc(f.EscalationCondition))
+		}
+		if len(rv.EvRefs) > 0 {
+			w(`<tr><td>Evidence objects</td><td><code>%s</code></td></tr>`, esc(strings.Join(capList(rv.EvRefs, 12), ", ")))
 		}
 		if note := renderOverrideNote(f); note != "" {
 			w(`<tr><td>Adjudication</td><td>%s</td></tr>`, esc(note))
 		}
-		if len(f.CVEs) > 0 {
-			w(`<tr><td>CVEs (OSV)</td><td>%s</td></tr>`, esc(strings.Join(f.CVEs, ", ")))
-		}
 		w(`<tr><td>Remediation SLA</td><td>%s</td></tr>
-          <tr><td>SOC 2 (TSC)</td><td>%s</td></tr>
-          <tr><td>ISO/IEC 27001:2022</td><td>%s</td></tr>
-          <tr><td>PCI-DSS 4.0</td><td>%s</td></tr>
+          <tr><td>SOC 2 / ISO / PCI</td><td>%s / %s / %s</td></tr>
           <tr><td>Owning team</td><td>%s</td></tr>
           </tbody></table>`, esc(slaFor(f.Severity)), esc(c.SOC2), esc(c.ISO), esc(c.PCI), esc(c.Team))
-		w(`<div class="f-body"><p><b>Business risk.</b> %s</p>`, esc(businessRiskFor(f)))
+		w(`<div class="f-body"><p><b>Affected endpoints.</b> %s</p>`, esc(strings.Join(capList(rv.Assets, 12), ", ")))
+		w(`<p><b>Business risk.</b> %s</p>`, esc(businessRiskFor(f)))
 		w(`<p><b>Severity rationale.</b> %s</p>`, mdBulletsToHTML(severityJustification(f)))
 		impact := f.ImpactText
 		if impact == "" {
@@ -185,13 +184,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		}
 		w(`<p><b>Technical impact.</b> %s</p>`, esc(impact))
 		if f.ObservedEvidence != "" {
-			w(`<p><b>Observed evidence.</b></p><pre>%s</pre>`, esc(f.ObservedEvidence))
-		}
-		if f.EvidenceCmd != "" {
-			w(`<p><b>Reproduction.</b></p><pre>%s</pre>`, esc(f.EvidenceCmd))
+			w(`<p><b>Representative observed evidence.</b></p><pre>%s</pre>`, esc(f.ObservedEvidence))
 		}
 		w(`<p><b>Remediation.</b></p><div class="rem">%s</div></div></div>`, mdBulletsToHTML(remediationByType(f)))
 	}
+	w(`<h3>Observation Detail</h3><div class="rem">%s</div>`, mdBulletsToHTML(renderObservationAppendix(findings)))
 	w(`</section>`)
 
 	// ---- Attack narrative ----
@@ -351,6 +348,10 @@ func execNarrativeHTML(target string, c map[string]int, subs, live int) string {
 
 // cmdReportHTML / PDF entrypoints are wired via cmdReport flags.
 func writeHTMLReport(target, wd, output string) error {
+	fs := loadOrLatest(target, wd)
+	if err := enforceReportLint(target, wd, normalizedForLint(target, wd, fs)); err != nil {
+		return err
+	}
 	report := renderHTMLReport(target, wd, loadOrLatest(target, wd))
 	if output == "" {
 		output = target + "_report.html"
@@ -363,6 +364,9 @@ func writeHTMLReport(target, wd, output string) error {
 }
 
 func writePDFReport(target, wd, output string) error {
+	if err := enforceReportLint(target, wd, normalizedForLint(target, wd, loadOrLatest(target, wd))); err != nil {
+		return err
+	}
 	if output == "" {
 		output = target + "_report.pdf"
 	}
@@ -411,3 +415,4 @@ func loadOrLatest(target, wd string) []Finding {
 	}
 	return nil
 }
+
