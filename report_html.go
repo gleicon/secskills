@@ -22,6 +22,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	for i := range findings {
 		ensureEvidenceFields(&findings[i])
 	}
+	applyOverrides(target, findings)
 	subs := readLines(filepath.Join(wd, "subs.txt"))
 	authStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "auth-status.txt"), "not-available"))
 	ssStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "screenshots-status.txt"), "not-available"))
@@ -156,10 +157,17 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           <tr><td>CWE</td><td>%s</td></tr>
           <tr><td>Detector</td><td><code>%s</code></td></tr>
           <tr><td>Finding key</td><td><code>%s</code></td></tr>
+          <tr><td>Evidence state</td><td>%s</td></tr>
           <tr><td>CVSS v3.1</td><td><code>%s</code></td></tr>`,
 			i+1, strings.ToLower(f.Severity), f.Severity, esc(f.Title),
 			esc(f.Host), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(f.OWASP), esc(f.CWE),
-			esc(detectorIDFor(f)), esc(orDash(f.Key)), esc(cvssString(f)))
+			esc(detectorIDFor(f)), esc(orDash(f.Key)), esc(orDash(f.State)), esc(cvssString(f)))
+		if len(f.EvidenceRefs) > 0 {
+			w(`<tr><td>Evidence objects</td><td><code>%s</code></td></tr>`, esc(strings.Join(f.EvidenceRefs, ", ")))
+		}
+		if note := renderOverrideNote(f); note != "" {
+			w(`<tr><td>Adjudication</td><td>%s</td></tr>`, esc(note))
+		}
 		if len(f.CVEs) > 0 {
 			w(`<tr><td>CVEs (OSV)</td><td>%s</td></tr>`, esc(strings.Join(f.CVEs, ", ")))
 		}
@@ -219,6 +227,16 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	// ---- Appendix B — Cleanup log (non-destructive attestation) ----
 	w(`<section class="page"><h2>Appendix B — Tools &amp; Cleanup Log</h2><div class="rem">%s</div></section>`,
 		mdBulletsToHTML(appendices(wd, authStatus)))
+
+	// ---- Root-cause clustering, scorecard, evidence index, rubric ----
+	w(`<section class="page"><h2>Root-Cause Clustering (shared configuration)</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(clusterRootIssues(findings, live)))
+	w(`<section class="page"><h2>Detector Quality Scorecard</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(renderScorecard()))
+	w(`<section class="page"><h2>Evidence Object Index</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(renderEvidenceIndex(wd)))
+	w(`<section class="page"><h2>Severity Rubric (independent of CVSS)</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(severityRubric()))
 
 	// ---- Control Test Ledger (negative evidence) ----
 	w(`<section class="page"><h2>Control Test Ledger</h2><div class="rem">%s</div></section>`,

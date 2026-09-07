@@ -52,6 +52,13 @@ type Finding struct {
 	// finding persists across runs (open→mitigated→regressed) independent of F-NNN.
 	DetectorID string `json:"detector_id,omitempty"`
 	Key        string `json:"finding_key,omitempty"`
+	// Formal evidence state (state machine) + immutable evidence object ids.
+	State        string   `json:"evidence_state,omitempty"`
+	EvidenceRefs []string `json:"evidence_refs,omitempty"`
+	// Severity provenance: automated (rubric) severity is immutable; a human
+	// adjudication is recorded separately, never by mutating Severity.
+	AutomatedSeverity string    `json:"automated_severity,omitempty"`
+	Override          *Override `json:"override,omitempty"`
 }
 
 type Run struct {

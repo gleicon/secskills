@@ -21,6 +21,7 @@ func renderProReport(target, wd string, findings []Finding) string {
 	for i := range findings {
 		ensureEvidenceFields(&findings[i])
 	}
+	applyOverrides(target, findings)
 	counts := severityCounts(findings)
 	live := liveHosts(wd)
 	subs := readLines(filepath.Join(wd, "subs.txt"))
@@ -78,7 +79,8 @@ func renderProReport(target, wd string, findings []Finding) string {
 
 	// ---- 2b. Coverage & capability (discovery vs security; explicit non-coverage)
 	p("### Assessment coverage funnel\n\n%s\n\n", renderCoverageFunnel(wd, live))
-	p("### Assessment capability matrix\n\n%s\n\n---\n\n", renderCapabilityMatrix(deepRun))
+	p("### Assessment capability matrix\n\n%s\n\n", renderCapabilityMatrix(deepRun))
+	p("### Severity rubric (independent of CVSS)\n\n%s\n\n---\n\n", severityRubric())
 
 	// ---- 3. Scope -------------------------------------------------------------
 	p("## 3. Scope\n\n")
@@ -132,12 +134,19 @@ func renderProReport(target, wd string, findings []Finding) string {
 		}
 		p("| Confidence | %s |\n", orDash(f.Confidence))
 		p("| Validation | %s |\n", orDash(f.Validation))
+		p("| Evidence state | %s |\n", orDash(f.State))
 		p("| CVSS v3.1 | %s |\n", cvssString(f))
 		p("| Remediation SLA | %s |\n", slaFor(f.Severity))
 		p("| Owning team | %s |\n", complianceFor(f.KBClass).Team)
 		p("| Detector | `%s` |\n", detectorIDFor(f))
 		p("| Finding key | `%s` |\n", f.Key)
+		if len(f.EvidenceRefs) > 0 {
+			p("| Evidence objects | %s |\n", "`"+strings.Join(f.EvidenceRefs, "`, `")+"`")
+		}
 		p("| Cheat sheet | `secskills kb %s` |\n", f.KBClass)
+		if note := renderOverrideNote(f); note != "" {
+			p("| Adjudication | %s |\n", note)
+		}
 		p("\n**Business risk.** %s\n\n", businessRiskFor(f))
 		p("**Severity rationale.** %s\n\n", severityJustification(f))
 		impact := f.ImpactText
@@ -174,6 +183,15 @@ func renderProReport(target, wd string, findings []Finding) string {
 		p("| F-%03d | %s | %s | %s | %s | %s | %s |\n", i+1, truncateStr(f.Title, 50), f.Severity, slaFor(f.Severity), owaspShort(f.OWASP), complianceFor(f.KBClass).Team, f.Host)
 	}
 	p("\n_Export as tickets: `secskills tickets %s`._\n\n---\n\n", target)
+
+	// ---- Root-cause clustering (asset graph) ---------------------------------
+	p("## 11b. Root-Cause Clustering (shared configuration)\n\n%s\n\n---\n\n", clusterRootIssues(findings, live))
+
+	// ---- Detector quality scorecard (measured precision/recall) ---------------
+	p("## 11c. Detector Quality Scorecard\n\n%s\n\n---\n\n", renderScorecard())
+
+	// ---- Immutable evidence object index --------------------------------------
+	p("## 11d. Evidence Object Index\n\n%s\n\n---\n\n", renderEvidenceIndex(wd))
 
 	// ---- Control Test Ledger + Run Attestation (audit evidence) ---------------
 	p("## 12. Control Test Ledger\n\n%s\n\n---\n\n", renderLedger(live, findings))

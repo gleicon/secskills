@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-const version = "0.12.0"
+const version = "0.13.0"
 
 func usage() {
 	fmt.Fprint(os.Stderr, `secskills `+version+` — security assessment orchestrator
@@ -98,6 +98,12 @@ func main() {
 		err = cmdProfile(args)
 	case "scope":
 		err = cmdScope(args)
+	case "override":
+		err = cmdOverride(args)
+	case "attest":
+		err = cmdAttest(args)
+	case "conformance":
+		err = cmdConformance(args)
 	case "mcp":
 		err = cmdMCP(args)
 	case "version", "-v", "--version":

@@ -228,6 +228,9 @@ func ensureEvidenceFields(f *Finding) {
 			f.Confidence = "Confirmed" // a directly-observed absence/presence
 		}
 	}
+	if f.State == "" {
+		f.State = string(stateForValidation(f.Validation))
+	}
 }
 
 // stableFindingKey derives a finding's audit identity from stable *semantics*,
