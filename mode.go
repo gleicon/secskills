@@ -332,7 +332,7 @@ func cmdTest(args []string) error {
 		}
 	}
 
-	writeRunMeta(wd, target, started, loadWorkFindings(wd))
+	writeRunMeta(wd, target, started, loadWorkFindings(wd), *deep, *intrusive)
 	fmt.Printf("\n%d findings -> %s\n", total, workFindings(wd))
 	fmt.Println("Remediation per finding: secskills kb <class>. Report: secskills report --render", target)
 	if *save {
