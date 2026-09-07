@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -143,9 +144,12 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           <tr><td>Validation</td><td>%s</td></tr>
           <tr><td>OWASP</td><td>%s</td></tr>
           <tr><td>CWE</td><td>%s</td></tr>
+          <tr><td>Detector</td><td><code>%s</code></td></tr>
+          <tr><td>Finding key</td><td><code>%s</code></td></tr>
           <tr><td>CVSS v3.1</td><td><code>%s</code></td></tr>`,
 			i+1, strings.ToLower(f.Severity), f.Severity, esc(f.Title),
-			esc(f.Host), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(f.OWASP), esc(f.CWE), esc(cvssString(f)))
+			esc(f.Host), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(f.OWASP), esc(f.CWE),
+			esc(detectorIDFor(f)), esc(orDash(f.Key)), esc(cvssString(f)))
 		if len(f.CVEs) > 0 {
 			w(`<tr><td>CVEs (OSV)</td><td>%s</td></tr>`, esc(strings.Join(f.CVEs, ", ")))
 		}
@@ -206,7 +210,16 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	w(`<section class="page"><h2>Appendix B — Tools &amp; Cleanup Log</h2><div class="rem">%s</div></section>`,
 		mdBulletsToHTML(appendices(wd, authStatus)))
 
-	w(`<footer class="doc-foot">secskills v%s — Confidential — generated %s</footer>`, version, date)
+	// ---- Control Test Ledger (negative evidence) ----
+	w(`<section class="page"><h2>Control Test Ledger</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(renderLedger(live, findings)))
+
+	// ---- Run Attestation (binds report to an exact run) ----
+	w(`<section class="page"><h2>Run Attestation</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(renderAttestation(wd)))
+
+	sum := sha256.Sum256([]byte(b.String()))
+	w(`<footer class="doc-foot">secskills v%s — Confidential — generated %s — Report SHA-256 %x</footer>`, version, date, sum)
 	w(`</body></html>`)
 	return b.String()
 }

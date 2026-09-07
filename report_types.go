@@ -147,3 +147,33 @@ func severityJustification(f *Finding) string {
 	}
 	return fmt.Sprintf("CVSS base score %.1f (%s band); **assessment severity %s** — %s.", score, band, f.Severity, reason)
 }
+
+// detectorIDFor names the detector that produced a finding (audit identity).
+func detectorIDFor(f *Finding) string {
+	switch findingType(f) {
+	case "tls-deprecated":
+		return "tls.deprecated-protocol@1"
+	case "hsts-missing":
+		return "http.header.hsts-missing@1"
+	case "csp-missing":
+		return "http.header.csp-missing@1"
+	case "nosniff-missing":
+		return "http.header.nosniff-missing@1"
+	case "xfo-missing":
+		return "http.header.xfo-missing@1"
+	case "cors":
+		return "http.cors@1"
+	case "metrics-exposed":
+		return "http.prometheus.public-metrics@1"
+	case "exposure-path":
+		return "http.exposure-path@1"
+	case "component-lead":
+		return "component.banner-osv-correlation@1"
+	case "prompt-injection":
+		return "content.prompt-injection@1"
+	}
+	if strings.HasPrefix(strings.ToLower(f.Title), "nuclei:") {
+		return "nuclei@1"
+	}
+	return "generic@1"
+}

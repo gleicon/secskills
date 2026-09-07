@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -29,6 +30,14 @@ func loadWorkFindings(wd string) []Finding {
 func addFinding(wd string, f Finding) error {
 	if f.Status == "" {
 		f.Status = "open"
+	}
+	// stable audit identity — independent of the display index F-NNN
+	if f.DetectorID == "" {
+		f.DetectorID = detectorIDFor(&f)
+	}
+	if f.Key == "" {
+		h := sha256.Sum256([]byte(f.DetectorID + "|" + hostOf(f.Host) + "|" + f.ProbeURL + "|" + f.ProbeArg))
+		f.Key = fmt.Sprintf("%x", h[:8])
 	}
 	// Note: the response hash is captured lazily at first retest (which re-runs
 	// evidence_cmd) — avoid re-executing every finding's command at write time,
