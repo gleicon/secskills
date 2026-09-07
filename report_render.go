@@ -18,6 +18,9 @@ func renderProReport(target, wd string, findings []Finding) string {
 	var b strings.Builder
 	p := func(f string, a ...any) { fmt.Fprintf(&b, f, a...) }
 
+	for i := range findings {
+		ensureEvidenceFields(&findings[i])
+	}
 	counts := severityCounts(findings)
 	live := liveHosts(wd)
 	subs := readLines(filepath.Join(wd, "subs.txt"))
@@ -72,6 +75,10 @@ func renderProReport(target, wd string, findings []Finding) string {
 	} else {
 		p("Destructive, credential, and deep (nuclei/cipher-enumeration) tests were **out of scope** for this pass and are recommended as an authorized follow-up (see §8).\n\n---\n\n")
 	}
+
+	// ---- 2b. Coverage & capability (discovery vs security; explicit non-coverage)
+	p("### Assessment coverage funnel\n\n%s\n\n", renderCoverageFunnel(wd, live))
+	p("### Assessment capability matrix\n\n%s\n\n---\n\n", renderCapabilityMatrix(deepRun))
 
 	// ---- 3. Scope -------------------------------------------------------------
 	p("## 3. Scope\n\n")
@@ -751,21 +758,28 @@ func retestDeltaSection(target string) string {
 		return ""
 	}
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "### Retest delta (%s → %s)\n\n", run.PreviousRunID, run.RunID)
-	order := []string{"regressed", "open", "mitigated", "accepted", "manual"}
+	fmt.Fprintf(&sb, "## Retest Delta Report\n\n")
+	fmt.Fprintf(&sb, "**Previous run:** `%s`  \n**Current run:** `%s`  \n**Retested at:** %s\n\n", run.PreviousRunID, run.RunID, run.Date)
+	order := []string{"REGRESSED", "OPEN", "FIXED", "INCONCLUSIVE", "MANUAL", "NEW"}
+	sb.WriteString("| Disposition | Count |\n|-------------|------:|\n")
 	for _, k := range order {
 		if n := run.StatusCounts[k]; n > 0 {
-			fmt.Fprintf(&sb, "- **%s:** %d\n", k, n)
+			fmt.Fprintf(&sb, "| %s | %d |\n", k, n)
 		}
 	}
-	sb.WriteString("\n| ID | Key | Severity | Status | Latest change |\n|----|-----|----------|--------|---------------|\n")
+	sb.WriteString("\n_A finding is keyed by its stable `finding_key` (detector + normalized asset + probe), so disposition tracks the same issue across runs regardless of display order. An unreachable/errored probe is **INCONCLUSIVE**, never silently FIXED._\n\n")
+	sb.WriteString("### Per-finding disposition\n\n")
+	sb.WriteString("| Key | Severity | Prev → Now | Disposition | Retest evidence |\n|-----|----------|-----------|-------------|------------------|\n")
 	for i := range run.Findings {
 		f := &run.Findings[i]
-		change := "—"
+		disp, prevStatus, ev := "—", "—", "—"
 		if h := f.RetestHistory; len(h) > 0 {
-			change = h[len(h)-1]["change"]
+			last := h[len(h)-1]
+			disp = orNone(last["disposition"])
+			prevStatus = orNone(last["prev_status"])
+			ev = orNone(last["retest_evidence"])
 		}
-		fmt.Fprintf(&sb, "| %s | `%s` | %s | %s | %s |\n", f.ID, f.Key, f.Severity, f.Status, orNone(change))
+		fmt.Fprintf(&sb, "| `%s` | %s | %s → %s | %s | %s |\n", f.Key, f.Severity, prevStatus, f.Status, disp, safeField(ev))
 	}
 	return sb.String()
 }

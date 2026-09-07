@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -188,9 +189,19 @@ func sslscanHost(host string) *Finding {
 	out, _ := exec.CommandContext(ctx, "sslscan", "--no-colour", host+":443").CombinedOutput()
 	s := string(out)
 	var weakProto, weakCipher []string
+	protoState := map[string]string{"SSLv2": "not offered", "SSLv3": "not offered", "TLSv1.0": "not offered", "TLSv1.1": "not offered", "TLSv1.2": "not offered", "TLSv1.3": "not offered"}
+	testedIP := ""
 	for _, line := range strings.Split(s, "\n") {
+		if m := reSSLScanIP.FindStringSubmatch(line); m != nil && testedIP == "" {
+			testedIP = m[1]
+		}
 		if !strings.Contains(line, "Accepted") {
 			continue
+		}
+		for _, p := range []string{"SSLv2", "SSLv3", "TLSv1.0", "TLSv1.1", "TLSv1.2", "TLSv1.3"} {
+			if strings.Contains(line, p) {
+				protoState[p] = "accepted"
+			}
 		}
 		for _, p := range []string{"SSLv2", "SSLv3", "TLSv1.0", "TLSv1.1"} {
 			if strings.Contains(line, p) && !contains(weakProto, p) {
@@ -218,18 +229,44 @@ func sslscanHost(host string) *Finding {
 	if len(weakCipher) > 0 {
 		parts = append(parts, "ciphers: "+strings.Join(weakCipher, ","))
 	}
+	// Observed evidence: full protocol acceptance map + weak ciphers + network
+	// identity at test time (audit-grade: what the scanner actually observed,
+	// distinct from the reproduction command).
+	var ev strings.Builder
+	for _, p := range []string{"SSLv2", "SSLv3", "TLSv1.0", "TLSv1.1", "TLSv1.2", "TLSv1.3"} {
+		fmt.Fprintf(&ev, "%s: %s\n", p, protoState[p])
+	}
+	if len(weakCipher) > 0 {
+		fmt.Fprintf(&ev, "weak ciphers accepted: %s\n", strings.Join(weakCipher, ", "))
+	}
+	if testedIP != "" {
+		fmt.Fprintf(&ev, "resolved IP at test time: %s\n", testedIP)
+	}
+	fmt.Fprintf(&ev, "tested at: %s (sslscan)", nowRFC())
+	probeArg := ""
+	if len(weakProto) > 0 {
+		// normalize "TLSv1.0" -> "1.0" for the structured retest reprobe
+		probeArg = strings.TrimPrefix(strings.TrimPrefix(weakProto[0], "TLSv"), "SSLv")
+	}
 	f := &Finding{
-		Title:        "Weak TLS configuration (" + strings.Join(parts, "; ") + ")",
-		Host:         "https://" + host,
-		Severity:     sev,
-		Status:       "open",
-		EvidenceCmd:  fmt.Sprintf("sslscan --no-colour %s:443 | grep -E 'Accepted (SSLv|TLSv1.0|TLSv1.1)|RC4|3DES|NULL|EXPORT'", shellQuote(host)),
-		ExpectedOpen: "Accepted",
-		ProbeKind:    "manual",
+		Title:            "Weak TLS configuration (" + strings.Join(parts, "; ") + ")",
+		Host:             "https://" + host,
+		Severity:         sev,
+		Status:           "open",
+		Confidence:       "Confirmed",
+		Validation:       "behavior-confirmed",
+		ObservedEvidence: ev.String(),
+		EvidenceCmd:      fmt.Sprintf("sslscan --no-colour %s:443 | grep -E 'Accepted (SSLv|TLSv1.0|TLSv1.1)|RC4|3DES|NULL|EXPORT'", shellQuote(host)),
+		ExpectedOpen:     "Accepted",
+		ProbeKind:        "tls-weak",
+		ProbeURL:         host + ":443",
+		ProbeArg:         probeArg,
 	}
 	classify(f)
 	return f
 }
+
+var reSSLScanIP = regexp.MustCompile(`Connected to ([0-9a-fA-F:.]+)`)
 
 // haveChrome reports whether a headless-capable browser is on PATH.
 func haveChrome() bool {

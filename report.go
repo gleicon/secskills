@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -86,6 +85,7 @@ func cmdReport(args []string) error {
 	render := fs.String("render", "", "target: render a markdown report from its findings")
 	htmlT := fs.String("html", "", "target: render a professional HTML report")
 	pdfT := fs.String("pdf", "", "target: render a professional PDF report (needs headless Chrome)")
+	auditT := fs.String("audit", "", "target: render a concise auditor evidence report (control objectives + ledger + attestation)")
 	output := fs.String("output", "", "write rendered report to this path (default stdout/auto)")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -99,8 +99,10 @@ func cmdReport(args []string) error {
 		return writeHTMLReport(*htmlT, workdir(*htmlT), *output)
 	case *pdfT != "":
 		return writePDFReport(*pdfT, workdir(*pdfT), *output)
+	case *auditT != "":
+		return doAudit(*auditT, *output)
 	default:
-		return fmt.Errorf("usage: secskills report --render|--html|--pdf <target> [--output f] | --retest <target>")
+		return fmt.Errorf("usage: secskills report --render|--html|--pdf|--audit <target> [--output f] | --retest <target>")
 	}
 }
 
@@ -148,34 +150,33 @@ func doRetest(target string) error {
 	status := map[string]int{}
 	for i := range prev.Findings {
 		f := &prev.Findings[i]
-		change := "—"
+		prevStatus := f.Status
 		// Structured re-verification in Go — no shell, no eval. EvidenceCmd is a
 		// human-readable reproduction string only and is never executed.
-		stillOpen, testable := reprobe(f)
-		if !testable {
-			f.Status = "manual"
-		} else {
-			switch {
-			case stillOpen && f.Status == "mitigated":
-				f.Status, change = "regressed", "↑ REGRESSED"
-			case stillOpen:
-				f.Status, change = "open", "✗ still open"
-			default:
-				f.Status, change = "mitigated", "✓ mitigated"
+		state, evidence := reprobe(f)
+		var disposition, change string
+		switch state {
+		case "inconclusive":
+			// never silently "fixed": an unreachable/errored probe is INCONCLUSIVE.
+			f.Status, disposition, change = "inconclusive", "INCONCLUSIVE", "? inconclusive"
+		case "manual":
+			f.Status, disposition, change = "manual", "MANUAL", "· manual recheck"
+		case "open":
+			if prevStatus == "mitigated" {
+				f.Status, disposition, change = "open", "REGRESSED", "↑ regressed"
+			} else {
+				f.Status, disposition, change = "open", "OPEN", "✗ still open"
 			}
+		default: // mitigated
+			f.Status, disposition, change = "mitigated", "FIXED", "✓ fixed"
 		}
 		f.LastTestedRun = newID
-		// close the loop in writing: append a verification note to the finding
-		// rather than issuing a disconnected fresh report (playbook §05).
-		verdict := f.Status
-		if !testable {
-			verdict = "manual-recheck-needed"
-		}
 		f.RetestHistory = append(f.RetestHistory, map[string]string{
-			"run_id": newID, "date": nowRFC(), "status": verdict, "change": strings.TrimSpace(change),
+			"run_id": newID, "date": nowRFC(), "disposition": disposition,
+			"change": change, "retest_evidence": evidence, "prev_status": prevStatus,
 		})
-		status[f.Status]++
-		fmt.Printf("| %s | %s | %s | %s | %s |\n", f.ID, f.Severity, f.Status, change, f.Title)
+		status[disposition]++
+		fmt.Printf("| %s | %s | %s | %s | %s |\n", f.ID, f.Severity, disposition, change, f.Title)
 	}
 	prev.RunID, prev.PreviousRunID, prev.Type = newID, prev.RunID, "retest"
 	prev.Date = time.Now().UTC().Format(time.RFC3339)

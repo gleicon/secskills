@@ -19,6 +19,9 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	sortFindings(findings)
 	counts := severityCounts(findings)
 	live := liveHosts(wd)
+	for i := range findings {
+		ensureEvidenceFields(&findings[i])
+	}
 	subs := readLines(filepath.Join(wd, "subs.txt"))
 	authStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "auth-status.txt"), "not-available"))
 	ssStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "screenshots-status.txt"), "not-available"))
@@ -117,6 +120,13 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
       <tr><td>Authenticated testing</td><td>%s</td></tr>
       <tr><td>Out of scope</td><td>Denial-of-service; social engineering; physical; destructive exploitation; cross-domain pivots (reported separately, require scope confirmation)</td></tr>
       </tbody></table></section>`, esc(target), esc(scopeAuthLine(target)), authLabel(authStatus))
+
+	// ---- Coverage & capability ----
+	deepRun := fileExists(filepath.Join(wd, "nuclei.jsonl")) || dirNonEmpty(filepath.Join(wd, "screenshots"))
+	w(`<section class="page"><h2>2b. Coverage &amp; Capability</h2>
+      <h3>Assessment coverage funnel</h3><div class="rem">%s</div>
+      <h3>Assessment capability matrix</h3><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(renderCoverageFunnel(wd, live)), mdBulletsToHTML(renderCapabilityMatrix(deepRun)))
 
 	// ---- Findings Summary ----
 	w(`<section class="page"><h2>3. Findings Summary</h2>

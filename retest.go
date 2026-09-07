@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -11,30 +12,53 @@ import (
 // reprobe re-verifies a finding using its structured probe, entirely in Go — no
 // shell, no eval. Returns (stillOpen, testable). testable=false means the finding
 // has no automated probe (manual) and its status is left unchanged.
-func reprobe(f *Finding) (open bool, testable bool) {
+// reprobe re-verifies a finding in Go with no shell. It returns a tri-state plus
+// the evidence observed this run:
+//   "open"          - the weakness is still present
+//   "mitigated"     - the weakness is gone (control now present)
+//   "inconclusive"  - the host was unreachable/errored, so we cannot assert
+//                     either way (never silently counted as fixed)
+//   "manual"        - no structured probe; requires human recheck
+func reprobe(f *Finding) (state string, evidence string) {
 	switch f.ProbeKind {
 	case "header-missing":
 		h, ok := httpHeaders(f.ProbeURL)
 		if !ok {
-			return false, true // unreachable now → treat as mitigated
+			return "inconclusive", "host unreachable at retest (" + f.ProbeURL + ")"
 		}
-		return h.Get(f.ProbeArg) == "", true
+		if h.Get(f.ProbeArg) == "" {
+			return "open", "header " + f.ProbeArg + " still absent"
+		}
+		return "mitigated", "header " + f.ProbeArg + " now present: " + redactedSample(h.Get(f.ProbeArg), 80)
 	case "tls-weak":
-		return tlsVersionAccepted(hostOf(f.ProbeURL), f.ProbeArg), true
+		if f.ProbeArg == "" {
+			return "manual", "cipher-only weakness; protocol reprobe not applicable"
+		}
+		host := hostOf(f.ProbeURL)
+		if tlsVersionAccepted(host, f.ProbeArg) {
+			return "open", "TLS " + f.ProbeArg + " still accepted on " + host + ":443"
+		}
+		return "mitigated", "TLS " + f.ProbeArg + " now rejected on " + host + ":443"
 	case "body-contains":
 		code, body, ok := httpGetBody(f.ProbeURL)
 		if !ok {
-			return false, true
+			return "inconclusive", "host unreachable at retest (" + f.ProbeURL + ")"
 		}
-		return code == 200 && strings.Contains(body, f.ProbeArg), true
+		if code == 200 && strings.Contains(body, f.ProbeArg) {
+			return "open", "pattern still present (HTTP 200)"
+		}
+		return "mitigated", fmt.Sprintf("pattern absent (HTTP %d)", code)
 	case "status":
 		code, _, ok := httpGetBody(f.ProbeURL)
 		if !ok {
-			return false, true
+			return "inconclusive", "host unreachable at retest (" + f.ProbeURL + ")"
 		}
-		return code == 200, true
-	default: // manual / unknown
-		return false, false
+		if code == 200 {
+			return "open", "endpoint still returns HTTP 200"
+		}
+		return "mitigated", fmt.Sprintf("endpoint now returns HTTP %d", code)
+	default:
+		return "manual", "no structured probe; requires human recheck"
 	}
 }
 

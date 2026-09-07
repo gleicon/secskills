@@ -31,13 +31,13 @@ func addFinding(wd string, f Finding) error {
 	if f.Status == "" {
 		f.Status = "open"
 	}
+	ensureEvidenceFields(&f)
 	// stable audit identity — independent of the display index F-NNN
 	if f.DetectorID == "" {
 		f.DetectorID = detectorIDFor(&f)
 	}
 	if f.Key == "" {
-		h := sha256.Sum256([]byte(f.DetectorID + "|" + hostOf(f.Host) + "|" + f.ProbeURL + "|" + f.ProbeArg))
-		f.Key = fmt.Sprintf("%x", h[:8])
+		f.Key = stableFindingKey(&f)
 	}
 	// Note: the response hash is captured lazily at first retest (which re-runs
 	// evidence_cmd) — avoid re-executing every finding's command at write time,
@@ -193,4 +193,110 @@ func findingsShow(args []string) error {
 	}
 	os.Stdout.Write(b)
 	return nil
+}
+
+// ensureEvidenceFields enforces the schema invariant that every finding carries
+// a non-blank Confidence and Validation (the executive summary asserts this).
+// Values are inferred from the detector type; a finding never ships with a blank
+// evidence state. Fields already set by a detector are respected.
+func ensureEvidenceFields(f *Finding) {
+	if f.Validation == "" {
+		switch findingType(f) {
+		case "tls-deprecated", "metrics-exposed", "exposure-path":
+			f.Validation = "behavior-confirmed"
+		case "component-lead":
+			f.Validation = "version-inferred"
+		case "csp-missing", "nosniff-missing", "xfo-missing", "hsts-missing", "cors":
+			f.Validation = "passive"
+		default:
+			if strings.HasPrefix(strings.ToLower(f.Title), "nuclei:") {
+				f.Validation = "behavior-confirmed"
+			} else {
+				f.Validation = "passive"
+			}
+		}
+	}
+	if f.Confidence == "" {
+		switch f.Validation {
+		case "exploited", "behavior-confirmed":
+			f.Confidence = "Confirmed"
+		case "config-inferred":
+			f.Confidence = "Medium"
+		case "version-inferred":
+			f.Confidence = "Low"
+		default: // passive
+			f.Confidence = "Confirmed" // a directly-observed absence/presence
+		}
+	}
+}
+
+// stableFindingKey derives a finding's audit identity from stable *semantics*,
+// not from scan-output ordering or volatile strings. It must survive: finding
+// reordering, F-number changes, other hosts being added, report date/IP changes,
+// scheme (http/https) and trailing-slash normalization. Identity intentionally
+// changes only when the detector identity (which carries an @version) changes.
+//
+//	identity = detector + normalized asset(host:port) + normalized control/endpoint
+func stableFindingKey(f *Finding) string {
+	det := f.DetectorID
+	if det == "" {
+		det = detectorIDFor(f)
+	}
+	asset := normalizedAsset(f.Host)
+	if f.ProbeURL != "" {
+		asset = normalizedAsset(f.ProbeURL)
+	}
+	control := normalizedControl(f)
+	h := sha256.Sum256([]byte(det + "|" + asset + "|" + control))
+	return fmt.Sprintf("%x", h[:8])
+}
+
+// normalizedAsset reduces a URL/host to host[:port], dropping the scheme and any
+// default port, lowercased. So http://H/, https://H:443/, and H all normalize to
+// the same asset — a control's identity does not flip on scheme/port cosmetics.
+func normalizedAsset(s string) string {
+	s = strings.TrimSpace(strings.ToLower(s))
+	s = strings.TrimPrefix(strings.TrimPrefix(s, "https://"), "http://")
+	if i := strings.IndexAny(s, "/?#"); i >= 0 {
+		s = s[:i]
+	}
+	s = strings.TrimSuffix(strings.TrimSuffix(s, ":443"), ":80")
+	return s
+}
+
+// normalizedControl identifies which control/endpoint the finding is about, so
+// the same weakness on the same asset keys identically across runs.
+func normalizedControl(f *Finding) string {
+	switch f.ProbeKind {
+	case "header-missing":
+		return "header:" + strings.ToLower(strings.TrimSpace(f.ProbeArg))
+	case "tls-weak":
+		return "tls-config" // per-asset TLS policy — one identity, not one per protocol
+	case "status", "body-contains":
+		return "path:" + normalizedPath(f.ProbeURL)
+	}
+	// fall back to the detector-specific type; keeps a stable label per class
+	if t := findingType(f); t != "" {
+		return "type:" + t
+	}
+	return "type:generic"
+}
+
+// normalizedPath extracts a normalized path (lowercased, trailing slash trimmed,
+// query/fragment dropped) from a URL, so /metrics and /metrics/ are one control.
+func normalizedPath(u string) string {
+	s := strings.ToLower(strings.TrimSpace(u))
+	s = strings.TrimPrefix(strings.TrimPrefix(s, "https://"), "http://")
+	if i := strings.IndexByte(s, '/'); i >= 0 {
+		s = s[i:]
+	} else {
+		s = "/"
+	}
+	if j := strings.IndexAny(s, "?#"); j >= 0 {
+		s = s[:j]
+	}
+	if len(s) > 1 {
+		s = strings.TrimRight(s, "/")
+	}
+	return s
 }

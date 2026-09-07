@@ -221,7 +221,7 @@ func checkExposure(url string) []Finding {
 		// Deep-inspect Prometheus metrics: severity follows what is actually leaked.
 		if p == "/metrics" && hasSig {
 			leaked := inspectMetrics(body)
-			f.ObservedEvidence = "Sampled response classes: " + orNone(strings.Join(leaked, ", ")) + "\n" + redactedSample(body, 5)
+			f.ObservedEvidence = metricsTaxonomy(body) + "\nRedacted sample (credential-like values masked):\n" + redactedSample(body, 5)
 			hasSecretPattern := false
 			for _, l := range leaked {
 				if strings.Contains(l, "credential-like") {
@@ -286,6 +286,36 @@ func inspectMetrics(body string) []string {
 	add("credential-like label patterns (pattern match — validate, not confirmed secrets)", reSecretish.MatchString(body))
 	add("cloud region/bucket identifiers", strings.Contains(l, "region=") || strings.Contains(l, "bucket=") || strings.Contains(l, "s3_"))
 	return found
+}
+
+// metricsTaxonomy renders an explicit present/absent sensitive-class taxonomy for
+// a Prometheus body — an auditor sees exactly what was and was NOT observed,
+// which is what justifies (or de-escalates) the severity. Order is fixed.
+func metricsTaxonomy(body string) string {
+	l := strings.ToLower(body)
+	rows := []struct {
+		label string
+		cond  bool
+	}{
+		{"internal hostname", reInternalHost.MatchString(body)},
+		{"service/version banner", strings.Contains(l, "build_info") || strings.Contains(l, "_version{") || strings.Contains(l, "version_info")},
+		{"namespace / topology (k8s)", strings.Contains(l, "namespace=") || strings.Contains(l, "pod=") || strings.Contains(l, "kubernetes_") || strings.Contains(l, "kube_")},
+		{"private/internal IP", rePrivateIP.MatchString(body)},
+		{"cloud region/bucket id", strings.Contains(l, "region=") || strings.Contains(l, "bucket=") || strings.Contains(l, "s3_")},
+		{"credential-like pattern (unvalidated)", reSecretish.MatchString(body)},
+		{"bearer token / API key value", strings.Contains(l, "bearer ") || strings.Contains(l, "eyj")},
+		{"customer/user identifiers", strings.Contains(l, "customer_id") || strings.Contains(l, "user_id=") || strings.Contains(l, "email=")},
+	}
+	var b strings.Builder
+	b.WriteString("Observed sensitive classes (unauthenticated /metrics sample):\n")
+	for _, r := range rows {
+		mark := "[ ]"
+		if r.cond {
+			mark = "[x]"
+		}
+		fmt.Fprintf(&b, "  %s %s\n", mark, r.label)
+	}
+	return b.String()
 }
 
 var (

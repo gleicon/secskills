@@ -28,6 +28,7 @@ func cmdTickets(args []string) error {
 	if len(findings) == 0 {
 		return fmt.Errorf("no findings for %s", target)
 	}
+	findings = dedupeByKey(findings)
 	sortFindings(findings)
 
 	out := os.Stdout
@@ -111,4 +112,29 @@ func priorityFor(sev string) string {
 	default:
 		return "P5"
 	}
+}
+
+// dedupeByKey collapses findings that share a stable finding_key (e.g. TLS 1.0 +
+// TLS 1.1 on the same host both key to that host's tls-config) into one ticket,
+// keeping the highest severity. Prevents three tickets for one edge config.
+func dedupeByKey(fs []Finding) []Finding {
+	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
+	best := map[string]int{} // key -> index into out
+	var out []Finding
+	for i := range fs {
+		f := fs[i]
+		k := f.Key
+		if k == "" {
+			k = stableFindingKey(&f)
+		}
+		if j, ok := best[k]; ok {
+			if rank[f.Severity] < rank[out[j].Severity] {
+				out[j] = f
+			}
+			continue
+		}
+		best[k] = len(out)
+		out = append(out, f)
+	}
+	return out
 }
