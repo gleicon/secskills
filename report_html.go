@@ -127,7 +127,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	w(`<section class="page"><h2>2b. Coverage &amp; Capability</h2>
       <h3>Assessment coverage funnel</h3><div class="rem">%s</div>
       <h3>Assessment capability matrix</h3><div class="rem">%s</div></section>`,
-		mdBulletsToHTML(renderCoverageFunnel(wd, live)), mdBulletsToHTML(renderCapabilityMatrix(deepRun)))
+		mdBulletsToHTML(renderCoverageFunnel(wd, live)), mdBulletsToHTML(renderCapabilityMatrix(deepRun, readProfile(wd).adversarial())))
 
 	// ---- Findings Summary ----
 	w(`<section class="page"><h2>3. Findings Summary</h2>
@@ -138,7 +138,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 			classify(f)
 		}
 		w(`<tr><td>F-%03d</td><td>%s</td><td><span class="pill sev-%s">%s</span></td><td>%s</td><td>%s</td><td>%s</td></tr>`,
-			i+1, esc(truncateStr(f.Title, 70)), strings.ToLower(f.Severity), f.Severity, cvssBand(f.Severity), esc(owaspShort(f.OWASP)), esc(complianceFor(f.KBClass).Team))
+			i+1, esc(truncateStr(displayTitle(f), 70)), strings.ToLower(f.Severity), f.Severity, esc(cvssScoreStr(f)), esc(owaspShort(f.OWASP)), esc(complianceFor(f.KBClass).Team))
 	}
 	w(`</tbody></table></section>`)
 
@@ -159,7 +159,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           <tr><td>Detector</td><td><code>%s</code></td></tr>
           <tr><td>Control (detector)</td><td><code>%s</code></td></tr>
           <tr><td>CVSS v3.1</td><td><code>%s</code></td></tr>`,
-			ri, strings.ToLower(f.Severity), f.Severity, esc(rootTitle(f)),
+			ri, strings.ToLower(f.Severity), f.Severity, esc(rootTitleDisplay(f)),
 			len(rv.Assets), esc(orDash(f.Confidence)), esc(orDash(f.Validation)), esc(orDash(f.State)),
 			esc(f.OWASP), esc(f.CWE), esc(detectorIDFor(f)), esc(detectorIDFor(f)), esc(cvssString(f)))
 		if f.PotentialSeverity != "" {
@@ -178,11 +178,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		w(`<div class="f-body"><p><b>Affected endpoints.</b> %s</p>`, esc(strings.Join(capList(rv.Assets, 12), ", ")))
 		w(`<p><b>Business risk.</b> %s</p>`, esc(businessRiskFor(f)))
 		w(`<p><b>Severity rationale.</b> %s</p>`, mdBulletsToHTML(severityJustification(f)))
-		impact := f.ImpactText
-		if impact == "" {
-			impact = impactFor(f.KBClass)
-		}
-		w(`<p><b>Technical impact.</b> %s</p>`, esc(impact))
+		w(`<p><b>Technical impact.</b> %s</p>`, esc(displayImpact(f)))
 		if f.ObservedEvidence != "" {
 			w(`<p><b>Representative observed evidence.</b></p><pre>%s</pre>`, esc(f.ObservedEvidence))
 		}
@@ -192,7 +188,12 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	w(`</section>`)
 
 	// ---- Attack narrative ----
-	w(`<section class="page"><h2>5. Attack Narrative</h2><p>%s</p></section>`, esc(attackNarrative(findings, live, subs)))
+	w(`<section class="page"><h2>5. Attack Narrative</h2><p>%s</p>
+      <h3>Attack-path exploration</h3><div class="rem">%s</div>
+      <h3>Human red-team queue</h3><div class="rem">%s</div></section>`,
+		esc(attackNarrative(findings, live, subs)),
+		mdBulletsToHTML(renderAttackGraph(findings, readProfile(wd))),
+		mdBulletsToHTML(renderHumanQueue(findings)))
 
 	// ---- Compliance matrix ----
 	w(`<section class="page"><h2>6. Compliance Coverage Matrix</h2>

@@ -71,6 +71,10 @@ type Finding struct {
 	LastSeen   string `json:"last_seen,omitempty"`
 	FixedAt    string `json:"fixed_at,omitempty"`
 	RegressedAt string `json:"regressed_at,omitempty"`
+	// Adversarial model: capabilities this finding grants an attacker (drives the
+	// attack graph), and any pivot intelligence extracted from it.
+	Capabilities []string `json:"capabilities,omitempty"`
+	Pivots       []string `json:"pivots,omitempty"`
 }
 
 type Run struct {

@@ -66,9 +66,9 @@ func severityRationale(f *Finding) string {
 		factors = append(factors, "can lead to host compromise")
 	}
 	if len(factors) == 0 {
-		return fmt.Sprintf("Rated %s per CVSS v3.1 band %s.", f.Severity, cvssBand(f.Severity))
+		return fmt.Sprintf("Rated %s; CVSS v3.1 base %s.", f.Severity, cvssScoreStr(f))
 	}
-	return fmt.Sprintf("Rated %s (CVSS band %s): %s.", f.Severity, cvssBand(f.Severity), strings.Join(factors, ", "))
+	return fmt.Sprintf("Rated %s (CVSS v3.1 base %s): %s.", f.Severity, cvssScoreStr(f), strings.Join(factors, ", "))
 }
 
 // attackNarrative is graph-derived: it references only conditions actually present

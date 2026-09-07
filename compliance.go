@@ -1,6 +1,6 @@
 package main
 
-import "strings"
+
 
 // complianceMap returns the SOC 2, ISO 27001, and PCI-DSS controls a finding maps
 // to, so the report doubles as compliance evidence (CISO can attach it to a SOC 2
@@ -94,19 +94,3 @@ func complianceFor(kbClass string) compliance {
 	}
 }
 
-// cvssBand maps a severity to an indicative CVSS v3.1 base-score band (the tool
-// does not compute per-finding vectors; the band communicates order of magnitude).
-func cvssBand(sev string) string {
-	switch strings.ToUpper(sev) {
-	case "CRITICAL":
-		return "9.0–10.0"
-	case "HIGH":
-		return "7.0–8.9"
-	case "MEDIUM":
-		return "4.0–6.9"
-	case "LOW":
-		return "0.1–3.9"
-	default:
-		return "0.0 (informational)"
-	}
-}

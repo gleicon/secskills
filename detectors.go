@@ -88,6 +88,7 @@ func severityRubric() string {
 		"**LOW** — a defense-in-depth / hardening deviation with no demonstrated exploit prerequisite.",
 		"**INFORMATIONAL** — an observation with no security weakness; context only.",
 		"CVSS base score is computed separately (FIRST.org). Where the rubric severity differs from the CVSS band, the finding states the reason; the rubric governs the assessment severity.",
+		"**Severity is impact-if-true and does NOT imply validation.** A finding's `State` (CONFIRMED / OBSERVED / INFERRED / INCONCLUSIVE) carries the validation status. A MEDIUM/INCONCLUSIVE finding means \"medium impact IF the condition holds; not confirmed this run\" — it is not a confirmed medium weakness.",
 	}, "\n\n")
 }
 
@@ -193,6 +194,11 @@ func detectorRegistry() []DetectorMeta {
 		{ID: "dns.dmarc-none@1", IdentityCompatible: true, Description: "DMARC p=none"},
 		{ID: "dns.wildcard@1", IdentityCompatible: true, Description: "wildcard DNS"},
 		{ID: "dns.dnssec-unknown@1", IdentityCompatible: true, Description: "DNSSEC not evaluated"},
+		{ID: "http.authz-bypass@1", IdentityCompatible: true, Description: "authorization bypass via request variant"},
+		{ID: "http.authz-boundary@1", IdentityCompatible: true, Description: "authorization boundary resisted bypass classes (negative evidence)"},
+		{ID: "http.open-redirect@1", IdentityCompatible: true, Description: "open redirect to attacker-controlled host"},
+		{ID: "ssti.arithmetic@1", IdentityCompatible: true, Description: "server-side template injection (arithmetic evaluated)"},
+		{ID: "http.ssrf@1", IdentityCompatible: true, Description: "server-side request forgery (OAST-validated)"},
 		{ID: "nuclei@1", IdentityCompatible: true, Description: "nuclei template match"},
 		{ID: "generic@1", IdentityCompatible: true, Description: "unclassified finding"},
 	}
@@ -247,6 +253,12 @@ func hasValidatedPrimitive(f *Finding) bool {
 // escalation condition is recorded. Automation never silently keeps an
 // unsupported HIGH. Called at write time and idempotent.
 func enforceSeverityPolicy(f *Finding) {
+	// An inconclusive finding keeps the severity the detector assigned as
+	// "impact-if-true"; we do not upgrade it (an unvalidated observation must not
+	// be promoted to a confirmed weakness). State carries the epistemic status.
+	if isInconclusive(f) {
+		return
+	}
 	want, _ := assessSeverity(f)
 	// let the rubric drive known families
 	if want != "" && !strings.EqualFold(want, f.Severity) {

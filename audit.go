@@ -44,6 +44,7 @@ type RunMeta struct {
 	Operator     string `json:"operator"`
 	Authorization string `json:"authorization"`
 	FindingsSHA  string `json:"findings_sha256"`
+	Profile      string `json:"aggression_profile"`
 	ScopeSHA     string `json:"scope_manifest_sha256"`
 	ConfigSHA    string `json:"config_sha256"`
 	RulesetSHA   string `json:"ruleset_sha256"`
@@ -74,6 +75,7 @@ func writeRunMeta(wd, target, started string, findings []Finding, deep, intrusiv
 		Operator:      osUser(),
 		Authorization: scopeAuthLine(target),
 		FindingsSHA:   fmt.Sprintf("%x", sum),
+		Profile:       readProfile(wd).String(),
 		ScopeSHA:      scopeSHA(wd),
 		ConfigSHA:     configSHA(target, deep, intrusive),
 		RulesetSHA:    rulesetSHA(),
@@ -365,6 +367,7 @@ func renderAttestation(wd string) string {
 			"| Scanner local IP (behind NAT) | `%s` |\n"+
 			"| Scanner public egress IP (target-observed) | `%s` |\n"+
 			"| Tool versions (parsed + exe hash) | %s |\n"+
+			"| Aggression profile | %s |\n"+
 			"| Authorization | %s |\n"+
 			"| Scope manifest SHA-256 | `%s` |\n"+
 			"| Config SHA-256 | `%s` |\n"+
@@ -373,7 +376,7 @@ func renderAttestation(wd string) string {
 			"| Raw evidence bundle SHA-256 | `%s` |\n\n"+
 			"_This binds the report to an exact run, engine build, and the normalized scope manifest (hashed above). The findings, evidence bundle, ruleset, and config are each independently hashed; the report's own SHA-256 is printed in the document footer for cross-reference._",
 		m.RunID, m.Target, m.Started, m.Finished, m.EngineVer, m.GitCommit, m.Operator,
-		orNA(m.LocalIP), orNA(m.PublicEgress), orNA(tv.String()), m.Authorization,
+		orNA(m.LocalIP), orNA(m.PublicEgress), orNA(tv.String()), orNA(m.Profile), m.Authorization,
 		m.ScopeSHA, m.ConfigSHA, m.RulesetSHA, m.FindingsSHA, m.EvidenceSHA)
 }
 

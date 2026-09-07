@@ -33,6 +33,9 @@ func addFinding(wd string, f Finding) error {
 	}
 	ensureEvidenceFields(&f)
 	enforceSeverityPolicy(&f)
+	if len(f.Capabilities) == 0 {
+		f.Capabilities = capabilitiesFor(&f)
+	}
 	// stable audit identity — independent of the display index F-NNN
 	if f.DetectorID == "" {
 		f.DetectorID = detectorIDFor(&f)

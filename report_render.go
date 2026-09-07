@@ -32,7 +32,7 @@ func renderProReport(target, wd string, findings []Finding) string {
 	p("# %s — %s\n\n", deliverableTitle(findings), target)
 	p("**Classification:** Confidential — Authorized Recipients Only\n")
 	p("**Report date:** %s\n", nowDate())
-	p("**Assessment type:** External, unauthenticated, non-destructive — reconnaissance + active probing (no exploitation/authenticated phase). This is an attack-surface & vulnerability assessment, not a full penetration test.\n")
+	p("**Assessment type:** %s\n", assessmentTypeLine(readProfile(wd)))
 	p("**Target(s):** %s (and in-scope subdomains)\n", target)
 	p("**Authorization:** Confirmed by operator prior to testing (see Scope)\n")
 	p("**Assessor tooling:** secskills v%s — subfinder → dnsx → httpx pipeline, native check engine, Shodan OSINT, OSV CVE, OWASP mapping\n", version)
@@ -79,8 +79,9 @@ func renderProReport(target, wd string, findings []Finding) string {
 
 	// ---- 2b. Coverage & capability (discovery vs security; explicit non-coverage)
 	p("### Assessment coverage funnel\n\n%s\n\n", renderCoverageFunnel(wd, live))
-	p("### Assessment capability matrix\n\n%s\n\n", renderCapabilityMatrix(deepRun))
-	p("### Severity rubric (independent of CVSS)\n\n%s\n\n---\n\n", severityRubric())
+	p("### Assessment capability matrix\n\n%s\n\n", renderCapabilityMatrix(deepRun, readProfile(wd).adversarial()))
+	p("### Severity rubric (independent of CVSS)\n\n%s\n\n", severityRubric())
+	p("### Aggression profile\n\n%s\n\n---\n\n", profileDescription(readProfile(wd)))
 
 	// ---- 3. Scope -------------------------------------------------------------
 	p("## 3. Scope\n\n")
@@ -124,8 +125,10 @@ func renderProReport(target, wd string, findings []Finding) string {
 	// ---- 6b. Observation appendix (compact, one row per observation) ----------
 	p("## 6b. Observation Detail (Appendix C)\n\n%s\n\n---\n\n", renderObservationAppendix(findings))
 
-	// ---- 7. Attack Narrative -------------------------------------------------
-	p("---\n\n## 7. Attack Narrative\n\n%s\n\n---\n\n", attackNarrative(findings, live, subs))
+	// ---- 7. Attack Narrative + adversarial path exploration ------------------
+	p("---\n\n## 7. Attack Narrative\n\n%s\n\n", attackNarrative(findings, live, subs))
+	p("### Attack-path exploration\n\n%s\n\n", renderAttackGraph(findings, readProfile(wd)))
+	p("### Human red-team queue (top manual-validation candidates)\n\n%s\n\n---\n\n", renderHumanQueue(findings))
 
 	// ---- 8. OWASP Coverage Matrix --------------------------------------------
 	p("## 8. OWASP Coverage Matrix\n\n%s\n\n---\n\n", owaspMatrix(findings))
@@ -810,7 +813,7 @@ func renderRootFindings(findings []Finding) string {
 		if f.OWASP == "" {
 			classify(f)
 		}
-		fmt.Fprintf(&b, "### R-%03d — %s\n\n", n, rootTitle(f))
+		fmt.Fprintf(&b, "### R-%03d — %s\n\n", n, rootTitleDisplay(f))
 		fmt.Fprintf(&b, "| Field | Value |\n|-------|-------|\n")
 		fmt.Fprintf(&b, "| Assessment severity | **%s** |\n", f.Severity)
 		if f.PotentialSeverity != "" {
@@ -832,11 +835,7 @@ func renderRootFindings(findings []Finding) string {
 		fmt.Fprintf(&b, "\n**Affected endpoints:** %s\n\n", strings.Join(capList(g.assets, 12), ", "))
 		fmt.Fprintf(&b, "**Business risk.** %s\n\n", businessRiskFor(f))
 		fmt.Fprintf(&b, "**Severity rationale.** %s\n\n", severityJustification(f))
-		impact := f.ImpactText
-		if impact == "" {
-			impact = impactFor(f.KBClass)
-		}
-		fmt.Fprintf(&b, "**Technical impact.** %s\n\n", impact)
+		fmt.Fprintf(&b, "**Technical impact.** %s\n\n", displayImpact(f))
 		fmt.Fprintf(&b, "**Remediation.**\n\n%s\n\n_Reference: `secskills kb %s`._\n\n---\n\n", remediationByType(f), f.KBClass)
 	}
 	fmt.Fprintf(&b, "_%d observations collapsed to %d root findings._", len(findings), n)
@@ -925,4 +924,25 @@ func collapseByRoot(findings []Finding) []RootView {
 	}
 	sort.SliceStable(out, func(i, j int) bool { return rank[out[i].Rep.Severity] < rank[out[j].Rep.Severity] })
 	return out
+}
+
+// rootTitleDisplay applies the inconclusive rename to the collapsed root title.
+func rootTitleDisplay(f *Finding) string {
+	if isInconclusive(f) {
+		return "Potential: " + rootTitle(f) + " — validation inconclusive"
+	}
+	return rootTitle(f)
+}
+
+// assessmentTypeLine frames the engagement by aggression profile.
+func assessmentTypeLine(p Profile) string {
+	switch p {
+	case ProfileAdversarialRO:
+		return "External, unauthenticated, **adversarial-readonly** — reconnaissance, active probing, request-variant authorization-bypass testing, and harmless exploit primitives (open-redirect, arithmetic SSTI, OAST-validated SSRF, object-storage enumeration). No state changes, no credential attacks, no denial of service. Validation stops at a defined proof boundary."
+	case ProfileAuthorizedExploit:
+		return "External, **authorized-exploit** — adversarial testing including credentialed and state-changing checks under explicit authorization."
+	case ProfilePassive:
+		return "Passive OSINT only — no active probing of the target."
+	}
+	return "External, unauthenticated, non-destructive (safe-active) — reconnaissance + active probing (no exploitation/authenticated phase). Attack-surface & vulnerability assessment."
 }

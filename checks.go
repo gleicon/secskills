@@ -235,6 +235,10 @@ func checkExposure(url string) []Finding {
 		if p == "/metrics" && hasSig {
 			leaked := inspectMetrics(body)
 			f.ObservedEvidence = metricsTaxonomy(body) + "\nRedacted sample (credential-like values masked):\n" + redactedSample(body, 5)
+			if pv := extractPivots(body); len(pv) > 0 {
+				f.Pivots = pv
+				f.ObservedEvidence += "\n" + pivotSummary(&f)
+			}
 			hasSecretPattern := false
 			for _, l := range leaked {
 				if strings.Contains(l, "credential-like") {

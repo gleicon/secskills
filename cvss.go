@@ -79,3 +79,10 @@ func cvssString(f *Finding) string {
 }
 
 
+
+// cvssScoreStr returns the exact CVSS v3.1 base score as a string (deterministic;
+// no bands/ranges — if we know the vector we show the number).
+func cvssScoreStr(f *Finding) string {
+	_, score := cvssVector(f)
+	return fmt.Sprintf("%.1f", score)
+}

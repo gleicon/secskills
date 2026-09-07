@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-const version = "0.14.0"
+const version = "0.15.0"
 
 func usage() {
 	fmt.Fprint(os.Stderr, `secskills `+version+` — security assessment orchestrator
@@ -29,7 +29,7 @@ COMMANDS:
   source      Static source review — run embedded ast-grep rules over a path
   discover    Live attack-surface discovery (authorization-gated)
   graph       Cross-domain exploration graph (OSINT pivots; discovered domains NOT tested)
-  test        OWASP Top 10 active tests against a surface (authorization-gated)
+  test        OWASP Top 10 active tests against a surface (authorization-gated; --profile passive|safe-active|adversarial-readonly|authorized-exploit)
   sandbox     Build/run an artifact isolated in Docker, then test it
   report      Assemble report (--render|--html|--pdf|--audit) / --retest a prior run
   tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
