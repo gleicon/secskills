@@ -155,22 +155,20 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
           <tr><td>PCI-DSS 4.0</td><td>%s</td></tr>
           <tr><td>Owning team</td><td>%s</td></tr>
           </tbody></table>`, esc(slaFor(f.Severity)), esc(c.SOC2), esc(c.ISO), esc(c.PCI), esc(c.Team))
-		w(`<div class="f-body"><p><b>Business risk.</b> %s</p>`, esc(businessRisk(f.KBClass, f.Severity)))
-		w(`<p><b>Severity rationale.</b> %s</p>`, esc(severityRationale(f)))
+		w(`<div class="f-body"><p><b>Business risk.</b> %s</p>`, esc(businessRiskFor(f)))
+		w(`<p><b>Severity rationale.</b> %s</p>`, mdBulletsToHTML(severityJustification(f)))
 		impact := f.ImpactText
 		if impact == "" {
 			impact = impactFor(f.KBClass)
 		}
 		w(`<p><b>Technical impact.</b> %s</p>`, esc(impact))
+		if f.ObservedEvidence != "" {
+			w(`<p><b>Observed evidence.</b></p><pre>%s</pre>`, esc(f.ObservedEvidence))
+		}
 		if f.EvidenceCmd != "" {
-			w(`<p><b>Evidence (reproduce).</b></p><pre>%s</pre>`, esc(f.EvidenceCmd))
+			w(`<p><b>Reproduction.</b></p><pre>%s</pre>`, esc(f.EvidenceCmd))
 		}
-		rem := kbRemediation(f.KBClass)
-		if rem == "" {
-			rem = remediationFor(f.KBClass)
-		}
-		w(`<p><b>Remediation</b> (from OWASP cheat sheet <code>%s</code>):</p><div class="rem">%s</div></div></div>`,
-			esc(f.KBClass), mdBulletsToHTML(rem))
+		w(`<p><b>Remediation.</b></p><div class="rem">%s</div></div></div>`, mdBulletsToHTML(remediationByType(f)))
 	}
 	w(`</section>`)
 

@@ -57,8 +57,13 @@ func renderProReport(target, wd string, findings []Finding) string {
 	p("3. **Active testing (rate-limited, in-scope)** — security headers, TLS version posture, unauthenticated-exposure paths (baseline-differential to avoid catch-all false positives), and component-version CVE lookup via OSV.\n")
 	p("4. **Classification & direction** — every finding mapped to an OWASP category (Web/Mobile/LLM), CWE, and an OWASP Cheat Sheet, with per-stack remediation recipes.\n\n")
 	deepRun := fileExists(filepath.Join(wd, "nuclei.jsonl")) || dirNonEmpty(filepath.Join(wd, "screenshots"))
+	ssStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "screenshots-status.txt"), ""))
+	ssPhrase := ""
+	if !strings.HasPrefix(ssStatus, "not-available") && ssStatus != "" {
+		ssPhrase = ", and page screenshots for visual evidence"
+	}
 	if deepRun {
-		p("5. **Deep phase (executed)** — template-based vulnerability scanning (nuclei), TLS cipher/protocol enumeration (sslscan), and page screenshots for visual evidence.\n\n")
+		p("5. **Deep phase (executed)** — template-based vulnerability scanning (nuclei), TLS cipher/protocol enumeration (sslscan)%s.\n\n", ssPhrase)
 		p("Credential/authenticated and destructive tests remain out of scope; recommended as an authorized follow-up (see §8).\n\n---\n\n")
 	} else {
 		p("Destructive, credential, and deep (nuclei/cipher-enumeration) tests were **out of scope** for this pass and are recommended as an authorized follow-up (see §8).\n\n---\n\n")
@@ -120,22 +125,21 @@ func renderProReport(target, wd string, findings []Finding) string {
 		p("| Remediation SLA | %s |\n", slaFor(f.Severity))
 		p("| Owning team | %s |\n", complianceFor(f.KBClass).Team)
 		p("| Cheat sheet | `secskills kb %s` |\n", f.KBClass)
-		p("\n**Business risk.** %s\n\n", businessRisk(f.KBClass, f.Severity))
-		p("**Severity rationale.** %s\n\n", severityRationale(f))
+		p("\n**Business risk.** %s\n\n", businessRiskFor(f))
+		p("**Severity rationale.** %s\n\n", severityJustification(f))
 		impact := f.ImpactText
 		if impact == "" {
 			impact = impactFor(f.KBClass)
 		}
 		p("**Technical impact.** %s\n\n", impact)
+		if f.ObservedEvidence != "" {
+			p("**Observed evidence.**\n```\n%s\n```\n\n", f.ObservedEvidence)
+		}
 		if f.EvidenceCmd != "" {
-			p("**Evidence (reproduce).**\n```bash\n%s\n```\n\n", f.EvidenceCmd)
+			p("**Reproduction.**\n```bash\n%s\n```\n\n", f.EvidenceCmd)
 		}
-		rem := kbRemediation(f.KBClass)
-		if rem == "" {
-			rem = remediationFor(f.KBClass)
-		}
-		p("**Remediation** (from OWASP cheat sheet `%s`):\n\n%s\n\n_Full guidance: `secskills kb %s` · code fix: `secskills recipes %s`._\n\n",
-			f.KBClass, rem, f.KBClass, f.KBClass)
+		p("**Remediation.**\n\n%s\n\n_Reference: `secskills kb %s` · code fix: `secskills recipes %s`._\n\n",
+			remediationByType(f), f.KBClass, f.KBClass)
 	}
 
 	// ---- 7. Attack Narrative -------------------------------------------------
@@ -550,7 +554,7 @@ func scopeAuthLine(target string) string {
 	if ok, why := scopeAuthorizes(target); ok {
 		return "Confirmed — " + why
 	}
-	return "Operator-confirmed at test time (`--confirm`). No persisted scope file; confirm written authorization is on record."
+	return "Operator attestation: `--confirm` supplied. Written authorization is an engagement prerequisite and is **not** validated or stored by the assessment engine."
 }
 
 // hasExploited reports whether any finding was actually exploited/validated (drives
@@ -632,7 +636,7 @@ func rootKey(f Finding) string {
 	case strings.Contains(t, "metrics"):
 		return "Unauthenticated operational endpoints exposed"
 	case strings.Contains(t, "potentially vulnerable") || strings.Contains(t, "outdated component"):
-		return "Outdated component versions (version-inferred)"
+		return "Potential outdated-component exposure (version-inferred, unvalidated)"
 	default:
 		return f.KBClass
 	}

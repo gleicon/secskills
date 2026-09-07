@@ -51,9 +51,10 @@ func checkSecurityHeaders(url string) []Finding {
 			Confidence:   "Confirmed",   // header absence is directly observed
 			Validation:   "passive",     // observed, not exploited
 			ImpactText:   impact,
-			EvidenceCmd:  fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
-			ExpectedOpen: "MISSING",
-			ProbeKind:    "header-missing", ProbeURL: url, ProbeArg: header,
+			EvidenceCmd:      fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
+			ExpectedOpen:     "MISSING",
+			ObservedEvidence: "Response Content-Type: " + dash(ct) + "; header " + header + " absent from the response headers.",
+			ProbeKind:        "header-missing", ProbeURL: url, ProbeArg: header,
 		})
 	}
 
@@ -147,6 +148,7 @@ func checkTLS(url string) []Finding {
 				Confidence:   "Confirmed",           // protocol was actually negotiated
 				Validation:   "behavior-confirmed",  // we completed a handshake at this version
 				ImpactText:   "The server completed a " + name + " handshake. On a hostile network this enables downgrade/interception of sessions to this host. Deprecated by RFC 8996.",
+				ObservedEvidence: "Completed a " + name + " TLS handshake to " + host + ":443 (connection accepted at this protocol version).",
 				EvidenceCmd:  fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", shellQuote(host), strings.ToLower(strings.ReplaceAll(name, " ", ""))),
 				ExpectedOpen: "ACCEPTED",
 				ProbeKind:    "tls-weak", ProbeURL: url, ProbeArg: strings.TrimPrefix(name, "TLS "),
@@ -219,14 +221,24 @@ func checkExposure(url string) []Finding {
 		// Deep-inspect Prometheus metrics: severity follows what is actually leaked.
 		if p == "/metrics" && hasSig {
 			leaked := inspectMetrics(body)
-			if len(leaked) > 0 {
+			f.ObservedEvidence = "Sampled response classes: " + orNone(strings.Join(leaked, ", ")) + "\n" + redactedSample(body, 5)
+			hasSecretPattern := false
+			for _, l := range leaked {
+				if strings.Contains(l, "credential-like") {
+					hasSecretPattern = true
+				}
+			}
+			switch {
+			case hasSecretPattern:
 				f.Severity = "HIGH"
-				f.ImpactText = "Unauthenticated Prometheus metrics disclose: " + strings.Join(leaked, ", ") +
-					". This provides internal reconnaissance and may include sensitive identifiers."
-			} else {
+				f.ImpactText = "The sampled response matched credential-like label patterns (see Observed Evidence). If confirmed to be real secrets, this is a direct credential exposure. Pattern-based — manual validation required to confirm the matched labels are genuine secrets, not benign metric names."
+			case len(leaked) > 0:
+				f.Severity = "MEDIUM"
+				f.ImpactText = "Unauthenticated Prometheus metrics disclose the following classes in the sampled response: " + strings.Join(leaked, ", ") + ". This aids internal reconnaissance (topology/version intelligence). No credentials were observed."
+			default:
 				f.Severity = "LOW"
 				f.Title = "Prometheus metrics exposed unauthenticated (generic runtime metrics only)"
-				f.ImpactText = "Endpoint returns generic process/runtime metrics; no internal hostnames, versions, credentials, or topology were observed in the sampled response. Exposure is a hardening/monitoring concern, not a direct compromise path."
+				f.ImpactText = "Endpoint returns generic process/runtime metrics; no internal hostnames, versions, credentials, or topology were observed in the sampled response. Hardening/monitoring concern, not a direct compromise path."
 			}
 		} else {
 			// non-metrics exposure: HIGH when a strong signature matched, else MEDIUM
@@ -236,6 +248,7 @@ func checkExposure(url string) []Finding {
 				f.Severity = "MEDIUM"
 			}
 			f.ImpactText = "Endpoint " + base + p + " is reachable unauthenticated and returned content matching a known-sensitive signature; review the exact content for internal detail before acting."
+			f.ObservedEvidence = "GET " + base + p + " → HTTP " + fmt.Sprint(code) + "; response matched signature " + shellQuote(sig.signature) + ".\n" + redactedSample(body, 4)
 		}
 		out = append(out, f)
 	}
@@ -270,7 +283,7 @@ func inspectMetrics(body string) []string {
 	add("private/internal IP addresses", rePrivateIP.MatchString(body))
 	add("software version/build info", strings.Contains(l, "build_info") || strings.Contains(l, "_version{") || strings.Contains(l, "version_info"))
 	add("database/queue/backend names", strings.Contains(l, "database=") || strings.Contains(l, "db_name") || strings.Contains(l, "queue=") || strings.Contains(l, "upstream="))
-	add("credentials or tokens", reSecretish.MatchString(body))
+	add("credential-like label patterns (pattern match — validate, not confirmed secrets)", reSecretish.MatchString(body))
 	add("cloud region/bucket identifiers", strings.Contains(l, "region=") || strings.Contains(l, "bucket=") || strings.Contains(l, "s3_"))
 	return found
 }
@@ -334,4 +347,36 @@ func checkAuthenticated(url string, headers map[string]string) []Finding {
 		out = append(out, f)
 	}
 	return out
+}
+
+// orNone returns "(none)" for an empty string.
+func orNone(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "(none)"
+	}
+	return s
+}
+
+// redactedSample returns up to n non-empty lines of a response body, with
+// credential-like values redacted, prefixed as observed evidence.
+func redactedSample(body string, n int) string {
+	var out []string
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = reSecretish.ReplaceAllString(line, "$1=[REDACTED] ")
+		if len(line) > 160 {
+			line = line[:160] + "…"
+		}
+		out = append(out, "  "+line)
+		if len(out) >= n {
+			break
+		}
+	}
+	if len(out) == 0 {
+		return "  (no sample lines)"
+	}
+	return "sample:\n" + strings.Join(out, "\n")
 }

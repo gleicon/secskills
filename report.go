@@ -44,6 +44,9 @@ type Finding struct {
 	Validation string `json:"validation,omitempty"`
 	// ImpactText is asset-specific, replacing the generic per-class string when set.
 	ImpactText string `json:"impact,omitempty"`
+	// ObservedEvidence is what the test actually observed (facts), distinct from
+	// EvidenceCmd which is only a reproduction command.
+	ObservedEvidence string `json:"observed_evidence,omitempty"`
 	// Provenance: how this asset/finding was discovered and whether it is in scope.
 	DiscoveredFrom string `json:"discovered_from,omitempty"`
 }

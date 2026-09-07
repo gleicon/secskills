@@ -71,49 +71,73 @@ func severityRationale(f *Finding) string {
 	return fmt.Sprintf("Rated %s (CVSS band %s): %s.", f.Severity, cvssBand(f.Severity), strings.Join(factors, ", "))
 }
 
-// attackNarrative synthesizes a chronological chaining story from the findings —
-// the playbook's signature §07 section, generically (no target-specific hardcoding).
+// attackNarrative is graph-derived: it references only conditions actually present
+// in the findings and preserves the confidence boundary between confirmed
+// disclosure, inference, and unvalidated hypothesis (no compressed overclaims).
 func attackNarrative(findings []Finding, live []LiveHost, subs []string) string {
-	classes := map[string]int{}
+	// presence of specific, evidence-graded conditions
+	var metricsSensitive, metricsGeneric, componentLead, tlsWeak, exposurePath bool
 	var highs []string
-	for _, f := range findings {
-		classes[f.KBClass]++
+	for i := range findings {
+		f := &findings[i]
+		switch findingType(f) {
+		case "metrics-exposed":
+			if f.Severity == "HIGH" || f.Severity == "MEDIUM" {
+				metricsSensitive = true
+			} else {
+				metricsGeneric = true
+			}
+		case "component-lead":
+			componentLead = true
+		case "tls-deprecated":
+			tlsWeak = true
+		case "exposure-path":
+			exposurePath = true
+		}
 		if f.Severity == "HIGH" || f.Severity == "CRITICAL" {
 			highs = append(highs, f.Title+" ("+f.Host+")")
 		}
 	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "During reconnaissance, %d subdomains were enumerated and %d live services identified. ", len(subs), len(live))
-	// count auth-gated as a control
 	gated := 0
 	for _, l := range live {
 		if l.Status == 401 || l.Status == 403 {
 			gated++
 		}
 	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "During reconnaissance, %d subdomains were enumerated and %d live services identified. ", len(subs), len(live))
 	if gated > 0 {
-		fmt.Fprintf(&b, "Sensitive services (%d) enforced authentication and resisted unauthenticated access. ", gated)
+		fmt.Fprintf(&b, "%d sensitive services enforced authentication (HTTP 401/403) and resisted unauthenticated access. ", gated)
 	}
-	if len(highs) == 0 {
-		b.WriteString("No individual finding reached high severity; the exposure is an accumulation of hardening gaps rather than a single break. ")
+	if len(highs) > 0 {
+		fmt.Fprintf(&b, "Highest-impact observations: %s. ", strings.Join(capList(highs, 5), "; "))
 	} else {
-		fmt.Fprintf(&b, "The highest-impact issues were: %s. ", strings.Join(capList(highs, 5), "; "))
+		b.WriteString("No individual observation reached high severity; the posture is an accumulation of hardening gaps, not a single break. ")
 	}
-	// chaining logic
+
+	// chain — each edge included only if the source condition is present, with its
+	// confidence stated (confirmed → inferred → unvalidated hypothesis).
 	var chain []string
-	if classes["config-exposure"] > 0 && classes["logging-monitoring"] >= 0 {
-		chain = append(chain, "exposed operational endpoints (metrics/config) hand an attacker internal topology and version data")
+	if metricsSensitive || exposurePath {
+		chain = append(chain, "**[confirmed disclosure]** an unauthenticated operational endpoint returned internal detail (see the finding's Observed Evidence) → improves target selection and topology/version intelligence")
+	} else if metricsGeneric {
+		chain = append(chain, "**[confirmed, low value]** an unauthenticated metrics endpoint returned only generic runtime metrics → no internal detail to leverage")
 	}
-	if classes["components-supply-chain"] > 0 {
-		chain = append(chain, "that version data maps directly to public CVEs on outdated components, giving a concrete exploit path")
+	if componentLead {
+		chain = append(chain, "**[unvalidated hypothesis]** banner-inferred component versions correlate with public CVEs → a *potential* component exploit, NOT a demonstrated one (exploitability unproven; distro backports may already patch it)")
 	}
-	if classes["crypto-secrets"] > 0 {
-		chain = append(chain, "weak transport (TLS 1.0/1.1, missing HSTS) lets an on-path attacker intercept sessions to those services")
+	if tlsWeak {
+		chain = append(chain, "**[requires network position]** deprecated TLS 1.0/1.1 acceptance → interception is possible only for an on-path attacker with a vulnerable client/cipher/downgrade condition, not remotely by itself")
 	}
-	if len(chain) >= 2 {
-		fmt.Fprintf(&b, "Chained, these compound: %s. Individually low-to-medium, together they shorten the path from external attacker to a foothold. ", strings.Join(chain, "; then "))
+	if len(chain) > 0 {
+		b.WriteString("Chaining the observed conditions (confidence preserved):\n\n")
+		for _, c := range chain {
+			b.WriteString("- " + c + "\n")
+		}
+		b.WriteString("\nNo edge in this chain reaches a demonstrated compromise: the confirmed links are information-disclosure and configuration, and the exploit link is an unvalidated hypothesis. ")
 	}
-	b.WriteString("A credentialed follow-up would extend this narrative into authenticated authorization and business-logic testing.")
+	b.WriteString("A credentialed follow-up would be required to extend this into authenticated authorization and business-logic testing.")
 	return b.String()
 }
 
