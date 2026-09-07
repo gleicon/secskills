@@ -296,16 +296,6 @@ func execNarrativeHTML(target string, c map[string]int, subs, live int) string {
 	for _, v := range c {
 		total += v
 	}
-	level := "LOW-to-MODERATE"
-	switch {
-	case c["CRITICAL"] > 0:
-		level = "CRITICAL"
-	case c["HIGH"] >= 3:
-		level = "HIGH"
-	case c["HIGH"] > 0:
-		level = "MODERATE-to-HIGH"
-	}
-	_ = level
 	compromise := "No critical compromise path was demonstrated during this unauthenticated, non-destructive assessment."
 	if c["CRITICAL"] > 0 {
 		compromise = "A critical-severity condition was identified requiring immediate manual validation."

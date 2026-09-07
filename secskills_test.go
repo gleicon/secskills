@@ -148,3 +148,41 @@ func TestRegistrableDomain(t *testing.T) {
 		}
 	}
 }
+
+func TestSemverLess(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want bool
+	}{
+		{"1.24.0", "1.25.0", true},
+		{"1.25.0", "1.24.0", false},
+		{"1.24.0", "1.24.0", false},
+		{"1.9.0", "1.10.0", true}, // numeric, not lexical
+		{"1.29.8", "1.30.0", true},
+	}
+	for _, c := range cases {
+		if got := semverLess(c.a, c.b); got != c.want {
+			t.Errorf("semverLess(%q,%q)=%v want %v", c.a, c.b, got, c.want)
+		}
+	}
+}
+
+func TestCVSSVector(t *testing.T) {
+	// config-exposure LOW → C:L only → 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N)
+	f := &Finding{KBClass: "config-exposure", Severity: "LOW"}
+	vec, score := cvssVector(f)
+	if score != 5.3 {
+		t.Errorf("config-exposure C:L score=%.1f want 5.3", score)
+	}
+	if !contains([]string{vec}, "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N") {
+		t.Errorf("unexpected vector %q", vec)
+	}
+	// injection (C:H/I:H/A:H) → 9.8
+	if _, s := cvssVector(&Finding{KBClass: "injection"}); s != 9.8 {
+		t.Errorf("injection score=%.1f want 9.8", s)
+	}
+	// INFORMATIONAL hardening (C:N) → 0.0
+	if _, s := cvssVector(&Finding{KBClass: "config-exposure", Severity: "INFORMATIONAL"}); s != 0.0 {
+		t.Errorf("informational score=%.1f want 0.0", s)
+	}
+}
