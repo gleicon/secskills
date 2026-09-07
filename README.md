@@ -70,6 +70,37 @@ gate and rate limiting built into the core.
 - **Token hygiene** — `secskills compress|scrub|scan` (tldt) shrink OSINT, redact
   PII/secrets, and flag prompt injection in untrusted target output.
 
+## Assurance & audit-grade evidence
+
+secskills is an **assessment-record system**, not just a report generator. The raw
+observation is the system of record; the report is a view over it.
+
+- **Immutable evidence objects** — content-addressed `EV-*` artifacts (HTTP/TLS/
+  DNS/cert transcripts), append-only manifest, referenced per finding.
+- **Run attestation + signing** — each run records SHA-256 over findings, scope
+  manifest, ruleset, evidence bundle and config, plus build commit and source IP;
+  signed with ed25519 (`secskills attest --sign/--verify`).
+- **Control Test Ledger** — negative evidence (tested/passed/failed/inconclusive/
+  N-A per control family); an unreachable probe is INCONCLUSIVE, never a silent pass.
+- **Stable finding keys** — derived from semantics (detector + normalized asset +
+  control), invariant under scheme/slash/port/order; the retest disposition
+  (FIXED/OPEN/REGRESSED/INCONCLUSIVE) is keyed by it.
+- **Detector quality scorecard** — measured precision/recall from an offline
+  regression corpus (`secskills conformance`), enforced as a build gate.
+- **Formal evidence state machine**, **severity rubric independent of CVSS**, and
+  **auditable human adjudication** (`secskills override` — reviewed vs automated,
+  never a silent mutation).
+- **Root-cause clustering** — collapses N endpoint observations into shared-config
+  groups (ingress/cert/ASN) with the grouping reason stated.
+- **Non-destructive depth packs** — tech fingerprinting (Argo CD/Harbor/Vault/
+  Grafana/Keycloak/MinIO/...), OIDC/OpenAPI/GraphQL surface, dangling-CNAME
+  takeover *candidates*, public object-storage — plus differential CORS/exposure
+  testing and environmental-ambiguity handling.
+- **Three deliverables** — full technical report, concise `report --audit` for
+  external auditors, and a machine-readable `attestation.json`.
+
+Evidence handling, retention and governance: see [EVIDENCE-POLICY.md](EVIDENCE-POLICY.md).
+
 ## Multi-agent
 
 One binary, thin adapters (see `ADAPTERS.md`):
