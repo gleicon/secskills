@@ -40,7 +40,8 @@ authorized scope file. `--intrusive` requires `--intrusive-confirm`.
 | `secskills report --render <target>` | Full Markdown report. |
 | `secskills report --html <target> --output f.html` | Professional HTML report. |
 | `secskills report --pdf <target> --output f.pdf` | Professional PDF (SOC2/ISO/PCI mapped). Needs headless Chrome. |
-| `secskills report --retest <target>` | Re-probe the latest run → fixed / still-present / regressed. |
+| `secskills report --retest <target>` | Re-probe the latest run (structured, no shell) → fixed / still-present / regressed; appends a verification note per finding. |
+| `secskills tickets <target> [--format csv\|json]` | Export findings as ticket rows (fields = Jira/Linear fields: severity, SLA, priority, asset, owner, business risk). |
 
 ## OSINT & data sources
 

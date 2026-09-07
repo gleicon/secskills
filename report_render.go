@@ -111,8 +111,13 @@ func renderProReport(target, wd string, findings []Finding) string {
 		if len(f.CVEs) > 0 {
 			p("| CVEs (OSV) | %s |\n", strings.Join(f.CVEs, ", "))
 		}
+		p("| CVSS band | %s |\n", cvssBand(f.Severity))
+		p("| Remediation SLA | %s |\n", slaFor(f.Severity))
+		p("| Owning team | %s |\n", complianceFor(f.KBClass).Team)
 		p("| Cheat sheet | `secskills kb %s` |\n", f.KBClass)
-		p("\n**Impact.** %s\n\n", impactFor(f.KBClass))
+		p("\n**Business risk.** %s\n\n", businessRisk(f.KBClass, f.Severity))
+		p("**Severity rationale.** %s\n\n", severityRationale(f))
+		p("**Technical impact.** %s\n\n", impactFor(f.KBClass))
 		if f.EvidenceCmd != "" {
 			p("**Evidence (reproduce).**\n```bash\n%s\n```\n\n", f.EvidenceCmd)
 		}
@@ -124,26 +129,33 @@ func renderProReport(target, wd string, findings []Finding) string {
 			f.KBClass, rem, f.KBClass, f.KBClass)
 	}
 
-	// ---- 7. OWASP Coverage Matrix --------------------------------------------
-	p("---\n\n## 7. OWASP Coverage Matrix\n\n%s\n\n---\n\n", owaspMatrix(findings))
+	// ---- 7. Attack Narrative -------------------------------------------------
+	p("---\n\n## 7. Attack Narrative\n\n%s\n\n---\n\n", attackNarrative(findings, live, subs))
 
-	// ---- 8. Authenticated Testing --------------------------------------------
-	p("## 8. Authenticated Testing\n\n%s\n\n---\n\n", authSection(wd, findings))
+	// ---- 8. OWASP Coverage Matrix --------------------------------------------
+	p("## 8. OWASP Coverage Matrix\n\n%s\n\n---\n\n", owaspMatrix(findings))
 
-	// ---- 9. Recommended Testing Direction ------------------------------------
-	p("## 9. Recommended Testing Direction (cheatsheet-keyed)\n\n%s\n\n---\n\n", directionSynthesis(findings, live, subs))
+	// ---- 9. Authenticated Testing --------------------------------------------
+	p("## 9. Authenticated Testing\n\n%s\n\n---\n\n", authSection(wd, findings))
 
-	// ---- 10. Risk Summary Table ----------------------------------------------
-	p("## 10. Risk Summary Table\n\n| # | Title | Severity | OWASP | Host |\n|---|-------|----------|-------|------|\n")
+	// ---- 10. Recommended Testing Direction -----------------------------------
+	p("## 10. Recommended Testing Direction (cheatsheet-keyed)\n\n%s\n\n---\n\n", directionSynthesis(findings, live, subs))
+
+	// ---- 11. Risk Summary Table (with SLA + owner, for ticketing) ------------
+	p("## 11. Risk Summary Table\n\n| ID | Title | Severity | SLA | OWASP | Owner | Host |\n|----|-------|----------|-----|-------|-------|------|\n")
 	for i := range findings {
 		f := findings[i]
-		p("| %d | %s | %s | %s | %s |\n", i+1, truncateStr(f.Title, 60), f.Severity, owaspShort(f.OWASP), f.Host)
+		p("| F-%03d | %s | %s | %s | %s | %s | %s |\n", i+1, truncateStr(f.Title, 50), f.Severity, slaFor(f.Severity), owaspShort(f.OWASP), complianceFor(f.KBClass).Team, f.Host)
 	}
-	p("\n---\n\n")
+	p("\n_Export as tickets: `secskills tickets %s`._\n\n---\n\n", target)
 
-	// ---- 11. Glossary & Appendix ---------------------------------------------
-	p("## 11. Glossary\n\n%s\n\n", glossary())
-	p("## Appendix A — Data artifacts\n\n`data/subs-%s.txt`, `data/live-%s.json`, `data/findings-%s.json`, `data/shodan/`", target, target, target)
+	// ---- 12. Appendices ------------------------------------------------------
+	authStatus := strings.TrimSpace(readFileOr(filepath.Join(wd, "auth-status.txt"), "not-available"))
+	p("## 12. Appendices & Cleanup Log\n\n%s\n\n", appendices(wd, authStatus))
+
+	// ---- 13. Glossary --------------------------------------------------------
+	p("## 13. Glossary\n\n%s\n\n", glossary())
+	p("### Data artifacts\n\n`data/subs-%s.txt`, `data/live-%s.json`, `data/findings-%s.json`, `data/shodan/`", target, target, target)
 	ss := strings.TrimSpace(readFileOr(filepath.Join(wd, "screenshots-status.txt"), ""))
 	if strings.HasPrefix(ss, "not-available") || ss == "" {
 		p(". Screenshots: **not available** (%s)", dash(strings.TrimPrefix(ss, "not-available")))

@@ -31,6 +31,7 @@ COMMANDS:
   test        OWASP Top 10 active tests against a surface (authorization-gated)
   sandbox     Build/run an artifact isolated in Docker, then test it
   report      Assemble findings report / --retest a prior run
+  tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
   compress    Shrink text via tldt (token hygiene)
   scrub       Redact PII/secrets via tldt (for reports)
   scan        Detect prompt-injection + PII in untrusted output
@@ -76,6 +77,8 @@ func main() {
 		err = cmdSandbox(args)
 	case "report":
 		err = cmdReport(args)
+	case "tickets":
+		err = cmdTickets(args)
 	case "findings":
 		err = cmdFindings(args)
 	case "selftest":

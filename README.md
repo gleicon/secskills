@@ -95,6 +95,8 @@ screenshots.
 - [Usage & commands](docs/usage.md)
 - [Architecture](docs/architecture.md)
 - [Reporting & compliance](docs/reporting.md)
+- [Coverage matrix (skills × tools × OWASP × output)](docs/coverage-matrix.md)
+- [Security model](SECURITY.md)
 - Full command list: `secskills help`
 
 ## Safety

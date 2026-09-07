@@ -144,12 +144,15 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		if len(f.CVEs) > 0 {
 			w(`<tr><td>CVEs (OSV)</td><td>%s</td></tr>`, esc(strings.Join(f.CVEs, ", ")))
 		}
-		w(`<tr><td>SOC 2 (TSC)</td><td>%s</td></tr>
+		w(`<tr><td>Remediation SLA</td><td>%s</td></tr>
+          <tr><td>SOC 2 (TSC)</td><td>%s</td></tr>
           <tr><td>ISO/IEC 27001:2022</td><td>%s</td></tr>
           <tr><td>PCI-DSS 4.0</td><td>%s</td></tr>
           <tr><td>Owning team</td><td>%s</td></tr>
-          </tbody></table>`, esc(c.SOC2), esc(c.ISO), esc(c.PCI), esc(c.Team))
-		w(`<div class="f-body"><p><b>Impact.</b> %s</p>`, esc(impactFor(f.KBClass)))
+          </tbody></table>`, esc(slaFor(f.Severity)), esc(c.SOC2), esc(c.ISO), esc(c.PCI), esc(c.Team))
+		w(`<div class="f-body"><p><b>Business risk.</b> %s</p>`, esc(businessRisk(f.KBClass, f.Severity)))
+		w(`<p><b>Severity rationale.</b> %s</p>`, esc(severityRationale(f)))
+		w(`<p><b>Technical impact.</b> %s</p>`, esc(impactFor(f.KBClass)))
 		if f.EvidenceCmd != "" {
 			w(`<p><b>Evidence (reproduce).</b></p><pre>%s</pre>`, esc(f.EvidenceCmd))
 		}
@@ -162,8 +165,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	}
 	w(`</section>`)
 
+	// ---- Attack narrative ----
+	w(`<section class="page"><h2>5. Attack Narrative</h2><p>%s</p></section>`, esc(attackNarrative(findings, live, subs)))
+
 	// ---- Compliance matrix ----
-	w(`<section class="page"><h2>5. Compliance Coverage Matrix</h2>
+	w(`<section class="page"><h2>6. Compliance Coverage Matrix</h2>
       <p>Findings grouped by control domain — usable as an evidence index for SOC 2 / ISO 27001 / PCI-DSS audits.</p>
       <table class="grid"><thead><tr><th>Control domain</th><th>Findings</th><th>SOC 2</th><th>Owner</th></tr></thead><tbody>`)
 	byClass := map[string]int{}
@@ -186,8 +192,12 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	} else {
 		w(`<p>Page screenshots (%s) are provided in <code>screenshots/</code>, referenced by host. Findings-to-evidence mapping is via the affected-asset field of each finding.</p>`, esc(ssStatus))
 	}
-	w(`<p>Raw data (subdomains, live services, findings JSON, Shodan OSINT, nuclei output) accompanies this report in <code>data/</code> for team distribution and re-testing (<code>secskills report --retest %s</code>).</p>`, esc(target))
+	w(`<p>Raw data (subdomains, live services, findings JSON, Shodan OSINT, nuclei output) accompanies this report in <code>data/</code> for team distribution and re-testing (<code>secskills report --retest %s</code>). Ticket export: <code>secskills tickets %s</code>.</p>`, esc(target), esc(target))
 	w(`</section>`)
+
+	// ---- Appendix B — Cleanup log (non-destructive attestation) ----
+	w(`<section class="page"><h2>Appendix B — Tools &amp; Cleanup Log</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(appendices(wd, authStatus)))
 
 	w(`<footer class="doc-foot">secskills v%s — Confidential — generated %s</footer>`, version, date)
 	w(`</body></html>`)
