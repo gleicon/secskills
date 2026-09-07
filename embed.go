@@ -4,13 +4,13 @@ import "embed"
 
 // Embedded data — the KB, the ast-grep rules, and the tool registry all ship
 // inside the single binary so secskills works offline with no sidecar files.
-// rules are embedded from vendor/ast-grep-rules (a real directory) because
+// rules are embedded from thirdparty/ast-grep-rules (a real directory) because
 // go:embed cannot follow the rules/ symlink.
 
 //go:embed all:kb
 var kbFS embed.FS
 
-//go:embed all:vendor/ast-grep-rules
+//go:embed all:thirdparty/ast-grep-rules
 var rulesFS embed.FS
 
 //go:embed all:recipes

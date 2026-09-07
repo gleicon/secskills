@@ -132,3 +132,19 @@ func TestInjectionDefense(t *testing.T) {
 		}
 	}
 }
+
+func TestRegistrableDomain(t *testing.T) {
+	cases := map[string]string{
+		"www.example.cloud":       "example.cloud",
+		"a.b.examplelabs.com":      "examplelabs.com",
+		"foo.bar.example.com.br": "example.com.br", // multi-label PSL
+		"host.example.co.uk":     "example.co.uk",
+		"[{garbage":              "",
+		"not a host":             "",
+	}
+	for in, want := range cases {
+		if got := registrableDomain(in); got != want {
+			t.Errorf("registrableDomain(%q)=%q want %q", in, got, want)
+		}
+	}
+}

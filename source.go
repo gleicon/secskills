@@ -60,11 +60,11 @@ func materializeRules() (string, func(), error) {
 		return "", func() {}, err
 	}
 	cleanup := func() { os.RemoveAll(dir) }
-	err = fs.WalkDir(rulesFS, "vendor/ast-grep-rules", func(p string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(rulesFS, "thirdparty/ast-grep-rules", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		rel, _ := filepath.Rel("vendor/ast-grep-rules", p)
+		rel, _ := filepath.Rel("thirdparty/ast-grep-rules", p)
 		dst := filepath.Join(dir, rel)
 		if d.IsDir() {
 			return os.MkdirAll(dst, 0o755)

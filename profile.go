@@ -112,23 +112,13 @@ func profileSubs(target string) []string {
 			return s
 		}
 	}
-	if body, err := httpDo("crtsh", "GET", "https://crt.sh/?q=%25."+target+"&output=json", "", 3); err == nil {
-		seen := map[string]bool{}
-		var s []string
-		for _, part := range strings.Split(string(body), "\"name_value\":\"") {
-			if i := strings.IndexByte(part, '"'); i > 0 {
-				for _, h := range strings.Split(part[:i], "\\n") {
-					h = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(h), "*."))
-					if strings.HasSuffix(h, target) && !seen[h] {
-						seen[h] = true
-						s = append(s, h)
-					}
-				}
-			}
+	var s []string
+	for _, h := range crtshNames(target) {
+		if strings.HasSuffix(h, target) {
+			s = append(s, h)
 		}
-		return s
 	}
-	return nil
+	return s
 }
 
 func signalCounts(subs []string) (env, svc map[string]int) {

@@ -28,6 +28,7 @@ COMMANDS:
   recipes     Serve per-stack secure/vulnerable recipes (Node/Python/Go)
   source      Static source review — run embedded ast-grep rules over a path
   discover    Live attack-surface discovery (authorization-gated)
+  graph       Cross-domain exploration graph (OSINT pivots; discovered domains NOT tested)
   test        OWASP Top 10 active tests against a surface (authorization-gated)
   sandbox     Build/run an artifact isolated in Docker, then test it
   report      Assemble findings report / --retest a prior run
@@ -71,6 +72,8 @@ func main() {
 		err = cmdSource(args)
 	case "discover":
 		err = cmdDiscover(args)
+	case "graph":
+		err = cmdGraph(args)
 	case "test":
 		err = cmdTest(args)
 	case "sandbox":
