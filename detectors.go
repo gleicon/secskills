@@ -202,6 +202,7 @@ func detectorRegistry() []DetectorMeta {
 		{ID: "edge.origin-exposure@1", IdentityCompatible: true, Description: "origin reachable directly, bypassing the CDN/WAF"},
 		{ID: "edge.header-acl-bypass@1", IdentityCompatible: true, Description: "access-control bypass via trusted header"},
 		{ID: "tech.second-stage@1", IdentityCompatible: true, Description: "technology-triggered second-stage anonymous check"},
+		{ID: "pivot.internal-host-reachable@1", IdentityCompatible: true, Description: "disclosed internal hostname resolves publicly (runtime pivot)"},
 		{ID: "nuclei@1", IdentityCompatible: true, Description: "nuclei template match"},
 		{ID: "generic@1", IdentityCompatible: true, Description: "unclassified finding"},
 	}

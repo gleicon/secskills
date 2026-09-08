@@ -11,8 +11,8 @@ listed at the bottom.
   - [x] Favicon-hash → technology lookup (mmh3), growable overlay
   - [x] `secskills fp list|add|import` (learn from engagements; ingest Wappalyzer/native datasets)
   - [x] Rewired service fingerprint + second-stage triggers to the registry
-- [ ] M2 — Runtime capability planner (stateful chaining: discover cap → decide → new probe → new evidence)
-- [ ] M3 — Persisted attack-graph edges (cap → decision → probe → evidence objects)
+- [x] M2 — Runtime capability planner (stateful chaining: discover cap → decide → new probe → new evidence)
+- [x] M3 — Persisted attack-graph edges (planner-graph.jsonl; in evidence bundle hash)
 - [ ] M4 — Adversarial ledger real instrumentation (per-probe counters, not derived)
 - [ ] M5 — Second-stage depth (per-service version→CVE applicability + auth-boundary)
 - [ ] M6 — Engine self-measurement corpus (deliberately vuln + secure targets; FP rate, precision/recall, validation-success, avg depth) + fixtures for adversarial/edge/second-stage detectors
@@ -25,5 +25,7 @@ listed at the bottom.
 
 ## Status log
 (append newest at top)
+
+- M2+M3 DONE — planner.go: runtime planner fires follow-up probes from discovered capabilities. Rule 1: disclosed internal hostname resolved externally -> MEDIUM pivot finding if publicly resolvable (proven by planner_test.go). Rule 2: service version -> OSV CVE-applicability probe (version-inferred, MEDIUM cap). Rules 3/4: credential/SSRF -> STOP_POLICY_BOUNDARY edges. Every decision persisted to planner-graph.jsonl (append-only, in evidence-bundle hash) + rendered as Runtime planner attack-graph section. Next: M4 adversarial ledger instrumentation.
 
 - M1 DONE — fingerprint registry (fingerprints.json + fingerprints.go), `fp` command, wired into fingerprintService. 56 seed signatures, growable via ~/.secskills-fingerprints.json overlay. Next: M2 runtime capability planner.

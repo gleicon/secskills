@@ -194,10 +194,12 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	// ---- Attack narrative ----
 	w(`<section class="page"><h2>5. Attack Narrative</h2><p>%s</p>
       <h3>Attack-path exploration</h3><div class="rem">%s</div>
+      <h3>Runtime planner attack-graph</h3><div class="rem">%s</div>
       <h3>Adversarial control ledger</h3><div class="rem">%s</div>
       <h3>Human red-team queue</h3><div class="rem">%s</div></section>`,
 		esc(attackNarrative(findings, live, subs)),
 		mdBulletsToHTML(renderAttackGraph(findings, readProfile(wd))),
+		mdBulletsToHTML(renderPlannerGraph(wd)),
 		mdBulletsToHTML(renderAdversarialLedger(findings, live, wd, registrableDomain(hostOf(target)), subs)),
 		mdBulletsToHTML(renderHumanQueue(findings)))
 	w(`<section class="page"><h2>Edge &amp; Defense Map (CDN / WAF / origin looking-glass)</h2><div class="rem">%s</div></section>`,

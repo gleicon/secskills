@@ -215,3 +215,32 @@ func cveLookup(host, serverHeader string) *Finding {
 	f.References = append(f.References, "Remediation: upgrade the component to a fixed release and confirm the running build. Hiding the version banner is fingerprint-reduction, NOT remediation.")
 	return f
 }
+
+// osvQuery queries OSV for a package@version and returns affecting advisory IDs
+// plus the max severity rank (0..4). Used by the runtime planner's CVE-
+// applicability probe. Best-effort; empty on any failure.
+func osvQuery(pkg, eco, ver string) ([]string, int) {
+	body, err := httpDo("osv", "POST", "https://api.osv.dev/v1/query",
+		fmt.Sprintf(`{"version":%q,"package":{"name":%q,"ecosystem":%q}}`, ver, pkg, eco), 3)
+	if err != nil {
+		return nil, 0
+	}
+	var r struct {
+		Vulns []osvVuln `json:"vulns"`
+	}
+	if json.Unmarshal(body, &r) != nil || len(r.Vulns) == 0 {
+		return nil, 0
+	}
+	sevRank := map[string]int{"LOW": 1, "MODERATE": 2, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+	var ids []string
+	maxSev := 0
+	for _, v := range r.Vulns {
+		if up, _ := fixedAfter(v, ver); up {
+			ids = append(ids, v.ID)
+			if s := sevRank[strings.ToUpper(v.DatabaseSpecific.Severity)]; s > maxSev {
+				maxSev = s
+			}
+		}
+	}
+	return ids, maxSev
+}

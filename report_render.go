@@ -129,6 +129,7 @@ func renderProReport(target, wd string, findings []Finding) string {
 	// ---- 7. Attack Narrative + adversarial path exploration ------------------
 	p("---\n\n## 7. Attack Narrative\n\n%s\n\n", attackNarrative(findings, live, subs))
 	p("### Attack-path exploration\n\n%s\n\n", renderAttackGraph(findings, readProfile(wd)))
+	p("### Runtime planner attack-graph (decisions & pivots)\n\n%s\n\n", renderPlannerGraph(wd))
 	p("### Adversarial control ledger\n\n%s\n\n", renderAdversarialLedger(findings, live, wd, registrableDomain(hostOf(target)), subs))
 	p("### Human red-team queue (top manual-validation candidates)\n\n%s\n\n---\n\n", renderHumanQueue(findings))
 
