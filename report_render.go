@@ -114,7 +114,8 @@ func renderProReport(target, wd string, findings []Finding) string {
 	p("\n---\n\n")
 
 	// ---- 5. OSINT Summary -----------------------------------------------------
-	p("## 5. OSINT Summary (Shodan & public sources)\n\n%s\n\n---\n\n", shodanSummary(wd))
+	p("## 5. OSINT Summary (Shodan & public sources)\n\n%s\n\n", shodanSummary(wd))
+	p("### Edge & Defense Map (CDN / WAF / origin looking-glass)\n\n%s\n\n---\n\n", renderEdgeMap(wd, target))
 
 	// ---- 6. Root Findings (observations collapsed) ---------------------------
 	p("## 6. Root Findings\n\n")
