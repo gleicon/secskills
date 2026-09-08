@@ -41,6 +41,21 @@ func reportLint(target, wd string, findings []Finding) []string {
 		if f.ObservedEvidence != "" && len(f.EvidenceRefs) == 0 {
 			v = append(v, tag+": has observed evidence but no immutable evidence reference")
 		}
+		// CVSS must be N/A for informational / negative evidence (CVSS describes a
+		// vulnerability, not a control that held).
+		if strings.EqualFold(f.Severity, "INFORMATIONAL") && !strings.Contains(cvssString(f), "N/A") {
+			v = append(v, tag+": INFORMATIONAL finding shows a numeric CVSS (must be N/A)")
+		}
+		// remediation-family contamination: a non-crypto/non-auth finding must not
+		// carry password-storage advice, and negative evidence must carry none.
+		rem := strings.ToLower(remediationByType(f))
+		if detectorOf(f) == "http.authz-boundary@1" && strings.TrimSpace(rem) != "" {
+			v = append(v, tag+": negative-evidence finding has remediation text (must be none)")
+		}
+		if (strings.Contains(rem, "argon2") || strings.Contains(rem, "password")) &&
+			f.KBClass != "auth-session" && f.KBClass != "crypto-secrets" && findingType(f) != "" {
+			v = append(v, tag+": remediation family mismatch (password/crypto advice on a non-auth finding)")
+		}
 		// distinct conditions must not share one observation key
 		ctl := observationControl(f) + "@" + assetOf(f)
 		if prev, ok := seenObs[f.Key]; ok && prev != ctl {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"fmt"
 	"math"
 )
@@ -70,6 +71,9 @@ func roundUp(x float64) float64 {
 
 // cvssString renders "CVSS:3.1/... = 5.3" with an indicative note for version-inferred.
 func cvssString(f *Finding) string {
+	if cvssNotApplicable(f) {
+		return "N/A (informational / negative evidence — not a vulnerability)"
+	}
 	vec, score := cvssVector(f)
 	s := fmt.Sprintf("%s = %.1f", vec, score)
 	if f.Validation == "version-inferred" || f.KBClass == "components-supply-chain" {
@@ -83,6 +87,23 @@ func cvssString(f *Finding) string {
 // cvssScoreStr returns the exact CVSS v3.1 base score as a string (deterministic;
 // no bands/ranges — if we know the vector we show the number).
 func cvssScoreStr(f *Finding) string {
+	if cvssNotApplicable(f) {
+		return "N/A"
+	}
 	_, score := cvssVector(f)
 	return fmt.Sprintf("%.1f", score)
+}
+
+// cvssNotApplicable reports whether CVSS should be N/A: CVSS describes a
+// vulnerability, so informational findings and negative evidence (a control that
+// held, e.g. "resisted N bypass classes") have no CVSS.
+func cvssNotApplicable(f *Finding) bool {
+	if strings.EqualFold(f.Severity, "INFORMATIONAL") {
+		return true
+	}
+	switch detectorOf(f) {
+	case "http.authz-boundary@1":
+		return true
+	}
+	return false
 }
