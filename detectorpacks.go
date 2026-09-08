@@ -1,6 +1,7 @@
 package main
 
 import (
+	"regexp"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -174,7 +175,7 @@ func fingerprintService(wd, base string, code int, hdr http.Header, body string)
 	}
 	ev := captureEvidence(wd, "tech.service-fingerprint@1", base, "http-response", "text/html", "GET "+base,
 		"redacted", []byte(fmt.Sprintf("status=%d server=%s title=%s matched=%s", code, hdr.Get("Server"), title(body), strings.Join(names, ","))))
-	return &Finding{
+	f := &Finding{
 		Title: "Operational service exposed: " + pick.Name, Host: base, Severity: "INFORMATIONAL",
 		Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 		ObservedEvidence: fmt.Sprintf("Fingerprint registry matched %q via %s (HTTP %d). Full stack: %s. Recommended authorized deeper checks: %s.", pick.Name, pick.Via, code, strings.Join(names, "; "), techNextChecks(pick.Name)),
@@ -183,6 +184,39 @@ func fingerprintService(wd, base string, code int, hdr http.Header, body string)
 		ProbeKind:    "status", ProbeURL: base, EvidenceRefs: []string{ev},
 		DetectorID: "tech.service-fingerprint@1",
 	}
+	// extract a service version (Server header / body) so the runtime planner can
+	// run an OSV CVE-applicability probe for this technology@version.
+	if ver := extractServiceVersion(pick.Name, hdr, body); ver != "" {
+		f.Pivots = []string{"version=" + ver}
+		f.ObservedEvidence += fmt.Sprintf(" Version fingerprinted: %s.", ver)
+	}
+	return f
+}
+
+var reServiceVer = regexp.MustCompile(`(\d+\.\d+(?:\.\d+)?)`)
+
+// extractServiceVersion pulls a version string near the technology name from the
+// Server header or body (e.g. "nginx/1.18.0", "Grafana v9.5.2").
+func extractServiceVersion(tech string, hdr http.Header, body string) string {
+	hay := hdr.Get("Server") + " " + hdr.Get("X-Powered-By")
+	low := strings.ToLower(tech)
+	// look for "<tech> ... <version>" within a window in header then body
+	for _, src := range []string{hay, body} {
+		ls := strings.ToLower(src)
+		i := strings.Index(ls, low)
+		if i < 0 {
+			continue
+		}
+		window := src[i:min(i+60, len(src))]
+		if m := reServiceVer.FindString(window); m != "" {
+			return m
+		}
+	}
+	// fall back to a version in the Server header alone
+	if m := reServiceVer.FindString(hay); m != "" {
+		return m
+	}
+	return ""
 }
 
 func techNextChecks(service string) string {
