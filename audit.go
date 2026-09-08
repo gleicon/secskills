@@ -139,7 +139,7 @@ func detectorManifest() []string {
 // covers the evidence bundle, not just the findings summary.
 func evidenceBundleSHA(wd string) string {
 	h := sha256.New()
-	arts := []string{"findings.json", "nuclei.jsonl", "resolved.txt", "ips.txt", "live_hosts.json", "subs.txt"}
+	arts := []string{"findings.json", "nuclei.jsonl", "resolved.txt", "ips.txt", "live_hosts.json", "subs.txt", "planner-graph.jsonl", "evidence-manifest.jsonl"}
 	sort.Strings(arts)
 	for _, a := range arts {
 		if b, err := os.ReadFile(filepath.Join(wd, a)); err == nil {

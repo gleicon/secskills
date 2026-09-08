@@ -299,6 +299,11 @@ func cmdTest(args []string) error {
 		if c := cveLookup(u, lh.Server); c != nil {
 			fnd = append(fnd, *c)
 		}
+		// runtime capability planner: discovered capabilities trigger follow-up
+		// probes and persisted attack-graph edges (adversarial profile).
+		if prof.adversarial() {
+			fnd = append(fnd, runPlanner(wd, hostOf(u), fnd)...)
+		}
 		// persist incrementally + thread-safe so a run killed by a time cap keeps
 		// its partial findings (no write-at-end data loss).
 		mu.Lock()
