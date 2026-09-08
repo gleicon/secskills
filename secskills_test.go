@@ -135,8 +135,8 @@ func TestInjectionDefense(t *testing.T) {
 
 func TestRegistrableDomain(t *testing.T) {
 	cases := map[string]string{
-		"www.example.cloud":       "example.cloud",
-		"a.b.examplelabs.com":      "examplelabs.com",
+		"www.example.cloud":      "example.cloud",
+		"a.b.contoso.com":        "contoso.com",
 		"foo.bar.example.com.br": "example.com.br", // multi-label PSL
 		"host.example.co.uk":     "example.co.uk",
 		"[{garbage":              "",
