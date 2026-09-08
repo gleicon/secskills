@@ -218,6 +218,7 @@ func cmdTest(args []string) error {
 	}
 	os.WriteFile(filepath.Join(wd, "profile.txt"), []byte(prof.String()), 0o644)
 	oast := newOAST()
+	advReset()
 	if !fileExists(filepath.Join(wd, "scope.txt")) {
 		writeScope(wd, []string{hostOf(target)})
 	}
@@ -380,6 +381,7 @@ func cmdTest(args []string) error {
 			addFinding(wd, f)
 		}
 	}
+	writeAdvStats(wd)
 	writeRunMeta(wd, target, started, loadWorkFindings(wd), *deep, *intrusive)
 	if _, err := signRunManifest(wd); err == nil {
 		fmt.Println("run attestation signed (ed25519): run-attestation.sig")

@@ -206,12 +206,14 @@ func techNextChecks(service string) string {
 // oidcSurface discovers an OAuth/OIDC surface via well-known documents. Surface
 // intelligence only; no flows are exercised.
 func oidcSurface(wd, base string) *Finding {
+	advProbe("oidc", 1)
 	for _, wk := range []string{"/.well-known/openid-configuration", "/.well-known/oauth-authorization-server"} {
 		u := strings.TrimRight(base, "/") + wk
 		code, _, body, ok := getWithBody(u, 32*1024)
 		if !ok || code != 200 || !strings.Contains(body, "issuer") {
 			continue
 		}
+		advHit("oidc")
 		var doc map[string]any
 		if json.Unmarshal([]byte(body), &doc) != nil {
 			continue
@@ -240,6 +242,7 @@ func oidcSurface(wd, base string) *Finding {
 // apiSchema detects exposed API schemas (OpenAPI/Swagger) and GraphQL
 // introspection. Introspection uses a single read-only query.
 func apiSchema(wd, base string) *Finding {
+	advProbe("api-schema", 1)
 	for _, p := range []string{"/openapi.json", "/swagger.json", "/v2/api-docs", "/api-docs", "/swagger/v1/swagger.json"} {
 		u := strings.TrimRight(base, "/") + p
 		code, _, body, ok := getWithBody(u, 64*1024)

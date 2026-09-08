@@ -35,6 +35,7 @@ func bypassProbe(wd, protectedURL string, baseCode int) *Finding {
 	if baseCode != 401 && baseCode != 403 {
 		return nil
 	}
+	advProbe("auth-bypass", 1)
 	resisted, bypassed := 0, ""
 	for _, bc := range bypassClasses {
 		vurl := protectedURL
@@ -71,6 +72,7 @@ func bypassProbe(wd, protectedURL string, baseCode int) *Finding {
 		resisted++
 	}
 	if bypassed != "" {
+		advHit("auth-bypass")
 		ev := captureEvidence(wd, "http.authz-bypass@1", protectedURL, "http-response", "text/plain", "GET "+protectedURL+" ("+bypassed+")", "none",
 			[]byte("bypass class '"+bypassed+"' returned HTTP 200 on a "+itoa(baseCode)+"-protected endpoint"))
 		return &Finding{
@@ -114,6 +116,7 @@ func caseFlipPath(u string) string {
 // openRedirectProbe tests common redirect params for an off-site redirect to a
 // canary. GET-only; confirms via the Location header, no victim involved.
 func openRedirectProbe(wd, base string) *Finding {
+	advProbe("open-redirect", 1)
 	canary := "https://secskills-canary.example"
 	for _, param := range []string{"url", "redirect", "next", "return", "returnUrl", "dest", "destination", "continue", "r"} {
 		u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape(canary)
@@ -129,6 +132,7 @@ func openRedirectProbe(wd, base string) *Finding {
 		loc := resp.Header.Get("Location")
 		resp.Body.Close()
 		if strings.HasPrefix(loc, canary) || strings.HasPrefix(loc, "//secskills-canary") {
+			advHit("open-redirect")
 			ev := captureEvidence(wd, "http.open-redirect@1", base, "http-response", "text/plain", "GET "+u, "none",
 				[]byte("Location: "+loc))
 			return &Finding{
@@ -148,6 +152,7 @@ func openRedirectProbe(wd, base string) *Finding {
 // and flags SSTI only when the *evaluated* result (49) appears where the literal
 // (7*7) does not — a low-false-positive primitive.
 func sstiArithmeticProbe(wd, base string) *Finding {
+	advProbe("ssti", 1)
 	// Rare operands so a coincidental match is near-impossible: 73819 * 91193 =
 	// 6,731,738,867 (a distinctive 10-digit number). We require the evaluated
 	// result to appear ONLY when injected (differential vs a control request),
@@ -169,6 +174,7 @@ func sstiArithmeticProbe(wd, base string) *Finding {
 				continue
 			}
 			if strings.Contains(body, product) && !strings.Contains(body, expr) && !strings.Contains(body, tmpl.open+expr) {
+				advHit("ssti")
 				ev := captureEvidence(wd, "ssti.arithmetic@1", base, "http-response", "text/plain", "GET "+u, "redacted",
 					[]byte(fmt.Sprintf("input %s reflected as evaluated result %s (control body did not contain %s)", marker, product, product)))
 				return &Finding{
@@ -191,12 +197,14 @@ func ssrfOASTProbe(wd, base string, o *OAST) *Finding {
 	if !o.available() {
 		return nil
 	}
+	advProbe("ssrf-oast", 1)
 	host, id := o.token()
 	for _, param := range []string{"url", "uri", "target", "dest", "callback", "webhook", "image", "fetch"} {
 		u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape("http://"+host+"/")
 		getWithBody(u, 2048) // fire; the target may perform a server-side fetch
 	}
 	if o.interacted(id) {
+		advHit("ssrf-oast")
 		ev := captureEvidence(wd, "http.ssrf@1", base, "detector-parse", "text/plain", "OAST "+host, "none",
 			[]byte("out-of-band interaction observed from target to canary "+host))
 		return &Finding{
