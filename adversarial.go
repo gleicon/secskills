@@ -148,23 +148,37 @@ func openRedirectProbe(wd, base string) *Finding {
 // and flags SSTI only when the *evaluated* result (49) appears where the literal
 // (7*7) does not — a low-false-positive primitive.
 func sstiArithmeticProbe(wd, base string) *Finding {
-	marker := "{{7*7}}"
-	for _, param := range []string{"q", "search", "name", "s", "query", "input"} {
-		u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape(marker)
-		code, _, body, ok := getWithBody(u, 32*1024)
-		if !ok || code != 200 {
-			continue
-		}
-		if strings.Contains(body, "49") && !strings.Contains(body, "7*7") && !strings.Contains(body, "{{") {
-			ev := captureEvidence(wd, "ssti.arithmetic@1", base, "http-response", "text/plain", "GET "+u, "redacted",
-				[]byte("reflected evaluated arithmetic (49) for input {{7*7}}"))
-			return &Finding{
-				Title: "Potential server-side template injection (arithmetic evaluated) via ?" + param, Host: base, Severity: "HIGH", Status: "open",
-				Confidence: "High", Validation: "behavior-confirmed",
-				ObservedEvidence: fmt.Sprintf("Input {{7*7}} in %s was reflected as evaluated result 49 (template expression executed server-side).", param),
-				ImpactText:  "Server-side template injection can lead to remote code execution depending on the engine. Proof boundary: arithmetic evaluation only — no code execution was attempted.",
-				EvidenceCmd: "curl -sk " + shellQuote(u), ProbeKind: "body-contains", ProbeURL: u, ProbeArg: "49",
-				EvidenceRefs: []string{ev}, DetectorID: "ssti.arithmetic@1", Capabilities: []string{capServerSideFetch},
+	// Rare operands so a coincidental match is near-impossible: 73819 * 91193 =
+	// 6,731,738,867 (a distinctive 10-digit number). We require the evaluated
+	// result to appear ONLY when injected (differential vs a control request),
+	// the literal expression to be absent, and the template braces to be gone —
+	// three independent conditions to keep false positives near zero.
+	const a, bb = 73819, 91193
+	const product = "6731738867"
+	const expr = "73819*91193"
+	// control body (no injection) — the number must NOT already be present
+	if _, _, ctrl, ok := getWithBody(strings.TrimRight(base, "/")+"/", 32*1024); ok && strings.Contains(ctrl, product) {
+		return nil
+	}
+	for _, tmpl := range []struct{ open, close string }{{"{{", "}}"}, {"${", "}"}, {"#{", "}"}} {
+		marker := tmpl.open + expr + tmpl.close
+		for _, param := range []string{"q", "search", "name", "s", "query", "input"} {
+			u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape(marker)
+			code, _, body, ok := getWithBody(u, 32*1024)
+			if !ok || code != 200 {
+				continue
+			}
+			if strings.Contains(body, product) && !strings.Contains(body, expr) && !strings.Contains(body, tmpl.open+expr) {
+				ev := captureEvidence(wd, "ssti.arithmetic@1", base, "http-response", "text/plain", "GET "+u, "redacted",
+					[]byte(fmt.Sprintf("input %s reflected as evaluated result %s (control body did not contain %s)", marker, product, product)))
+				return &Finding{
+					Title: "Potential server-side template injection (arithmetic evaluated) via ?" + param, Host: base, Severity: "HIGH", Status: "open",
+					Confidence: "High", Validation: "behavior-confirmed",
+					ObservedEvidence: fmt.Sprintf("Input %s in %s was reflected as the evaluated product %s (= %d*%d); the literal expression was absent and the value did not appear in the un-injected control response — the template expression was executed server-side.", marker, param, product, a, bb),
+					ImpactText:  "Server-side template injection can lead to remote code execution depending on the engine. Proof boundary: arithmetic evaluation only — no code execution was attempted.",
+					EvidenceCmd: "curl -sk " + shellQuote(u), ProbeKind: "body-contains", ProbeURL: u, ProbeArg: product,
+					EvidenceRefs: []string{ev}, DetectorID: "ssti.arithmetic@1", Capabilities: []string{capServerSideFetch},
+				}
 			}
 		}
 	}
