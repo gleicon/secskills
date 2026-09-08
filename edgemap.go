@@ -181,3 +181,16 @@ func looksLikeCDN(org string) bool {
 	}
 	return false
 }
+
+// shodanOrgOf returns the organization/ISP Shodan reports for an IP (best-effort;
+// empty on failure). Used to skip CDN edge nodes when hunting for origin IPs.
+func shodanOrgOf(ip string) string {
+	if !shodanReady() {
+		return ""
+	}
+	out, err := exec.Command("shodan", "host", "--fields", "org", ip).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}

@@ -13,10 +13,17 @@ import (
 // Active edge tests (adversarial-readonly): direct-to-origin reachability and
 // trusted-header access-control differentials. Read-only; GET requests only.
 
-// originReach dials a candidate IP directly (TLS SNI + Host = target) and returns
-// the raw response. If the origin answers content for the target with no edge
-// marker, the edge (CDN/WAF) is bypassed by talking to the origin directly.
-func originReach(wd, target, candidateIP string, edge edgeInfo) *Finding {
+// originReach dials a candidate IP directly (TLS SNI + Host = target). It only
+// reports an origin bypass when THREE guards hold, to keep false positives near
+// zero: (1) an edge (CDN/WAF) was actually fingerprinted — otherwise there is
+// nothing to bypass; (2) the direct response has no edge marker; (3) the direct
+// content matches the through-edge baseline (same <title>), proving it is the
+// same application, not a catch-all/default 200. `wantTitle` is the baseline
+// title fetched through the edge (empty disables origin-bypass reporting).
+func originReach(wd, target, candidateIP string, edge edgeInfo, wantTitle string) *Finding {
+	if wantTitle == "" {
+		return nil // no reliable content signature -> do not claim a bypass
+	}
 	dialer := &net.Dialer{Timeout: 6 * time.Second}
 	conn, err := tls.DialWithDialer(dialer, "tcp", candidateIP+":443",
 		&tls.Config{InsecureSkipVerify: true, ServerName: target})
@@ -38,24 +45,36 @@ func originReach(wd, target, candidateIP string, edge edgeInfo) *Finding {
 			return nil // still behind the edge, not a direct origin
 		}
 	}
-	appLike := strings.Contains(statusLine, " 200") || strings.Contains(statusLine, " 301") ||
-		strings.Contains(statusLine, " 302") || strings.Contains(statusLine, " 401") || strings.Contains(statusLine, " 403")
-	if !appLike {
+	if !strings.Contains(statusLine, " 200") {
+		return nil // require a real app response to compare content
+	}
+	// content-signature guard: the direct response must carry the SAME page title
+	// as the through-edge baseline, else this IP is a different/catch-all server.
+	gotTitle := title(bodyOf(resp))
+	if gotTitle == "" || !strings.EqualFold(strings.TrimSpace(gotTitle), strings.TrimSpace(wantTitle)) {
 		return nil
 	}
 	ev := captureEvidence(wd, "edge.origin-exposure@1", target, "http-response", "text/plain",
 		"GET https://"+candidateIP+"/ (Host: "+target+")", "redacted",
-		[]byte(statusLine+"\n(no edge marker in response headers)"))
+		[]byte(statusLine+"\nmatched page title: "+gotTitle+"\n(no edge marker in response headers)"))
 	return &Finding{
 		Title: "Origin reachable directly, bypassing " + edgeLabel(edge) + " (" + candidateIP + ")",
 		Host:  "https://" + target, Severity: "HIGH", Status: "open",
 		Confidence: "High", Validation: "behavior-confirmed",
-		ObservedEvidence: fmt.Sprintf("Direct TLS to %s with Host: %s returned %q and no edge (%s) marker — the origin answers requests that do not traverse the CDN/WAF.", candidateIP, target, statusLine, edgeLabel(edge)),
+		ObservedEvidence: fmt.Sprintf("Direct TLS to %s with Host: %s returned %q, no edge (%s) marker, and the SAME page title %q as the through-edge baseline — the origin answers requests that do not traverse the CDN/WAF.", candidateIP, target, statusLine, edgeLabel(edge), gotTitle),
 		ImpactText:       "Origin exposure defeats edge security controls: WAF rulesets, rate-limiting, DDoS and bot management are all bypassed by connecting to the origin IP directly. Restrict the origin to accept traffic only from the CDN (IP allow-list / authenticated origin pulls / mTLS).",
 		EvidenceCmd:      "curl -sk --resolve " + shellQuote(target) + ":443:" + candidateIP + " https://" + target + "/ -I",
 		ProbeKind:        "manual", ProbeURL: "https://" + target, EvidenceRefs: []string{ev},
 		DetectorID:       "edge.origin-exposure@1", Capabilities: []string{capAuthBoundary, capPublicService},
 	}
+}
+
+// bodyOf splits an HTTP response into its body (after the header/body separator).
+func bodyOf(resp string) string {
+	if i := strings.Index(resp, "\r\n\r\n"); i >= 0 {
+		return resp[i+4:]
+	}
+	return resp
 }
 
 func edgeLabel(e edgeInfo) string {
@@ -128,14 +147,36 @@ func trustedHeaderBypass(wd, u string, baseCode int) *Finding {
 // runEdgeRecon fingerprints the edge and (adversarial + Shodan) looks for origin
 // leaks via favicon-hash / cert-CN pivots.
 func runEdgeRecon(wd, target string, prof Profile) (edgeInfo, []Finding) {
-	base := "https://" + hostOf(target)
-	_, hdr, _, ok := getWithBody(base, 8*1024)
+	host := hostOf(target)
+	base := "https://" + host
 	var edge edgeInfo
-	if ok {
-		edge = fingerprintEdge(hdr)
+	baseTitle := ""
+	// fingerprint the edge from the apex, falling back to www (bare apex often
+	// 301s without exposing the CDN headers a real page carries).
+	for _, u := range []string{base, "https://www." + host} {
+		_, hdr, body, ok := getWithBody(u, 32*1024)
+		if !ok {
+			continue
+		}
+		e := fingerprintEdge(hdr)
+		if e.CDN != "" || e.WAF != "" {
+			edge = e
+			if t := title(body); t != "" {
+				baseTitle = t
+			}
+			break
+		}
+		if baseTitle == "" {
+			baseTitle = title(body)
+		}
 	}
 	var out []Finding
 	if !prof.adversarial() {
+		return edge, out
+	}
+	// Origin-bypass only makes sense when there IS an edge to bypass. If no CDN/WAF
+	// was fingerprinted, direct-IP reachability is expected, not a finding.
+	if edge.CDN == "" && edge.WAF == "" {
 		return edge, out
 	}
 	candidates := map[string]bool{}
@@ -152,8 +193,12 @@ func runEdgeRecon(wd, target string, prof Profile) (edgeInfo, []Finding) {
 		if tested >= 12 {
 			break
 		}
+		// skip IPs that are themselves CDN edge nodes (not origin)
+		if looksLikeCDN(shodanOrgOf(ip)) {
+			continue
+		}
 		tested++
-		if f := originReach(wd, hostOf(target), ip, edge); f != nil {
+		if f := originReach(wd, hostOf(target), ip, edge, baseTitle); f != nil {
 			out = append(out, *f)
 		}
 	}
@@ -162,12 +207,26 @@ func runEdgeRecon(wd, target string, prof Profile) (edgeInfo, []Finding) {
 
 // renderEdgeMap renders the Edge & Defense Map report section.
 func renderEdgeMap(wd, target string) string {
-	base := "https://" + hostOf(target)
-	_, hdr, _, ok := getWithBody(base, 8*1024)
-	if !ok {
+	host := hostOf(target)
+	base := "https://" + host
+	var edge edgeInfo
+	got := false
+	for _, u := range []string{base, "https://www." + host} {
+		_, hdr, _, ok := getWithBody(u, 8*1024)
+		if !ok {
+			continue
+		}
+		got = true
+		e := fingerprintEdge(hdr)
+		if e.CDN != "" || e.WAF != "" {
+			edge = e
+			break
+		}
+		edge = e
+	}
+	if !got {
 		return "_Edge could not be fingerprinted (primary host unreachable)._"
 	}
-	edge := fingerprintEdge(hdr)
 	var b strings.Builder
 	b.WriteString("| Property | Value |\n|---|---|\n")
 	b.WriteString(fmt.Sprintf("| CDN | %s |\n", orDash(edge.CDN)))
