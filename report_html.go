@@ -194,6 +194,8 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		esc(attackNarrative(findings, live, subs)),
 		mdBulletsToHTML(renderAttackGraph(findings, readProfile(wd))),
 		mdBulletsToHTML(renderHumanQueue(findings)))
+	w(`<section class="page"><h2>Edge &amp; Defense Map (CDN / WAF / origin looking-glass)</h2><div class="rem">%s</div></section>`,
+		mdBulletsToHTML(renderEdgeMap(wd, target)))
 
 	// ---- Compliance matrix ----
 	w(`<section class="page"><h2>6. Compliance Coverage Matrix</h2>

@@ -290,6 +290,10 @@ func cmdTest(args []string) error {
 				if f := bypassProbe(wd, u, lh.Status); f != nil {
 					fnd = append(fnd, *f)
 				}
+				<-tick.C
+				if f := trustedHeaderBypass(wd, u, lh.Status); f != nil {
+					fnd = append(fnd, *f)
+				}
 			}
 		}
 		if c := cveLookup(u, lh.Server); c != nil {
@@ -355,11 +359,14 @@ func cmdTest(args []string) error {
 		}
 	}
 
-	// DNS hygiene + object-storage enumeration run once per apex (not per host).
+	// DNS hygiene + object-storage enumeration + edge recon run once per apex.
 	if apex := registrableDomain(hostOf(target)); apex != "" {
 		apexFindings := dnsHygiene(apex)
 		if prof.adversarial() {
 			apexFindings = append(apexFindings, enumObjectStorage(wd, apex, names)...)
+			if _, edgeFindings := runEdgeRecon(wd, target, prof); len(edgeFindings) > 0 {
+				apexFindings = append(apexFindings, edgeFindings...)
+			}
 		}
 		for _, f := range apexFindings {
 			seq++
