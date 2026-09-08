@@ -42,6 +42,7 @@ COMMANDS:
   override    Record an auditable severity adjudication (reviewed vs automated)
   attest      Sign (--sign) / verify (--verify) a run's attestation (ed25519)
   conformance Detector quality scorecard from the offline regression corpus
+  fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
   shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
   mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
   selftest    End-to-end pipeline test against a local disposable server
@@ -107,6 +108,8 @@ func main() {
 		err = cmdAttest(args)
 	case "conformance":
 		err = cmdConformance(args)
+	case "fp":
+		err = cmdFP(args)
 	case "mcp":
 		err = cmdMCP(args)
 	case "version", "-v", "--version":

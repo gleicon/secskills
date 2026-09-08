@@ -137,49 +137,52 @@ func rateLimitProbe(wd, base string) *Finding {
 	}
 }
 
-// serviceSignatures maps a recognizable operational service to header/body marks.
-var serviceSignatures = []struct {
-	name string
-	hint []string
-}{
-	{"Argo CD", []string{"argocd", "argo-cd", "Argo CD"}},
-	{"Harbor registry", []string{"harbor", "/harbor/", "Harbor"}},
-	{"HashiCorp Vault", []string{"x-vault-", "vault-", "Vault"}},
-	{"Grafana", []string{"grafana", "Grafana"}},
-	{"Prometheus", []string{"Prometheus Time Series", "prometheus"}},
-	{"Keycloak", []string{"keycloak", "Keycloak", "auth/realms"}},
-	{"Kubernetes Dashboard", []string{"kubernetes-dashboard", "Kubernetes Dashboard"}},
-	{"GitLab", []string{"gitlab", "GitLab"}},
-	{"MinIO", []string{"MinIO", "minio"}},
-	{"Netbox", []string{"netbox", "NetBox"}},
-	{"Jenkins", []string{"X-Jenkins", "Jenkins"}},
-	{"Consul", []string{"consul", "Consul"}},
-}
-
-// fingerprintService recognizes a known operational service. It is INFORMATIONAL
-// context (surface intelligence), and it names the technology-specific checks an
-// authorized deeper pass should run — it does not perform them.
+// fingerprintService recognizes a technology via the data-driven fingerprint
+// registry (fingerprints.json + user overlay). It is INFORMATIONAL context and
+// names the deeper checks the second-stage pack (if any) will run.
 func fingerprintService(wd, base string, code int, hdr http.Header, body string) *Finding {
-	hay := strings.ToLower(hdr.Get("Server") + " " + hdr.Get("X-Powered-By") + " " + hdr.Get("WWW-Authenticate") + " " + title(body) + " " + body[:min(len(body), 4096)])
-	for _, sig := range serviceSignatures {
-		for _, h := range sig.hint {
-			if strings.Contains(hay, strings.ToLower(h)) {
-				ev := captureEvidence(wd, "tech.service-fingerprint@1", base, "http-response", "text/html", "GET "+base,
-					"redacted", []byte(fmt.Sprintf("status=%d server=%s title=%s", code, hdr.Get("Server"), title(body))))
-				f := &Finding{
-					Title: "Operational service exposed: " + sig.name, Host: base, Severity: "INFORMATIONAL",
-					Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
-					ObservedEvidence: fmt.Sprintf("Fingerprint matched %q (HTTP %d). Recommended authorized deeper checks for this service: %s.", sig.name, code, techNextChecks(sig.name)),
-					ImpactText:   "Recognized " + sig.name + " on the external surface. Exposure alone is context, not a vulnerability; deeper service-specific auth/config checks require an authorized follow-up.",
-					EvidenceCmd:  "curl -skI " + shellQuote(base),
-					ProbeKind:    "status", ProbeURL: base, EvidenceRefs: []string{ev},
-					DetectorID: "tech.service-fingerprint@1",
-				}
-				return f
+	fav, _ := faviconHash(base)
+	matches := matchFingerprints(hdr, body, fav)
+	// prefer a match that has a second-stage pack (operational service), else the
+	// first non-low-confidence match.
+	var pick *fpMatch
+	for i := range matches {
+		if matches[i].SecondStage != "" {
+			pick = &matches[i]
+			break
+		}
+	}
+	if pick == nil {
+		for i := range matches {
+			if !matches[i].LowConf {
+				pick = &matches[i]
+				break
 			}
 		}
 	}
-	return nil
+	if pick == nil {
+		return nil
+	}
+	// summarize the full stack for context
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		tag := m.Name
+		if m.LowConf {
+			tag += " (favicon-hint)"
+		}
+		names = append(names, tag)
+	}
+	ev := captureEvidence(wd, "tech.service-fingerprint@1", base, "http-response", "text/html", "GET "+base,
+		"redacted", []byte(fmt.Sprintf("status=%d server=%s title=%s matched=%s", code, hdr.Get("Server"), title(body), strings.Join(names, ","))))
+	return &Finding{
+		Title: "Operational service exposed: " + pick.Name, Host: base, Severity: "INFORMATIONAL",
+		Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
+		ObservedEvidence: fmt.Sprintf("Fingerprint registry matched %q via %s (HTTP %d). Full stack: %s. Recommended authorized deeper checks: %s.", pick.Name, pick.Via, code, strings.Join(names, "; "), techNextChecks(pick.Name)),
+		ImpactText:   "Recognized " + pick.Name + " on the external surface. Exposure alone is context, not a vulnerability; deeper service-specific auth/config checks are run by the second-stage pack where available.",
+		EvidenceCmd:  "curl -skI " + shellQuote(base),
+		ProbeKind:    "status", ProbeURL: base, EvidenceRefs: []string{ev},
+		DetectorID: "tech.service-fingerprint@1",
+	}
 }
 
 func techNextChecks(service string) string {
