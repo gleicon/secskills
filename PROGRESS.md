@@ -14,7 +14,7 @@ listed at the bottom.
 - [x] M2 — Runtime capability planner (stateful chaining: discover cap → decide → new probe → new evidence)
 - [x] M3 — Persisted attack-graph edges (planner-graph.jsonl; in evidence bundle hash)
 - [x] M4 — Adversarial ledger real instrumentation (advstats.go: measured per-probe counters)
-- [ ] M5 — Second-stage depth (per-service version→CVE applicability + auth-boundary)
+- [x] M5 — Second-stage depth: fingerprint extracts service version → runtime planner OSV CVE-applicability chains per service
 - [ ] M6 — Engine self-measurement corpus (deliberately vuln + secure targets; FP rate, precision/recall, validation-success, avg depth) + fixtures for adversarial/edge/second-stage detectors
 - [ ] M7 — Self-hostable OAST collaborator (`secskills oast-server`) + wire SSRF/XXE validation
 - [ ] M8 — Origin looking-glass depth (JARM fingerprint; Censys / passive-DNS adapters, key-gated)
@@ -25,6 +25,8 @@ listed at the bottom.
 
 ## Status log
 (append newest at top)
+
+- M5 DONE — fingerprintService extracts a service version (Server header/body) and sets a version= pivot; the runtime planner then runs an OSV CVE-applicability probe for that technology@version (version-inferred, MEDIUM cap). Depth-per-discovery chained end to end. Next: M6 engine self-measurement corpus.
 
 - M4 DONE — advstats.go: every adversarial module records candidates/positive/inconclusive per-probe (advProbe/advHit/advInconc, mutex-guarded). Written to adv-stats.json (in evidence bundle); ledger renders measured denominators, not derived. Verified: jaxy.dev 59 candidate probes measured. Next: M5 second-stage depth.
 
