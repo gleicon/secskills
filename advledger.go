@@ -12,6 +12,9 @@ func renderAdversarialLedger(findings []Finding, live []LiveHost, wd string, ape
 	if !readProfile(wd).adversarial() {
 		return "_Adversarial modules did not run (profile is not adversarial-readonly)._"
 	}
+	if m := renderMeasuredLedger(wd); m != "" {
+		return m
+	}
 	// count reachable live hosts (per-host module denominator)
 	reachable := 0
 	protected := 0

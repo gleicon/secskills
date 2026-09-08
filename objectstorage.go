@@ -43,7 +43,9 @@ func bucketCandidates(apex string, labels []string) []string {
 // findings for any publicly-listable store.
 func enumObjectStorage(wd, apex string, labels []string) []Finding {
 	var out []Finding
-	for _, b := range bucketCandidates(apex, labels) {
+	cands := bucketCandidates(apex, labels)
+	advProbe("object-storage", len(cands))
+	for _, b := range cands {
 		for _, probe := range []struct {
 			kind, url, sig string
 		}{
@@ -57,6 +59,7 @@ func enumObjectStorage(wd, apex string, labels []string) []Finding {
 				continue
 			}
 			if code == 200 && strings.Contains(body, probe.sig) {
+				advHit("object-storage")
 				ev := captureEvidence(wd, "storage.public-bucket@1", probe.url, "http-response", "application/xml", "GET "+probe.url, "redacted",
 					[]byte(body[:min(len(body), 8192)]))
 				out = append(out, Finding{

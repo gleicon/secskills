@@ -13,7 +13,7 @@ listed at the bottom.
   - [x] Rewired service fingerprint + second-stage triggers to the registry
 - [x] M2 — Runtime capability planner (stateful chaining: discover cap → decide → new probe → new evidence)
 - [x] M3 — Persisted attack-graph edges (planner-graph.jsonl; in evidence bundle hash)
-- [ ] M4 — Adversarial ledger real instrumentation (per-probe counters, not derived)
+- [x] M4 — Adversarial ledger real instrumentation (advstats.go: measured per-probe counters)
 - [ ] M5 — Second-stage depth (per-service version→CVE applicability + auth-boundary)
 - [ ] M6 — Engine self-measurement corpus (deliberately vuln + secure targets; FP rate, precision/recall, validation-success, avg depth) + fixtures for adversarial/edge/second-stage detectors
 - [ ] M7 — Self-hostable OAST collaborator (`secskills oast-server`) + wire SSRF/XXE validation
@@ -25,6 +25,8 @@ listed at the bottom.
 
 ## Status log
 (append newest at top)
+
+- M4 DONE — advstats.go: every adversarial module records candidates/positive/inconclusive per-probe (advProbe/advHit/advInconc, mutex-guarded). Written to adv-stats.json (in evidence bundle); ledger renders measured denominators, not derived. Verified: jaxy.dev 59 candidate probes measured. Next: M5 second-stage depth.
 
 - M2+M3 DONE — planner.go: runtime planner fires follow-up probes from discovered capabilities. Rule 1: disclosed internal hostname resolved externally -> MEDIUM pivot finding if publicly resolvable (proven by planner_test.go). Rule 2: service version -> OSV CVE-applicability probe (version-inferred, MEDIUM cap). Rules 3/4: credential/SSRF -> STOP_POLICY_BOUNDARY edges. Every decision persisted to planner-graph.jsonl (append-only, in evidence-bundle hash) + rendered as Runtime planner attack-graph section. Next: M4 adversarial ledger instrumentation.
 

@@ -24,6 +24,7 @@ func originReach(wd, target, candidateIP string, edge edgeInfo, wantTitle string
 	if wantTitle == "" {
 		return nil // no reliable content signature -> do not claim a bypass
 	}
+	advProbe("origin-lookingglass", 1)
 	dialer := &net.Dialer{Timeout: 6 * time.Second}
 	conn, err := tls.DialWithDialer(dialer, "tcp", candidateIP+":443",
 		&tls.Config{InsecureSkipVerify: true, ServerName: target})
@@ -54,6 +55,7 @@ func originReach(wd, target, candidateIP string, edge edgeInfo, wantTitle string
 	if gotTitle == "" || !strings.EqualFold(strings.TrimSpace(gotTitle), strings.TrimSpace(wantTitle)) {
 		return nil
 	}
+	advHit("origin-lookingglass")
 	ev := captureEvidence(wd, "edge.origin-exposure@1", target, "http-response", "text/plain",
 		"GET https://"+candidateIP+"/ (Host: "+target+")", "redacted",
 		[]byte(statusLine+"\nmatched page title: "+gotTitle+"\n(no edge marker in response headers)"))
@@ -98,6 +100,7 @@ func trustedHeaderBypass(wd, u string, baseCode int) *Finding {
 	if baseCode != 401 && baseCode != 403 {
 		return nil
 	}
+	advProbe("header-acl-bypass", 1)
 	variants := []struct {
 		name string
 		hdrs map[string]string
@@ -127,6 +130,7 @@ func trustedHeaderBypass(wd, u string, baseCode int) *Finding {
 		}
 		resp.Body.Close()
 		if resp.StatusCode == 200 {
+			advHit("header-acl-bypass")
 			ev := captureEvidence(wd, "edge.header-acl-bypass@1", u, "http-response", "text/plain",
 				"GET "+u+" ["+v.name+"]", "none",
 				[]byte(fmt.Sprintf("baseline HTTP %d; with %q -> HTTP 200", baseCode, v.name)))
