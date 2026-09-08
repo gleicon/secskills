@@ -50,7 +50,23 @@ func hvScore(f *Finding, capCount map[string]int) float64 {
 	if len(f.EvidenceRefs) > 0 {
 		evq = 0.8
 	}
-	return exploit*sens*(0.5+0.5*chainNorm)*(0.5+0.5*evq) * 10
+	// Expected Pivot Value: reward findings that grant capabilities opening NEW
+	// attack surface (a red teamer's real objective), so a Prometheus disclosure
+	// or an anonymous-read store outranks a deprecated-TLS observation.
+	epv := 1.0
+	capWeight := map[string]float64{
+		capCredCandidate: 1.0, capAnonRead: 0.8, capInternalHosts: 0.7,
+		capServerSideFetch: 0.9, capAuthBoundary: 0.6, capServiceVersion: 0.4,
+		capTakeover: 0.7, capRedirect: 0.5,
+	}
+	for _, c := range caps {
+		epv += capWeight[c]
+	}
+	// pure hardening deviations (no capability) get a low pivot value
+	if len(caps) == 0 {
+		epv = 0.5
+	}
+	return exploit * sens * (0.5 + 0.5*chainNorm) * (0.5 + 0.5*evq) * epv * 6
 }
 
 // renderHumanQueue returns the top manual-validation candidates.
@@ -82,11 +98,11 @@ func renderHumanQueue(findings []Finding) string {
 		return "_No high-value manual-validation candidates._"
 	}
 	var b strings.Builder
-	b.WriteString("| Rank | Score | Finding | Asset | State | Why it needs a human |\n|---|--:|---|---|---|---|\n")
+	b.WriteString("| Rank | Expected Pivot Value | Finding | Asset | State | Why it needs a human |\n|---|--:|---|---|---|---|\n")
 	for i, it := range items {
 		fmt.Fprintf(&b, "| %d | %.1f | %s | %s | %s | %s |\n", i+1, it.score, safeField(displayTitle(it.f)), safeField(it.f.Host), orDash(it.f.State), hvReason(it.f))
 	}
-	b.WriteString("\n_Ranked by exploitability x asset-sensitivity x chaining-potential x evidence-quality. Automation does the broad work; a specialist should spend time here first._")
+	b.WriteString("\n_Ranked by **Expected Pivot Value** = exploitability x asset-sensitivity x chaining x evidence-quality x capability-pivot-weight. Optimizes human attention for probability of reaching a NEW capability, not severity alone — so a disclosure that pivots outranks a deprecated-TLS observation._")
 	return b.String()
 }
 

@@ -129,6 +129,7 @@ func renderProReport(target, wd string, findings []Finding) string {
 	// ---- 7. Attack Narrative + adversarial path exploration ------------------
 	p("---\n\n## 7. Attack Narrative\n\n%s\n\n", attackNarrative(findings, live, subs))
 	p("### Attack-path exploration\n\n%s\n\n", renderAttackGraph(findings, readProfile(wd)))
+	p("### Adversarial control ledger\n\n%s\n\n", renderAdversarialLedger(findings, live, wd, registrableDomain(hostOf(target)), subs))
 	p("### Human red-team queue (top manual-validation candidates)\n\n%s\n\n---\n\n", renderHumanQueue(findings))
 
 	// ---- 8. OWASP Coverage Matrix --------------------------------------------
@@ -837,7 +838,11 @@ func renderRootFindings(findings []Finding) string {
 		fmt.Fprintf(&b, "**Business risk.** %s\n\n", businessRiskFor(f))
 		fmt.Fprintf(&b, "**Severity rationale.** %s\n\n", severityJustification(f))
 		fmt.Fprintf(&b, "**Technical impact.** %s\n\n", displayImpact(f))
-		fmt.Fprintf(&b, "**Remediation.**\n\n%s\n\n_Reference: `secskills kb %s`._\n\n---\n\n", remediationByType(f), f.KBClass)
+		if rem := remediationByType(f); strings.TrimSpace(rem) != "" {
+			fmt.Fprintf(&b, "**Remediation.**\n\n%s\n\n_Reference: `secskills kb %s`._\n\n---\n\n", rem, f.KBClass)
+		} else {
+			fmt.Fprintf(&b, "**Remediation.** None required (negative evidence / informational).\n\n---\n\n")
+		}
 	}
 	fmt.Fprintf(&b, "_%d observations collapsed to %d root findings._", len(findings), n)
 	return b.String()

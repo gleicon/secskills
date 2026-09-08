@@ -182,7 +182,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		if f.ObservedEvidence != "" {
 			w(`<p><b>Representative observed evidence.</b></p><pre>%s</pre>`, esc(f.ObservedEvidence))
 		}
-		w(`<p><b>Remediation.</b></p><div class="rem">%s</div></div></div>`, mdBulletsToHTML(remediationByType(f)))
+		if rem := remediationByType(f); strings.TrimSpace(rem) != "" {
+			w(`<p><b>Remediation.</b></p><div class="rem">%s</div></div></div>`, mdBulletsToHTML(rem))
+		} else {
+			w(`<p><b>Remediation.</b> None required (negative evidence / informational).</p></div></div>`)
+		}
 	}
 	w(`<h3>Observation Detail</h3><div class="rem">%s</div>`, mdBulletsToHTML(renderObservationAppendix(findings)))
 	w(`</section>`)
@@ -190,9 +194,11 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 	// ---- Attack narrative ----
 	w(`<section class="page"><h2>5. Attack Narrative</h2><p>%s</p>
       <h3>Attack-path exploration</h3><div class="rem">%s</div>
+      <h3>Adversarial control ledger</h3><div class="rem">%s</div>
       <h3>Human red-team queue</h3><div class="rem">%s</div></section>`,
 		esc(attackNarrative(findings, live, subs)),
 		mdBulletsToHTML(renderAttackGraph(findings, readProfile(wd))),
+		mdBulletsToHTML(renderAdversarialLedger(findings, live, wd, registrableDomain(hostOf(target)), subs)),
 		mdBulletsToHTML(renderHumanQueue(findings)))
 	w(`<section class="page"><h2>Edge &amp; Defense Map (CDN / WAF / origin looking-glass)</h2><div class="rem">%s</div></section>`,
 		mdBulletsToHTML(renderEdgeMap(wd, target)))

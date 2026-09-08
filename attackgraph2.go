@@ -12,38 +12,40 @@ import (
 // emerges from execution accounting, not prose synthesis.
 
 type attackPath struct {
-	name       string
-	precond    string   // capability that opens the path
-	steps      []string // narrative steps
-	advanced   bool     // a second capability/discovery extended it
-	validated  bool     // a safe primitive confirmed an intermediate step
-	boundary   string   // why it stops (proof boundary)
+	name      string
+	precond   string   // capability that opens the path
+	steps     []string // narrative steps
+	advanced  bool     // a second capability/discovery extended it
+	validated bool     // a safe primitive confirmed an intermediate step
+	boundary  string   // human proof-boundary text
+	stop      string   // machine termination reason (STOP_*)
 }
 
 // pathTemplates define the candidate attack paths the engine reasons about.
 var pathTemplates = []struct {
-	name     string
-	precond  string
-	extendBy []string // capabilities that "advance" the path
-	validatedBy []string // capabilities that mark a validated primitive
-	boundary string
+	name        string
+	precond     string
+	extendBy    []string
+	validatedBy []string
+	boundary    string
+	stop        string // termination reason when NOT validated
 }{
 	{"Internal-topology reconnaissance", capInternalHosts, []string{capServiceVersion, capPublicService}, []string{},
-		"Stops at disclosure; internal hosts are not routable from the external vantage and no exfiltration is attempted."},
+		"Stops at disclosure; internal hosts are not routable from the external vantage and no exfiltration is attempted.", "STOP_NO_REACHABLE_TARGET"},
 	{"Version-to-CVE applicability", capServiceVersion, []string{capInternalHosts}, []string{},
-		"Stops at a version-inferred lead; CVE exploitation is out of scope (requires authorized-exploit)."},
+		"Stops at a version-inferred lead; CVE exploitation is out of scope (requires authorized-exploit).", "STOP_REQUIRES_AUTHORIZED_EXPLOIT"},
 	{"Anonymous-read data exposure", capAnonRead, []string{capCredCandidate, capInternalHosts}, []string{capCredCandidate},
-		"Stops at reading benign/enumerable content; no secret extraction is attempted."},
+		"Stops at reading benign/enumerable content; no secret extraction is attempted.", "STOP_POLICY_BOUNDARY"},
 	{"Credential-material acquisition", capCredCandidate, []string{capAnonRead}, []string{},
-		"Stops at an unvalidated credential-like pattern; secrets are neither confirmed nor used."},
+		"Stops at an unvalidated credential-like pattern; secrets are neither confirmed nor used.", "STOP_POLICY_BOUNDARY"},
 	{"Server-side request forgery", capServerSideFetch, []string{}, []string{capServerSideFetch},
-		"Validated only via an out-of-band OAST callback to our canary; no internal resource is read."},
+		"Validated only via an out-of-band OAST callback to our canary; no internal resource is read.", "STOP_NO_OAST_INTERACTION"},
 	{"Subdomain takeover", capTakeover, []string{}, []string{},
-		"Stops at a takeover candidate; provider claimability is not exercised."},
+		"Stops at a takeover candidate; provider claimability is not exercised.", "STOP_POLICY_BOUNDARY"},
 	{"Open-redirect abuse", capRedirect, []string{}, []string{capRedirect},
-		"Validated by observing the redirect to a canary; no victim interaction is involved."},
+		"Validated by observing the redirect to a canary; no victim interaction is involved.", "STOP_NO_PRIMITIVE"},
 	{"Authorization-boundary bypass", capAuthBoundary, []string{}, []string{},
-		"Stops after read-only bypass variants; no credentials are attempted."},
+		"Stops after read-only bypass variants; no credentials are attempted.", "STOP_REQUIRES_CREDENTIALS"},
 }
 
 // buildAttackGraph accumulates capabilities across findings and evaluates each
@@ -70,7 +72,7 @@ func buildAttackGraph(findings []Finding) []attackPath {
 		if present[t.precond] == 0 {
 			continue
 		}
-		p := attackPath{name: t.name, precond: t.precond, boundary: t.boundary,
+		p := attackPath{name: t.name, precond: t.precond, boundary: t.boundary, stop: t.stop,
 			steps: []string{"initial capability: " + t.precond}}
 		for _, e := range t.extendBy {
 			if present[e] > 0 {
@@ -81,6 +83,7 @@ func buildAttackGraph(findings []Finding) []attackPath {
 		for _, v := range t.validatedBy {
 			if validatedCap[v] {
 				p.validated = true
+				p.stop = "REACHED_PROOF_BOUNDARY (validated primitive; stopped by policy before impact)"
 				p.steps = append(p.steps, "validated primitive: "+v)
 			}
 		}
@@ -124,9 +127,15 @@ func renderAttackGraph(findings []Finding, profile Profile) string {
 		}
 		return score(paths[i]) > score(paths[j])
 	})
-	b.WriteString("| Attack path | Opened by | Advanced | Validated | Proof boundary |\n|---|---|:--:|:--:|---|\n")
+	b.WriteString("| Attack path | Opened by | Advanced | Validated | Termination reason |\n|---|---|:--:|:--:|---|\n")
+	term := map[string]int{}
 	for _, p := range paths {
-		fmt.Fprintf(&b, "| %s | `%s` | %s | %s | %s |\n", p.name, p.precond, yesno(p.advanced), yesno(p.validated), p.boundary)
+		fmt.Fprintf(&b, "| %s | `%s` | %s | %s | `%s` |\n", p.name, p.precond, yesno(p.advanced), yesno(p.validated), p.stop)
+		term[p.stop]++
+	}
+	b.WriteString("\n**Termination reasons** (why each path stopped — distinguishes \"controls resisted\" from \"scanner could not continue\"):\n\n")
+	for _, k := range sortedKeys(term) {
+		fmt.Fprintf(&b, "- `%s`: %d\n", k, term[k])
 	}
 	b.WriteString("\n_Paths are derived from the capabilities each finding grants (capability model), not from prose. A path \"advances\" when a second capability extends it and \"validates\" when a harmless primitive (OAST callback, redirect-to-canary, arithmetic SSTI) confirms an intermediate step._")
 	return b.String()
@@ -137,4 +146,13 @@ func yesno(b bool) string {
 		return "yes"
 	}
 	return "—"
+}
+
+func sortedKeys(m map[string]int) []string {
+	ks := make([]string, 0, len(m))
+	for k := range m {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	return ks
 }

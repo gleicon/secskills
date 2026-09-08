@@ -38,6 +38,32 @@ func findingType(f *Finding) string {
 // remediationByType returns condition-specific remediation. Falls back to the
 // cheat-sheet content (kbRemediation) when the type is unknown.
 func remediationByType(f *Finding) string {
+	// Detector-keyed remediation first — prevents cross-family contamination
+	// (e.g. password-hashing advice attaching to an authorization finding).
+	switch detectorOf(f) {
+	case "http.authz-boundary@1":
+		return "" // negative evidence: a control that held needs no remediation
+	case "edge.origin-exposure@1":
+		return "- Restrict the origin to accept traffic only from the CDN/WAF (IP allow-list of edge ranges, authenticated origin pulls, or mTLS).\n- Rotate the origin IP and ensure it is not discoverable via historical DNS, certificate transparency, or favicon/JARM pivots.\n- Terminate direct-to-origin TLS with a client-cert requirement so only the edge can connect."
+	case "edge.header-acl-bypass@1":
+		return "- Strip inbound `X-Forwarded-For`, `X-Real-IP`, `True-Client-IP`, `CF-Connecting-IP`, `X-Forwarded-Host`, and `X-Original-URL` at the edge; never trust client-supplied values for authorization.\n- Make access decisions on the authenticated identity, not on IP/host headers.\n- Normalize header parsing so the edge and origin agree (no case/whitespace/duplicate differentials)."
+	case "http.open-redirect@1":
+		return "- Validate redirect targets against an allow-list of known paths/hosts; reject absolute or protocol-relative URLs.\n- Prefer server-side mapping tokens over user-supplied URLs in redirect parameters."
+	case "ssti.arithmetic@1":
+		return "- Do not pass user input into template rendering; use logic-less templates or strict sandboxing.\n- Context-encode output; upgrade the template engine and disable dangerous features.\n- Manually confirm the injection and assess RCE reachability."
+	case "http.ssrf@1":
+		return "- Enforce an egress allow-list; block requests to internal/link-local ranges and cloud metadata (169.254.169.254).\n- Resolve and pin destinations server-side; reject user-controlled URLs/schemes.\n- Require authentication on internal services (defense in depth)."
+	case "http.rate-limit-absent@1":
+		return "- Add per-IP / per-identity rate-limiting and abuse controls on unauthenticated endpoints (WAF rule, gateway policy, or app middleware).\n- Return `429` with `Retry-After` and monitor for abuse."
+	case "identity.oidc-surface@1":
+		return "- Confirm the OIDC discovery exposure is intended; review authorization/token endpoints, redirect-URI validation, PKCE enforcement, and token audience/lifetime in an authorized identity-focused pass."
+	case "api.schema-exposure@1", "api.verbose-error@1":
+		return "- Restrict API schema/introspection to authenticated internal use in production; disable GraphQL introspection where not intended.\n- Return generic errors; never leak stack traces, framework versions, or file paths."
+	case "tech.service-fingerprint@1":
+		return "" // fingerprint context only; the service-specific pack carries remediation
+	case "dns.dnssec-unknown@1":
+		return "" // explicit non-evaluation, not a finding
+	}
 	switch findingType(f) {
 	case "tls-deprecated":
 		return "- Disable TLS 1.0 and TLS 1.1; require TLS 1.2+ (prefer TLS 1.3).\n" +
@@ -134,6 +160,11 @@ func severityFromScore(score float64) string {
 // severityJustification reconciles the computed CVSS score with the assessment
 // severity, making any deliberate adjustment explicit (no LOW-vs-5.3 contradiction).
 func severityJustification(f *Finding) string {
+	if cvssNotApplicable(f) {
+		if strings.EqualFold(f.Severity, "INFORMATIONAL") {
+			return "Informational / negative evidence — CVSS is N/A (CVSS scores a vulnerability, not a control that held or a context observation)."
+		}
+	}
 	_, score := cvssVector(f)
 	band := severityFromScore(score)
 	if strings.EqualFold(band, f.Severity) {
