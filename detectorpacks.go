@@ -44,7 +44,7 @@ func runDetectorPacks(wd, base string) []Finding {
 		if f := fingerprintService(wd, base, code, hdr, body); f != nil {
 			out = append(out, *f)
 			// technology-triggered second-stage: deepen on the fingerprinted service
-			out = append(out, techSecondStage(wd, base, f.Title, hdr, body)...)
+			out = append(out, runSecondStage(wd, base, f.Title)...)
 		}
 		if f := publicBucket(wd, base, code, hdr, body); f != nil {
 			out = append(out, *f)
@@ -392,52 +392,4 @@ func title(body string) string {
 	return strings.TrimSpace(body[start : start+k])
 }
 
-// techSecondStage deepens testing on a fingerprinted service (non-destructive).
-// Discovery should dynamically deepen testing rather than stop at a fingerprint.
-func techSecondStage(wd, base, fpTitle string, hdr http.Header, body string) []Finding {
-	var out []Finding
-	low := strings.ToLower(fpTitle)
-	switch {
-	case strings.Contains(low, "minio"):
-		out = append(out, minioSecondStage(wd, base)...)
-	}
-	return out
-}
 
-// minioSecondStage runs MinIO-specific anonymous checks (GET-only, no writes):
-// anonymous bucket listing at the root, health endpoint, and admin console
-// exposure. A MinIO fingerprint should trigger these, not stop at "exposed".
-func minioSecondStage(wd, base string) []Finding {
-	var out []Finding
-	// 1. anonymous S3-style listing at the service root
-	if code, _, body, ok := getWithBody(strings.TrimRight(base, "/")+"/", 32*1024); ok && code == 200 &&
-		(strings.Contains(body, "<ListAllMyBucketsResult") || strings.Contains(body, "<ListBucketResult")) {
-		ev := captureEvidence(wd, "storage.public-bucket@1", base, "http-response", "application/xml", "GET "+base+"/", "redacted", []byte(body[:min(len(body), 8192)]))
-		out = append(out, Finding{
-			Title: "MinIO anonymous bucket listing", Host: base, Severity: "HIGH", Status: "open",
-			Confidence: "Confirmed", Validation: "behavior-confirmed",
-			ObservedEvidence: "Anonymous GET on the MinIO root returned an S3 ListBuckets/ListBucket XML response — buckets/objects are enumerable unauthenticated.",
-			ImpactText:  "Anonymous listing of a MinIO object store discloses bucket and object names and may expose object contents. Require authentication; disable anonymous policy.",
-			EvidenceCmd: "curl -sk " + shellQuote(base) + "/", ProbeKind: "body-contains", ProbeURL: base + "/", ProbeArg: "<List",
-			EvidenceRefs: []string{ev}, DetectorID: "storage.public-bucket@1", Capabilities: []string{capAnonRead},
-		})
-	}
-	// 2. admin console exposure
-	for _, p := range []string{"/minio/", "/minio/login", "/minio/health/live"} {
-		u := strings.TrimRight(base, "/") + p
-		if code, _, body, ok := getWithBody(u, 8*1024); ok && code == 200 &&
-			(strings.Contains(strings.ToLower(body), "minio") || p == "/minio/health/live") {
-			ev := captureEvidence(wd, "tech.service-fingerprint@1", base, "http-response", "text/plain", "GET "+u, "none", []byte(fmt.Sprintf("HTTP %d at %s", code, p)))
-			out = append(out, Finding{
-				Title: "MinIO console/health endpoint reachable (" + p + ")", Host: u, Severity: "LOW", Status: "open",
-				Confidence: "Confirmed", Validation: "behavior-confirmed",
-				ObservedEvidence: fmt.Sprintf("GET %s returned HTTP %d — the MinIO console/health surface is reachable unauthenticated.", u, code),
-				ImpactText:  "An exposed MinIO console widens the attack surface (login brute-force, version CVEs). Restrict to trusted networks.",
-				EvidenceCmd: "curl -skI " + shellQuote(u), ProbeKind: "status", ProbeURL: u,
-				EvidenceRefs: []string{ev}, DetectorID: "tech.service-fingerprint@1", Capabilities: []string{capServiceVersion},
-			})
-			break
-		}
-	}
-	return out
-}

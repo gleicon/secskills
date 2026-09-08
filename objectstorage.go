@@ -11,9 +11,9 @@ import (
 // anonymous listing across S3 / GCS / Azure Blob. All GET-only, bounded, throttled.
 
 // bucketCandidates builds a bounded, de-duplicated candidate list from the apex
-// and discovered labels (e.g. "assets.example.cloud" -> assets, example-assets, ...).
+// and discovered labels (e.g. "assets.example.com" -> assets, example-assets, ...).
 func bucketCandidates(apex string, labels []string) []string {
-	base := strings.SplitN(apex, ".", 2)[0] // "example" from "example.cloud"
+	base := strings.SplitN(apex, ".", 2)[0] // "example" from "example.com"
 	suffixes := []string{"", "-assets", "-static", "-backup", "-backups", "-media", "-uploads", "-data", "-public", "-dev", "-prod", "-logs", "-cdn"}
 	seen := map[string]bool{}
 	var out []string

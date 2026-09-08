@@ -201,6 +201,7 @@ func detectorRegistry() []DetectorMeta {
 		{ID: "http.ssrf@1", IdentityCompatible: true, Description: "server-side request forgery (OAST-validated)"},
 		{ID: "edge.origin-exposure@1", IdentityCompatible: true, Description: "origin reachable directly, bypassing the CDN/WAF"},
 		{ID: "edge.header-acl-bypass@1", IdentityCompatible: true, Description: "access-control bypass via trusted header"},
+		{ID: "tech.second-stage@1", IdentityCompatible: true, Description: "technology-triggered second-stage anonymous check"},
 		{ID: "nuclei@1", IdentityCompatible: true, Description: "nuclei template match"},
 		{ID: "generic@1", IdentityCompatible: true, Description: "unclassified finding"},
 	}
