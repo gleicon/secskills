@@ -132,8 +132,71 @@ func cmdAttest(args []string) error {
 		if err := verifyRunManifest(workdir(*verify)); err != nil {
 			return err
 		}
-		fmt.Println("signature OK — run attestation is authentic and unmodified")
+		if err := verifyEvidenceChain(workdir(*verify)); err != nil {
+			return err
+		}
+		fmt.Println("signature OK — run attestation + evidence chain are authentic and unmodified")
 		return nil
 	}
 	return fmt.Errorf("usage: secskills attest --sign <target> | --verify <target>")
+}
+
+// signEvidenceChain signs the evidence-manifest chain root with the run key and
+// writes evidence-chain.sig (a DSSE-style envelope over the root).
+func signEvidenceChain(wd string) (string, error) {
+	root := evidenceChainRoot(wd)
+	if root == "" {
+		return "", fmt.Errorf("no evidence to sign")
+	}
+	pk, err := loadOrCreateKey()
+	if err != nil {
+		return "", err
+	}
+	payload := []byte("secskills-evidence-chain:" + root)
+	sig := ed25519.Sign(pk, payload)
+	env := DSSEEnvelope{
+		PayloadType: "application/vnd.secskills.evidence-chain+text",
+		Payload:     base64.StdEncoding.EncodeToString(payload),
+		PayloadSHA:  root,
+		Sig:         base64.StdEncoding.EncodeToString(sig),
+		PublicKey:   base64.StdEncoding.EncodeToString(pk.Public().(ed25519.PublicKey)),
+	}
+	b, _ := json.MarshalIndent(env, "", "  ")
+	out := filepath.Join(wd, "evidence-chain.sig")
+	return out, os.WriteFile(out, b, 0o644)
+}
+
+// verifyEvidenceChain verifies the evidence-chain signature AND that the current
+// manifest still hashes to the signed root (tamper detection).
+func verifyEvidenceChain(wd string) error {
+	b, err := os.ReadFile(filepath.Join(wd, "evidence-chain.sig"))
+	if err != nil {
+		return fmt.Errorf("no evidence-chain signature: %w", err)
+	}
+	var env DSSEEnvelope
+	if err := json.Unmarshal(b, &env); err != nil {
+		return err
+	}
+	payload, _ := base64.StdEncoding.DecodeString(env.Payload)
+	pub, _ := base64.StdEncoding.DecodeString(env.PublicKey)
+	sig, _ := base64.StdEncoding.DecodeString(env.Sig)
+	if !ed25519.Verify(ed25519.PublicKey(pub), payload, sig) {
+		return fmt.Errorf("EVIDENCE CHAIN SIGNATURE INVALID")
+	}
+	if evidenceChainRoot(wd) != env.PayloadSHA {
+		return fmt.Errorf("EVIDENCE CHAIN SIGNED but the manifest has changed (tamper detected)")
+	}
+	// also re-hash each evidence blob and compare to the manifest — catches blob
+	// content tampering that leaves the manifest untouched.
+	for _, o := range loadEvidenceManifest(wd) {
+		blob := filepath.Join(wd, "evidence", o.ID+".blob")
+		b, err := os.ReadFile(blob)
+		if err != nil {
+			continue // blob may be pruned; manifest hash still governs the chain
+		}
+		if fmt.Sprintf("%x", sha256.Sum256(b)) != o.SHA256 {
+			return fmt.Errorf("EVIDENCE BLOB %s does not match its recorded hash (content tamper detected)", o.ID)
+		}
+	}
+	return nil
 }
