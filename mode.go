@@ -193,6 +193,8 @@ func cmdTest(args []string) error {
 	deep := fs.Bool("deep", false, "deep phase: nuclei + sslscan + content-discovery + screenshots (slow)")
 	profileFlag := fs.String("profile", "safe-active", "aggression profile: passive | safe-active | adversarial-readonly | authorized-exploit")
 	authToken := fs.String("auth-token", "", "Bearer token for authenticated testing (optional)")
+	authTokenB := fs.String("auth-token-b", "", "second identity Bearer token for BOLA/authz differential (optional)")
+	cookieB := fs.String("cookie-b", "", "second identity Cookie header for BOLA/authz differential (optional)")
 	cookie := fs.String("cookie", "", "Cookie header for authenticated testing (optional)")
 	authHeader := fs.String("auth-header", "", "raw 'Name: value' header for authenticated testing (optional)")
 	save := fs.Bool("save", true, "persist a run file after testing")
@@ -322,14 +324,34 @@ func cmdTest(args []string) error {
 	// authenticated pass (only when credentials supplied)
 	if authProvided {
 		fmt.Printf("== authenticated testing (credentials supplied) ==\n")
+		// second identity for BOLA/authz differential (authorized-exploit depth)
+		credB := map[string]string{}
+		if *authTokenB != "" {
+			credB["Authorization"] = "Bearer " + *authTokenB
+		}
+		if *cookieB != "" {
+			credB["Cookie"] = *cookieB
+		}
+		record := func(f Finding) {
+			mu.Lock()
+			seq++
+			f.ID = fmt.Sprintf("F%03d", seq)
+			classify(&f)
+			addFinding(wd, f)
+			mu.Unlock()
+		}
+		// JWT inspection of the supplied bearer token (once)
+		for _, f := range jwtInspect(*authToken) {
+			record(f)
+		}
 		for _, u := range inScopeURLs {
 			for _, f := range checkAuthenticated(u, authHeaders) {
-				mu.Lock()
-				seq++
-				f.ID = fmt.Sprintf("F%03d", seq)
-				classify(&f)
-				addFinding(wd, f)
-				mu.Unlock()
+				record(f)
+			}
+			if len(credB) > 0 {
+				if f := authzDifferential(wd, u, authHeaders, credB); f != nil {
+					record(*f)
+				}
 			}
 		}
 	} else {

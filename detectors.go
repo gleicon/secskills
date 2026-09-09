@@ -203,6 +203,9 @@ func detectorRegistry() []DetectorMeta {
 		{ID: "edge.header-acl-bypass@1", IdentityCompatible: true, Description: "access-control bypass via trusted header"},
 		{ID: "tech.second-stage@1", IdentityCompatible: true, Description: "technology-triggered second-stage anonymous check"},
 		{ID: "pivot.internal-host-reachable@1", IdentityCompatible: true, Description: "disclosed internal hostname resolves publicly (runtime pivot)"},
+		{ID: "auth.jwt@1", IdentityCompatible: true, Description: "JWT weakness (alg:none / weak alg / no-exp / sensitive claim)"},
+		{ID: "auth.cookie-flags@1", IdentityCompatible: true, Description: "session cookie missing Secure/HttpOnly/SameSite"},
+		{ID: "authz.bola-candidate@1", IdentityCompatible: true, Description: "potential BOLA/IDOR (object readable by two identities)"},
 		{ID: "nuclei@1", IdentityCompatible: true, Description: "nuclei template match"},
 		{ID: "generic@1", IdentityCompatible: true, Description: "unclassified finding"},
 	}
