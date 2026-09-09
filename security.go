@@ -49,10 +49,18 @@ func validURLTarget(u string) bool {
 // ssrfSafeURL validates a URL for the MCP fetch tool: http/https only, and the
 // resolved IPs must not be private/loopback/link-local/reserved (defeats SSRF and
 // DNS-rebinding by checking every resolved address). Returns nil if safe.
+// allowLocalProbes lets the self-measurement harness (cmdMeasure) probe its own
+// loopback corpus servers. It is set ONLY by `secskills measure`, never by any
+// target-facing path, so the SSRF guard is unchanged in real engagements.
+var allowLocalProbes bool
+
 func ssrfSafeURL(rawurl string) error {
 	l := strings.ToLower(rawurl)
 	if !strings.HasPrefix(l, "http://") && !strings.HasPrefix(l, "https://") {
 		return fmt.Errorf("scheme must be http or https")
+	}
+	if allowLocalProbes {
+		return nil
 	}
 	host := hostOf(rawurl)
 	if !validHost(host) {
