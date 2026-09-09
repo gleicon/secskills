@@ -18,13 +18,15 @@ listed at the bottom.
 - [x] M6 — Engine self-measurement corpus (measure.go: local vuln+safe servers, per-detector precision/recall; caught a real SSTI bug)
 - [x] M7 — Self-hostable OAST collaborator (`secskills oast-server`, HTTP callback + /poll); DNS-based OAST = future (needs DNS lib)
 - [x] M8 — Origin looking-glass depth: leaf-cert SHA-256 correlation (Confirmed origin) + Censys adapter (key-gated). JARM/JA3 = future (needs raw-TLS lib)
-- [ ] M9 — Interop exports (SARIF + CycloneDX/VEX)
+- [x] M9 — Interop exports: `secskills export --format sarif|cyclonedx` (SARIF 2.1.0 + CycloneDX 1.5 with embedded VEX analysis state)
 - [ ] M10 — Continuous mode (`secskills watch`: scheduled retest + posture drift)
 - [ ] M11 — Per-evidence signing (evidence manifest hash-chain + signature)
 - [ ] M12 — Credentialed depth (authorized-exploit: BOLA/IDOR user-A-vs-B, session/JWT/cookie, OAuth flow)
 
 ## Status log
 (append newest at top)
+
+- M9 DONE — export.go + `secskills export`: SARIF 2.1.0 (rules per detector, results with finding-key fingerprints, security-severity) and CycloneDX 1.5 with embedded VEX (analysis.state mapped from our validation model: exploitable / in_triage / not_affected / false_positive). Verified on jaxy.dev: 10 SARIF rules / 43 results; 43 CycloneDX vulns. Next: M10 continuous mode.
 
 - M8 DONE — edgeintel.go: origin-bypass now correlates the candidate leaf certificate SHA-256 with the edge cert (same cert => Confirmed, strongest same-origin proof); Censys hosts-search adapter (CENSYS_API_ID/SECRET) widens origin candidates alongside Shodan. JARM/JA3 active TLS fingerprint noted future (raw ClientHello crafting not in crypto/tls). Next: M9 interop exports.
 

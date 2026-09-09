@@ -33,6 +33,7 @@ COMMANDS:
   sandbox     Build/run an artifact isolated in Docker, then test it
   report      Assemble report (--render|--html|--pdf|--audit) / --retest a prior run
   tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
+  export      Export findings as SARIF 2.1.0 or CycloneDX 1.5 + VEX (interop)
   compress    Shrink text via tldt (token hygiene)
   scrub       Redact PII/secrets via tldt (for reports)
   scan        Detect prompt-injection + PII in untrusted output
@@ -116,6 +117,8 @@ func main() {
 		err = cmdMeasure(args)
 	case "oast-server":
 		err = cmdOASTServer(args)
+	case "export":
+		err = cmdExport(args)
 	case "mcp":
 		err = cmdMCP(args)
 	case "version", "-v", "--version":
