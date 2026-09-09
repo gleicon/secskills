@@ -43,14 +43,14 @@ func checkSecurityHeaders(url string) []Finding {
 	add := func(sev, title, header, impact string) {
 		n++
 		out = append(out, Finding{
-			ID:           fmt.Sprintf("HDR-%02d", n),
-			Title:        title,
-			Host:         url,
-			Severity:     sev,
-			Status:       "open",
-			Confidence:   "Confirmed",   // header absence is directly observed
-			Validation:   "passive",     // observed, not exploited
-			ImpactText:   impact,
+			ID:               fmt.Sprintf("HDR-%02d", n),
+			Title:            title,
+			Host:             url,
+			Severity:         sev,
+			Status:           "open",
+			Confidence:       "Confirmed", // header absence is directly observed
+			Validation:       "passive",   // observed, not exploited
+			ImpactText:       impact,
 			EvidenceCmd:      fmt.Sprintf("curl -skI %s | grep -i %q || echo MISSING", shellQuote(url), header),
 			ExpectedOpen:     "MISSING",
 			ObservedEvidence: "Response Content-Type: " + dash(ct) + "; header " + header + " absent from the response headers.",
@@ -140,18 +140,18 @@ func checkTLS(url string) []Finding {
 		if err == nil {
 			conn.Close()
 			out = append(out, Finding{
-				ID:           "TLS-" + strings.ReplaceAll(name, " ", ""),
-				Title:        "Deprecated " + name + " accepted (RFC 8996)",
-				Host:         url,
-				Severity:     "MEDIUM",
-				Status:       "open",
-				Confidence:   "Confirmed",           // protocol was actually negotiated
-				Validation:   "behavior-confirmed",  // we completed a handshake at this version
-				ImpactText:   "The server completed a " + name + " handshake. On a hostile network this enables downgrade/interception of sessions to this host. Deprecated by RFC 8996.",
+				ID:               "TLS-" + strings.ReplaceAll(name, " ", ""),
+				Title:            "Deprecated " + name + " accepted (RFC 8996)",
+				Host:             url,
+				Severity:         "MEDIUM",
+				Status:           "open",
+				Confidence:       "Confirmed",          // protocol was actually negotiated
+				Validation:       "behavior-confirmed", // we completed a handshake at this version
+				ImpactText:       "The server completed a " + name + " handshake. On a hostile network this enables downgrade/interception of sessions to this host. Deprecated by RFC 8996.",
 				ObservedEvidence: "Completed a " + name + " TLS handshake to " + host + ":443 (connection accepted at this protocol version).",
-				EvidenceCmd:  fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", shellQuote(host), strings.ToLower(strings.ReplaceAll(name, " ", ""))),
-				ExpectedOpen: "ACCEPTED",
-				ProbeKind:    "tls-weak", ProbeURL: url, ProbeArg: strings.TrimPrefix(name, "TLS "),
+				EvidenceCmd:      fmt.Sprintf("echo | openssl s_client -connect %s:443 -%s 2>/dev/null | grep -q 'Cipher is' && echo ACCEPTED", shellQuote(host), strings.ToLower(strings.ReplaceAll(name, " ", ""))),
+				ExpectedOpen:     "ACCEPTED",
+				ProbeKind:        "tls-weak", ProbeURL: url, ProbeArg: strings.TrimPrefix(name, "TLS "),
 			})
 		}
 	}
@@ -209,7 +209,7 @@ func checkExposure(url string) []Finding {
 				Confidence: "Low", Validation: "inconclusive",
 				ObservedEvidence: "Could not assess " + p + ": " + why + ".",
 				ImpactText:       "The endpoint could not be evaluated this run (" + why + "); re-test from an unblocked vantage point. Not counted as secure.",
-				ProbeKind: "status", ProbeURL: base + p,
+				ProbeKind:        "status", ProbeURL: base + p,
 			})
 			continue
 		}

@@ -22,13 +22,13 @@ import (
 var embeddedFingerprints []byte
 
 type fpSignature struct {
-	Name         string            `json:"name"`
-	Category     string            `json:"category"`
-	Headers      map[string]string `json:"headers,omitempty"` // header -> substring (empty = presence)
-	Cookies      []string          `json:"cookies,omitempty"`
-	Body         []string          `json:"body,omitempty"`
-	SecondStage  string            `json:"second_stage,omitempty"`
-	Implies      []string          `json:"implies,omitempty"`
+	Name        string            `json:"name"`
+	Category    string            `json:"category"`
+	Headers     map[string]string `json:"headers,omitempty"` // header -> substring (empty = presence)
+	Cookies     []string          `json:"cookies,omitempty"`
+	Body        []string          `json:"body,omitempty"`
+	SecondStage string            `json:"second_stage,omitempty"`
+	Implies     []string          `json:"implies,omitempty"`
 }
 
 type fpRegistry struct {

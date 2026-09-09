@@ -27,12 +27,12 @@ import (
 //     - legacy.example.com
 
 type scopeFile struct {
-	Authorized bool
-	Intrusive  bool
-	Expires    time.Time
-	Targets    []string
-	OutOfScope []string
-	Type       string
+	Authorized  bool
+	Intrusive   bool
+	Expires     time.Time
+	Targets     []string
+	OutOfScope  []string
+	Type        string
 	ConfirmedBy string
 }
 

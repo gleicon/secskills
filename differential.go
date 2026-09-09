@@ -31,39 +31,6 @@ func responseAmbiguity(code int, hdr http.Header, body string) (bool, string) {
 	return false, ""
 }
 
-// Item 11 — Differential request primitive.
-// Detectors reason by comparison, not isolated responses. diffTriad fetches a
-// baseline (root), the target path, and a random non-existent path, so a positive
-// only stands when the target differs from the SPA/reverse-proxy fallback.
-type diffResult struct {
-	targetCode, baseCode, randCode int
-	targetLen, randLen             int
-	targetType                     string
-	distinct                       bool // target is meaningfully different from the random-URL fallback
-}
-
-func diffTriad(base, path string) (diffResult, bool) {
-	root := strings.TrimRight(base, "/") + "/"
-	target := strings.TrimRight(base, "/") + path
-	rnd := strings.TrimRight(base, "/") + "/secskills-" + randToken() + "-nonexistent"
-	bc, _, _, ok1 := getWithBody(root, 16*1024)
-	tc, th, tb, ok2 := getWithBody(target, 64*1024)
-	rc, _, rb, ok3 := getWithBody(rnd, 16*1024)
-	if !ok2 {
-		return diffResult{}, false
-	}
-	_ = ok1
-	_ = ok3
-	res := diffResult{
-		targetCode: tc, baseCode: bc, randCode: rc,
-		targetLen: len(tb), randLen: len(rb), targetType: th.Get("Content-Type"),
-	}
-	// distinct when the target returns 200 while the random URL does not, or the
-	// bodies differ substantially in size — filters SPA/catch-all 200s.
-	res.distinct = tc == 200 && (rc != 200 || absInt(len(tb)-len(rb)) > 64)
-	return res, true
-}
-
 // corsOriginMatrix probes a small set of Origins (read-only, GET) and reports
 // whether the endpoint reflects an arbitrary origin — the differential CORS test.
 func corsOriginMatrix(url string) (reflectsArbitrary bool, allowsCreds bool, ok bool) {
@@ -93,13 +60,6 @@ func corsOriginMatrix(url string) (reflectsArbitrary bool, allowsCreds bool, ok 
 	return acao == evil, strings.EqualFold(acac, "true"), true
 }
 
-func absInt(a int) int {
-	if a < 0 {
-		return -a
-	}
-	return a
-}
-
 // corsDifferential actively confirms arbitrary-origin reflection using the origin
 // matrix, producing a behavior-confirmed CORS finding (distinct from the passive
 // header check). Only reflection of an attacker origin is reported; the severity
@@ -121,9 +81,9 @@ func corsDifferential(wd, url string) *Finding {
 		Title: title, Host: url, Severity: sev, Status: "open",
 		Confidence: "Confirmed", Validation: "behavior-confirmed",
 		ObservedEvidence: "Differential Origin test: a random attacker Origin was reflected verbatim in Access-Control-Allow-Origin; Access-Control-Allow-Credentials=" + boolStr(creds) + ".",
-		ImpactText:   impact,
-		EvidenceCmd:  "curl -sk -H 'Origin: https://evil.example' -I " + shellQuote(url) + " | grep -i access-control",
-		ProbeKind:  "manual", ProbeURL: url, EvidenceRefs: []string{ev}, DetectorID: "http.cors@1",
+		ImpactText:       impact,
+		EvidenceCmd:      "curl -sk -H 'Origin: https://evil.example' -I " + shellQuote(url) + " | grep -i access-control",
+		ProbeKind:        "manual", ProbeURL: url, EvidenceRefs: []string{ev}, DetectorID: "http.cors@1",
 	}
 }
 

@@ -95,7 +95,6 @@ func addFinding(wd string, f Finding) error {
 	return os.WriteFile(workFindings(wd), b, 0o600)
 }
 
-
 // writeRun freezes the workdir findings into a persistent run file and updates
 // the `latest` symlink (D-4). Returns the run file path.
 func writeRun(target, wd, runType string) (string, error) {

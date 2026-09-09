@@ -1,12 +1,12 @@
 package main
 
 import (
-	"sort"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -134,5 +134,3 @@ func evidenceChainRoot(wd string) string {
 	}
 	return root
 }
-
-

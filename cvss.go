@@ -1,9 +1,9 @@
 package main
 
 import (
-	"strings"
 	"fmt"
 	"math"
+	"strings"
 )
 
 // A real (indicative) CVSS v3.1 base vector + score per finding, computed with the
@@ -81,8 +81,6 @@ func cvssString(f *Finding) string {
 	}
 	return s
 }
-
-
 
 // cvssScoreStr returns the exact CVSS v3.1 base score as a string (deterministic;
 // no bands/ranges — if we know the vector we show the number).

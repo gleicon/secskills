@@ -1,20 +1,20 @@
 package main
 
 import (
-	"net/http"
-	"regexp"
-	"io"
-	"time"
 	"context"
-	"net"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
+	"time"
 )
 
 // buildCommit is set at build time via -ldflags; falls back to a runtime git
@@ -35,30 +35,30 @@ func gitCommit() string {
 // RunMeta is the run-attestation record: who/what/when produced this result, so
 // an auditor can bind a report to an exact run, engine, and scope.
 type RunMeta struct {
-	RunID        string `json:"run_id"`
-	Target       string `json:"target"`
-	Started      string `json:"started"`
-	Finished     string `json:"finished"`
-	EngineVer    string `json:"engine_version"`
-	GitCommit    string `json:"git_commit"`
-	Operator     string `json:"operator"`
-	Authorization string `json:"authorization"`
-	FindingsSHA  string `json:"findings_sha256"`
-	Profile      string `json:"aggression_profile"`
-	ScopeSHA     string `json:"scope_manifest_sha256"`
-	ConfigSHA    string `json:"config_sha256"`
-	RulesetSHA   string `json:"ruleset_sha256"`
-	EvidenceSHA  string `json:"raw_evidence_bundle_sha256"`
-	LocalIP      string `json:"scanner_local_ip"`
-	PublicEgress string `json:"scanner_public_egress_ip"`
-	ToolVersions map[string]ToolInfo `json:"tool_versions"`
+	RunID         string              `json:"run_id"`
+	Target        string              `json:"target"`
+	Started       string              `json:"started"`
+	Finished      string              `json:"finished"`
+	EngineVer     string              `json:"engine_version"`
+	GitCommit     string              `json:"git_commit"`
+	Operator      string              `json:"operator"`
+	Authorization string              `json:"authorization"`
+	FindingsSHA   string              `json:"findings_sha256"`
+	Profile       string              `json:"aggression_profile"`
+	ScopeSHA      string              `json:"scope_manifest_sha256"`
+	ConfigSHA     string              `json:"config_sha256"`
+	RulesetSHA    string              `json:"ruleset_sha256"`
+	EvidenceSHA   string              `json:"raw_evidence_bundle_sha256"`
+	LocalIP       string              `json:"scanner_local_ip"`
+	PublicEgress  string              `json:"scanner_public_egress_ip"`
+	ToolVersions  map[string]ToolInfo `json:"tool_versions"`
 }
 
 // ToolInfo identifies an external tool precisely: parsed version plus the SHA-256
 // of the executable (which pins the exact binary better than a version string).
 type ToolInfo struct {
-	Version   string `json:"version"`     // parsed semver, or "unknown"
-	ExeSHA256 string `json:"exe_sha256"`  // hash of the resolved executable
+	Version   string `json:"version"`    // parsed semver, or "unknown"
+	ExeSHA256 string `json:"exe_sha256"` // hash of the resolved executable
 	Cmd       string `json:"version_cmd"`
 }
 

@@ -17,12 +17,12 @@ import (
 // turns the one-shot engine into a continuous monitor without external tooling.
 
 type driftEntry struct {
-	Time       string         `json:"time"`
-	PrevRun    string         `json:"prev_run"`
-	CurRun     string         `json:"cur_run"`
-	Counts     map[string]int `json:"counts"` // NEW/FIXED/REGRESSED/PERSISTING
-	NewKeys    []string       `json:"new_keys,omitempty"`
-	FixedKeys  []string       `json:"fixed_keys,omitempty"`
+	Time      string         `json:"time"`
+	PrevRun   string         `json:"prev_run"`
+	CurRun    string         `json:"cur_run"`
+	Counts    map[string]int `json:"counts"` // NEW/FIXED/REGRESSED/PERSISTING
+	NewKeys   []string       `json:"new_keys,omitempty"`
+	FixedKeys []string       `json:"fixed_keys,omitempty"`
 }
 
 func cmdWatch(args []string) error {

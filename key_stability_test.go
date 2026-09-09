@@ -13,11 +13,11 @@ func TestStableFindingKeyInvariants(t *testing.T) {
 
 	// must be invariant under these cosmetic variations
 	invariants := []*Finding{
-		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "http://api.example.com", ProbeURL: "http://api.example.com/metrics"},        // scheme
-		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics/"},      // trailing slash
+		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "http://api.example.com", ProbeURL: "http://api.example.com/metrics"},           // scheme
+		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics/"},        // trailing slash
 		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com:443", ProbeURL: "https://api.example.com:443/metrics"}, // default port
-		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://API.Example.com", ProbeURL: "https://API.Example.com/metrics"},        // host case
-		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics?x=1"},    // query
+		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://API.Example.com", ProbeURL: "https://API.Example.com/metrics"},         // host case
+		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics?x=1"},     // query
 	}
 	for i, f := range invariants {
 		if got := observationKey(f); got != k {
@@ -27,9 +27,9 @@ func TestStableFindingKeyInvariants(t *testing.T) {
 
 	// must DIFFER when identity semantics differ
 	differ := []*Finding{
-		{DetectorID: "http.cors@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics"},          // detector
+		{DetectorID: "http.cors@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/metrics"},              // detector
 		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://other.example.com", ProbeURL: "https://other.example.com/metrics"}, // asset
-		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/actuator"},   // control/path
+		{DetectorID: "http.exposure-path@1", ProbeKind: "status", Host: "https://api.example.com", ProbeURL: "https://api.example.com/actuator"},    // control/path
 	}
 	for i, f := range differ {
 		if got := observationKey(f); got == k {

@@ -30,13 +30,13 @@ func doAudit(target, output string) error {
 				scorecard[fam] = map[string]any{"precision": precision(sc), "recall": recall(sc), "tp": sc.tp, "fp": sc.fp, "fn": sc.fn}
 			}
 			att := map[string]any{
-				"attestation":       m,
-				"controls":          buildLedger(live, findings),
-				"finding_count":     len(findings),
-				"findings":          auditFindingRefs(findings),
-				"detector_registry": detectorRegistry(),
+				"attestation":        m,
+				"controls":           buildLedger(live, findings),
+				"finding_count":      len(findings),
+				"findings":           auditFindingRefs(findings),
+				"detector_registry":  detectorRegistry(),
 				"detector_scorecard": scorecard,
-				"evidence_manifest": loadEvidenceManifest(wd),
+				"evidence_manifest":  loadEvidenceManifest(wd),
 			}
 			ab, _ := json.MarshalIndent(att, "", "  ")
 			os.WriteFile(filepath.Join(wd, "attestation.json"), ab, 0o644)

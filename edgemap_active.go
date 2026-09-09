@@ -73,7 +73,7 @@ func originReach(wd, target, candidateIP string, edge edgeInfo, wantTitle string
 		ImpactText:       "Origin exposure defeats edge security controls: WAF rulesets, rate-limiting, DDoS and bot management are all bypassed by connecting to the origin IP directly. Restrict the origin to accept traffic only from the CDN (IP allow-list / authenticated origin pulls / mTLS).",
 		EvidenceCmd:      "curl -sk --resolve " + shellQuote(target) + ":443:" + candidateIP + " https://" + target + "/ -I",
 		ProbeKind:        "manual", ProbeURL: "https://" + target, EvidenceRefs: []string{ev},
-		DetectorID:       "edge.origin-exposure@1", Capabilities: []string{capAuthBoundary, capPublicService},
+		DetectorID: "edge.origin-exposure@1", Capabilities: []string{capAuthBoundary, capPublicService},
 	}
 }
 
@@ -147,7 +147,7 @@ func trustedHeaderBypass(wd, u string, baseCode int) *Finding {
 				ImpactText:       "A client-controlled header changes an authorization decision, letting an attacker spoof internal-trust headers to reach protected functionality. Strip inbound X-Forwarded-*/CF-Connecting-IP/True-Client-IP at the edge and never trust them for authorization.",
 				EvidenceCmd:      "curl -sk -H '" + v.name + "' " + shellQuote(u),
 				ProbeKind:        "status", ProbeURL: u,
-				EvidenceRefs:     []string{ev}, DetectorID: "edge.header-acl-bypass@1", Capabilities: []string{capAuthBoundary},
+				EvidenceRefs: []string{ev}, DetectorID: "edge.header-acl-bypass@1", Capabilities: []string{capAuthBoundary},
 			}
 		}
 	}

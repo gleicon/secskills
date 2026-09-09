@@ -76,7 +76,7 @@ func ssHTTPPaths(service, sev string, paths []string, sig string) func(wd, base 
 				ObservedEvidence: fmt.Sprintf("GET %s returned HTTP %d — the %s surface answers unauthenticated.", u, code, service),
 				ImpactText:       "An exposed " + service + " endpoint widens the attack surface (enumeration, version CVEs, potential unauthenticated data). Restrict to trusted networks / require authentication.",
 				EvidenceCmd:      "curl -skI " + shellQuote(u), ProbeKind: "status", ProbeURL: u,
-				EvidenceRefs:     []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capServiceVersion},
+				EvidenceRefs: []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capServiceVersion},
 			})
 			break // one hit per service is enough
 		}
@@ -102,7 +102,7 @@ func ssJSONPaths(service string, paths []string) func(wd, base string) []Finding
 				ObservedEvidence: fmt.Sprintf("GET %s returned HTTP 200 JSON — the %s status/health API answers unauthenticated.", u, service),
 				ImpactText:       "The " + service + " status API discloses operational state (seal/health/version) that aids targeting. Require authentication / network restriction.",
 				EvidenceCmd:      "curl -sk " + shellQuote(u), ProbeKind: "status", ProbeURL: u,
-				EvidenceRefs:     []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capServiceVersion, capInternalHosts},
+				EvidenceRefs: []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capServiceVersion, capInternalHosts},
 			})
 			break
 		}
@@ -125,7 +125,7 @@ func ssObjectStore(wd, base string) []Finding {
 			ObservedEvidence: "Anonymous GET on the object-store root returned an S3 ListBuckets/ListBucket XML response — buckets/objects are enumerable unauthenticated.",
 			ImpactText:       "Anonymous listing discloses bucket and object names and may expose object contents. Require authentication; disable anonymous policy.",
 			EvidenceCmd:      "curl -sk " + shellQuote(base) + "/", ProbeKind: "body-contains", ProbeURL: base + "/", ProbeArg: "<List",
-			EvidenceRefs:     []string{ev}, DetectorID: "storage.public-bucket@1", Capabilities: []string{capAnonRead},
+			EvidenceRefs: []string{ev}, DetectorID: "storage.public-bucket@1", Capabilities: []string{capAnonRead},
 		})
 	}
 	for _, p := range []string{"/minio/health/live", "/minio/", "/minio/login"} {
@@ -139,7 +139,7 @@ func ssObjectStore(wd, base string) []Finding {
 				ObservedEvidence: fmt.Sprintf("GET %s returned HTTP %d — the object-store console/health surface is reachable unauthenticated.", u, code),
 				ImpactText:       "An exposed console widens the attack surface (login brute-force, version CVEs). Restrict to trusted networks.",
 				EvidenceCmd:      "curl -skI " + shellQuote(u), ProbeKind: "status", ProbeURL: u,
-				EvidenceRefs:     []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capServiceVersion},
+				EvidenceRefs: []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capServiceVersion},
 			})
 			break
 		}
@@ -158,7 +158,7 @@ func ssElasticsearch(wd, base string) []Finding {
 			ObservedEvidence: "GET /_cat/indices returned an index listing unauthenticated — data indices are enumerable and likely readable.",
 			ImpactText:       "Anonymous Elasticsearch access exposes indexed data (often PII/logs) to anyone. Enable authentication (X-Pack/OpenSearch security) and restrict network access.",
 			EvidenceCmd:      "curl -sk " + shellQuote(base) + "/_cat/indices", ProbeKind: "status", ProbeURL: base + "/_cat/indices",
-			EvidenceRefs:     []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capAnonRead, capInternalHosts},
+			EvidenceRefs: []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capAnonRead, capInternalHosts},
 		})
 	}
 	return out
@@ -178,7 +178,7 @@ func ssConsul(wd, base string) []Finding {
 		ObservedEvidence: "GET /v1/catalog/services returned the service catalog unauthenticated — internal service topology is disclosed.",
 		ImpactText:       "Anonymous Consul access discloses (and can modify, with write ACLs) service registration and KV data. Enable ACLs with default-deny and restrict the HTTP API.",
 		EvidenceCmd:      "curl -sk " + shellQuote(u), ProbeKind: "status", ProbeURL: u,
-		EvidenceRefs:     []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capInternalHosts, capAnonRead},
+		EvidenceRefs: []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capInternalHosts, capAnonRead},
 	}}
 }
 
@@ -193,7 +193,7 @@ func ssHarbor(wd, base string) []Finding {
 			ObservedEvidence: "GET /v2/_catalog returned the repository catalog unauthenticated — image names (and often layers) are enumerable.",
 			ImpactText:       "Anonymous registry access exposes internal image names and may allow pulling images containing secrets/source. Require authentication on the registry.",
 			EvidenceCmd:      "curl -sk " + shellQuote(base) + "/v2/_catalog", ProbeKind: "body-contains", ProbeURL: base + "/v2/_catalog", ProbeArg: "repositories",
-			EvidenceRefs:     []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capAnonRead, capInternalHosts},
+			EvidenceRefs: []string{ev}, DetectorID: "tech.second-stage@1", Capabilities: []string{capAnonRead, capInternalHosts},
 		})
 	}
 	return out

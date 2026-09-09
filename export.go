@@ -63,8 +63,8 @@ func buildSARIF(target string, fs []Finding) map[string]any {
 		if _, ok := ruleIdx[det]; !ok {
 			ruleIdx[det] = len(rules)
 			rules = append(rules, map[string]any{
-				"id":   det,
-				"name": det,
+				"id":               det,
+				"name":             det,
 				"shortDescription": map[string]string{"text": rootTitle(f)},
 				"properties": map[string]any{
 					"owasp": f.OWASP, "cwe": f.CWE, "security-severity": cvssNumeric(f),

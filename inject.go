@@ -24,7 +24,7 @@ var injectionRe = regexp.MustCompile(`(?i)` + strings.Join([]string{
 	`new instructions?`, `updated instructions?`,
 	`you are (now|a |an |no longer)`, `you're (now|a |an )`,
 	`system prompt`, `<\s*/?\s*system\s*>`, `\[system\]`, `\bsystem:`,
-	`\bassistant:`, `\buser:`, `\bhuman:`,  // fake conversation turns
+	`\bassistant:`, `\buser:`, `\bhuman:`, // fake conversation turns
 	`act as`, `pretend (to be|you are)`, `roleplay`,
 	`as an? (ai|llm|assistant|language model)`,
 	`override (previous|your|the|all)`, `stop being`,
@@ -153,4 +153,3 @@ func tldtDetect(path string) bool {
 	s := strings.ToLower(string(out))
 	return strings.Contains(s, `"flagged":true`) || strings.Contains(s, `"kind":"injection"`)
 }
-

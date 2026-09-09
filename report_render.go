@@ -253,7 +253,7 @@ func systemicIssues(fs []Finding) string {
 	labels := map[string]string{
 		"config-exposure":         "security-header / misconfiguration gaps (A05) — best fixed once at the CDN/edge",
 		"crypto-secrets":          "transport-security weaknesses (A02) — deprecated TLS and missing HSTS",
-		"components-supply-chain":  "outdated components with known CVEs (A06)",
+		"components-supply-chain": "outdated components with known CVEs (A06)",
 		"access-control":          "access-control gaps (A01)",
 		"auth-session":            "authentication/session weaknesses (A07)",
 	}
@@ -644,8 +644,7 @@ func rootKey(f Finding) string {
 }
 
 func sevRankN(s string) int {
-	m := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
-	if v, ok := m[strings.ToUpper(s)]; ok {
+	if v, ok := severityOrder[strings.ToUpper(s)]; ok {
 		return v
 	}
 	return 5
@@ -772,7 +771,6 @@ func retestDeltaSection(target string) string {
 // (R-NNN), each with its affected assets, max severity, single remediation, and
 // the evidence objects across the group. This is the primary-report view.
 func renderRootFindings(findings []Finding) string {
-	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
 	type group struct {
 		rep     Finding
 		assets  []string
@@ -791,7 +789,7 @@ func renderRootFindings(findings []Finding) string {
 			groups[rk] = g
 			order = append(order, rk)
 		}
-		if rank[f.Severity] < rank[g.rep.Severity] {
+		if severityOrder[f.Severity] < severityOrder[g.rep.Severity] {
 			g.rep = *f // representative = highest severity in the group
 		}
 		if !contains(g.assets, f.Host) {
@@ -891,16 +889,15 @@ func renderObservationAppendix(findings []Finding) string {
 
 // RootView is a collapsed root finding for card rendering (HTML/markdown share).
 type RootView struct {
-	Rep        Finding
-	Assets     []string
-	EvRefs     []string
-	ObsCount   int
+	Rep      Finding
+	Assets   []string
+	EvRefs   []string
+	ObsCount int
 }
 
 // collapseByRoot groups findings by RootKey and returns one RootView per group,
 // severity-ordered, with the highest-severity member as representative.
 func collapseByRoot(findings []Finding) []RootView {
-	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
 	order := []string{}
 	m := map[string]*RootView{}
 	for i := range findings {
@@ -912,7 +909,7 @@ func collapseByRoot(findings []Finding) []RootView {
 			m[rk] = g
 			order = append(order, rk)
 		}
-		if rank[f.Severity] < rank[g.Rep.Severity] {
+		if severityOrder[f.Severity] < severityOrder[g.Rep.Severity] {
 			g.Rep = f
 		}
 		if !contains(g.Assets, f.Host) {
@@ -929,7 +926,7 @@ func collapseByRoot(findings []Finding) []RootView {
 	for _, rk := range order {
 		out = append(out, *m[rk])
 	}
-	sort.SliceStable(out, func(i, j int) bool { return rank[out[i].Rep.Severity] < rank[out[j].Rep.Severity] })
+	sort.SliceStable(out, func(i, j int) bool { return severityOrder[out[i].Rep.Severity] < severityOrder[out[j].Rep.Severity] })
 	return out
 }
 

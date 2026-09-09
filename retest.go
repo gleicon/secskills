@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -14,11 +14,12 @@ import (
 // has no automated probe (manual) and its status is left unchanged.
 // reprobe re-verifies a finding in Go with no shell. It returns a tri-state plus
 // the evidence observed this run:
-//   "open"          - the weakness is still present
-//   "mitigated"     - the weakness is gone (control now present)
-//   "inconclusive"  - the host was unreachable/errored, so we cannot assert
-//                     either way (never silently counted as fixed)
-//   "manual"        - no structured probe; requires human recheck
+//
+//	"open"          - the weakness is still present
+//	"mitigated"     - the weakness is gone (control now present)
+//	"inconclusive"  - the host was unreachable/errored, so we cannot assert
+//	                  either way (never silently counted as fixed)
+//	"manual"        - no structured probe; requires human recheck
 func reprobe(f *Finding) (state string, evidence string) {
 	switch f.ProbeKind {
 	case "header-missing":

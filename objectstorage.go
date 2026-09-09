@@ -67,8 +67,8 @@ func enumObjectStorage(wd, apex string, labels []string) []Finding {
 					Host:  probe.url, Severity: "HIGH", Status: "open",
 					Confidence: "Confirmed", Validation: "behavior-confirmed",
 					ObservedEvidence: fmt.Sprintf("Anonymous GET %s returned HTTP 200 with a bucket listing (%s). Object keys are enumerable unauthenticated.", probe.url, probe.kind),
-					ImpactText:  "An anonymously-listable object store discloses stored object names and can expose their contents. Restrict the bucket policy and disable anonymous listing.",
-					EvidenceCmd: "curl -sk " + shellQuote(probe.url), ProbeKind: "body-contains", ProbeURL: probe.url, ProbeArg: probe.sig,
+					ImpactText:       "An anonymously-listable object store discloses stored object names and can expose their contents. Restrict the bucket policy and disable anonymous listing.",
+					EvidenceCmd:      "curl -sk " + shellQuote(probe.url), ProbeKind: "body-contains", ProbeURL: probe.url, ProbeArg: probe.sig,
 					EvidenceRefs: []string{ev}, DetectorID: "storage.public-bucket@1", Capabilities: []string{capAnonRead},
 				})
 				break // one hit per bucket is enough

@@ -1,7 +1,5 @@
 package main
 
-
-
 // complianceMap returns the SOC 2, ISO 27001, and PCI-DSS controls a finding maps
 // to, so the report doubles as compliance evidence (CISO can attach it to a SOC 2
 // audit). Keyed by KB class / OWASP category.
@@ -93,4 +91,3 @@ func complianceFor(kbClass string) compliance {
 		}
 	}
 }
-

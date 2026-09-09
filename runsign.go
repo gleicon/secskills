@@ -48,10 +48,10 @@ func loadOrCreateKey() (ed25519.PrivateKey, error) {
 // DSSEEnvelope is a minimal signing envelope (payloadType + payload + sig).
 type DSSEEnvelope struct {
 	PayloadType string `json:"payloadType"`
-	Payload     string `json:"payload"`     // base64 of the signed bytes
+	Payload     string `json:"payload"` // base64 of the signed bytes
 	PayloadSHA  string `json:"payload_sha256"`
-	Sig         string `json:"signature"`   // base64 ed25519 sig
-	PublicKey   string `json:"public_key"`  // base64 ed25519 public key
+	Sig         string `json:"signature"`  // base64 ed25519 sig
+	PublicKey   string `json:"public_key"` // base64 ed25519 public key
 }
 
 // signRunManifest signs run-meta.json into run-attestation.sig (a DSSE envelope).
