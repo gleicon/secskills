@@ -17,7 +17,7 @@ listed at the bottom.
 - [x] M5 — Second-stage depth: fingerprint extracts service version → runtime planner OSV CVE-applicability chains per service
 - [x] M6 — Engine self-measurement corpus (measure.go: local vuln+safe servers, per-detector precision/recall; caught a real SSTI bug)
 - [x] M7 — Self-hostable OAST collaborator (`secskills oast-server`, HTTP callback + /poll); DNS-based OAST = future (needs DNS lib)
-- [ ] M8 — Origin looking-glass depth (JARM fingerprint; Censys / passive-DNS adapters, key-gated)
+- [x] M8 — Origin looking-glass depth: leaf-cert SHA-256 correlation (Confirmed origin) + Censys adapter (key-gated). JARM/JA3 = future (needs raw-TLS lib)
 - [ ] M9 — Interop exports (SARIF + CycloneDX/VEX)
 - [ ] M10 — Continuous mode (`secskills watch`: scheduled retest + posture drift)
 - [ ] M11 — Per-evidence signing (evidence manifest hash-chain + signature)
@@ -25,6 +25,8 @@ listed at the bottom.
 
 ## Status log
 (append newest at top)
+
+- M8 DONE — edgeintel.go: origin-bypass now correlates the candidate leaf certificate SHA-256 with the edge cert (same cert => Confirmed, strongest same-origin proof); Censys hosts-search adapter (CENSYS_API_ID/SECRET) widens origin candidates alongside Shodan. JARM/JA3 active TLS fingerprint noted future (raw ClientHello crafting not in crypto/tls). Next: M9 interop exports.
 
 - M7 DONE — oastserver.go + `secskills oast-server`: self-hostable HTTP OAST collaborator. Captures canary interactions (token from Host label / path), persists JSONL, exposes /poll?token= for the engine confirmation channel already wired in ssrfOASTProbe. Smoke-tested: interaction recorded + poll 200/404. DNS-based OAST tracked as future (needs a DNS server lib, out of stdlib). Next: M8 origin looking-glass depth.
 
