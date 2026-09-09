@@ -99,6 +99,32 @@ observation is the system of record; the report is a view over it.
 - **Three deliverables** — full technical report, concise `report --audit` for
   external auditors, and a machine-readable `attestation.json`.
 
+### Adversarial engine (v0.28)
+
+- **Runtime capability planner** — discoveries trigger follow-up probes at runtime
+  (a disclosed internal hostname is resolved externally; a fingerprinted version
+  runs an OSV CVE-applicability probe). Every decision is a persisted attack-graph
+  edge (`planner-graph.jsonl`) with an explicit termination reason.
+- **Technology fingerprint registry** — data-driven (`fingerprints.json` + overlay),
+  grows like Wappalyzer/Shodan: `secskills fp list|add|import` (ingests Wappalyzer
+  `technologies.json` or favicon mmh3 hashes). Fingerprints trigger second-stage
+  packs (object store, Elasticsearch, Grafana, Vault, Consul, Argo CD, Harbor,
+  Kubernetes, GitLab, Jenkins, …).
+- **Edge & defense recon** — CDN/WAF fingerprint, favicon/cert Shodan+Censys
+  looking-glass for origin IPs, direct-origin bypass (leaf-cert correlated),
+  trusted-header ACL bypass.
+- **Engine self-measurement** — `secskills measure` runs the live detectors against
+  a local vulnerable+safe corpus and reports precision/recall (caught a real bug).
+- **Continuous mode** — `secskills watch --interval` re-assesses and reports posture
+  drift (NEW/FIXED/REGRESSED by finding key).
+- **Interop + integrity** — `secskills export --format sarif|cyclonedx` (SARIF 2.1.0,
+  CycloneDX 1.5 + VEX); signed tamper-evident evidence chain (`attest --verify`);
+  self-hostable `secskills oast-server` for blind-SSRF validation.
+- **Credentialed depth** — JWT inspection, session-cookie flags, BOLA/IDOR
+  differential (`--auth-token-b`).
+
+Build progress and roadmap: see [PROGRESS.md](PROGRESS.md).
+
 Evidence handling, retention and governance: see [EVIDENCE-POLICY.md](EVIDENCE-POLICY.md).
 
 ## Multi-agent
