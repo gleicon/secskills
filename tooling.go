@@ -121,7 +121,7 @@ func httpxProbe(hosts []string, workers int) []LiveHost {
 		}
 		var lh LiveHost
 		if json.Unmarshal([]byte(line), &lh) == nil && lh.URL != "" {
-			lh.Title = safeField(lh.Title)   // untrusted target data
+			lh.Title = safeField(lh.Title) // untrusted target data
 			lh.Server = safeField(lh.Server)
 			lives = append(lives, lh)
 		}

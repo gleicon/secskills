@@ -9,9 +9,10 @@ import (
 )
 
 // cmdKB serves the embedded OWASP knowledge base offline.
-//   secskills kb                 list classes
-//   secskills kb <class>         print a class's cheat-sheet content
-//   secskills kb top10           the Top 10 -> class index
+//
+//	secskills kb                 list classes
+//	secskills kb <class>         print a class's cheat-sheet content
+//	secskills kb top10           the Top 10 -> class index
 func cmdKB(args []string) error {
 	fs2 := flag.NewFlagSet("kb", flag.ContinueOnError)
 	list := fs2.Bool("list", false, "list classes and exit")
@@ -75,8 +76,9 @@ func kbSummary() string {
 }
 
 // cmdRecipes serves the embedded per-stack (Node/Python/Go) recipes.
-//   secskills recipes            list recipe files
-//   secskills recipes <name>     print a recipe (e.g. injection)
+//
+//	secskills recipes            list recipe files
+//	secskills recipes <name>     print a recipe (e.g. injection)
 func cmdRecipes(args []string) error {
 	names := recipeNames()
 	if len(args) == 0 {

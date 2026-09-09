@@ -18,7 +18,7 @@ func fileUID(fi fs.FileInfo) (int, bool) {
 }
 
 // shellQuote wraps s in single quotes for safe shell interpolation, escaping any
-// embedded single quote as '\''. Used for every host/URL that lands in a stored
+// embedded single quote as '\”. Used for every host/URL that lands in a stored
 // EvidenceCmd — those values originate from target-controlled DNS/HTTP data and
 // must never be able to break out of the command at retest time.
 func shellQuote(s string) string {

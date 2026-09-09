@@ -36,17 +36,23 @@ func TestEngineMeasurementCorpus(t *testing.T) {
 		return m
 	}
 
-	rv := redirectServer(true); rs := redirectServer(false)
+	rv := redirectServer(true)
+	rs := redirectServer(false)
 	check("http.open-redirect@1", true, firedOf(openRedirectProbe(wd, rv.URL)), firedOf(openRedirectProbe(wd, rs.URL)))
-	rv.Close(); rs.Close()
+	rv.Close()
+	rs.Close()
 
-	sv := sstiServer(true); ss := sstiServer(false)
+	sv := sstiServer(true)
+	ss := sstiServer(false)
 	check("ssti.arithmetic@1", true, firedOf(sstiArithmeticProbe(wd, sv.URL)), firedOf(sstiArithmeticProbe(wd, ss.URL)))
-	sv.Close(); ss.Close()
+	sv.Close()
+	ss.Close()
 
-	bv := bucketServer(true); bs := bucketServer(false)
+	bv := bucketServer(true)
+	bs := bucketServer(false)
 	check("storage.public-bucket@1", true, firedSl(ssObjectStore(wd, bv.URL)), firedSl(ssObjectStore(wd, bs.URL)))
-	bv.Close(); bs.Close()
+	bv.Close()
+	bs.Close()
 
 	ov := oidcServer()
 	check("identity.oidc-surface@1", true, firedOf(oidcSurface(wd, ov.URL)), nil)

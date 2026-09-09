@@ -15,13 +15,13 @@ import (
 // the stable finding_key. The report shows both the automated and reviewed
 // severity with reviewer, timestamp, and reason.
 type Override struct {
-	Key             string `json:"finding_key"`
-	AutomatedSev    string `json:"automated_severity"`
-	ReviewedSev     string `json:"reviewed_severity"`
-	Reviewer        string `json:"reviewer"`
-	Timestamp       string `json:"timestamp"`
-	Reason          string `json:"reason"`
-	EvidenceRef     string `json:"evidence_ref,omitempty"`
+	Key          string `json:"finding_key"`
+	AutomatedSev string `json:"automated_severity"`
+	ReviewedSev  string `json:"reviewed_severity"`
+	Reviewer     string `json:"reviewer"`
+	Timestamp    string `json:"timestamp"`
+	Reason       string `json:"reason"`
+	EvidenceRef  string `json:"evidence_ref,omitempty"`
 }
 
 func overridesPath(target string) string {

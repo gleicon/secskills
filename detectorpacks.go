@@ -1,12 +1,12 @@
 package main
 
 import (
-	"regexp"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -81,8 +81,8 @@ func apiMethodsAndErrors(wd, base string) *Finding {
 			Title: "Verbose error / stack trace disclosed", Host: base, Severity: "LOW", Status: "open",
 			Confidence: "Confirmed", Validation: "behavior-confirmed",
 			ObservedEvidence: fmt.Sprintf("GET %s -> HTTP %d; response contained framework stack-trace / debug markers.", rnd, code),
-			ImpactText:  "Verbose errors leak framework, file paths and internal structure, aiding targeted attacks. Return generic errors in production.",
-			EvidenceCmd: "curl -sk " + shellQuote(rnd), ProbeKind: "body-contains", ProbeURL: rnd, ProbeArg: "traceback",
+			ImpactText:       "Verbose errors leak framework, file paths and internal structure, aiding targeted attacks. Return generic errors in production.",
+			EvidenceCmd:      "curl -sk " + shellQuote(rnd), ProbeKind: "body-contains", ProbeURL: rnd, ProbeArg: "traceback",
 			EvidenceRefs: []string{ev}, DetectorID: "api.verbose-error@1",
 		}
 	}
@@ -132,8 +132,8 @@ func rateLimitProbe(wd, base string) *Finding {
 		Title: "No visible rate-limiting on unauthenticated endpoint", Host: base, Severity: "INFORMATIONAL", Status: "open",
 		Confidence: "Medium", Validation: "behavior-confirmed",
 		ObservedEvidence: fmt.Sprintf("Across %d bounded requests, no HTTP 429 and no RateLimit/Retry-After headers were observed. (Bounded probe; a global limiter may still exist.)", rateLimitBudget),
-		ImpactText:  "No externally-visible per-IP throttling on this endpoint. Not a vulnerability by itself; relevant to abuse/DoS posture for a public service.",
-		EvidenceCmd: "for i in $(seq 8); do curl -sk -o /dev/null -w '%%{http_code}\n' " + shellQuote(base) + "; done", ProbeKind: "manual", ProbeURL: base,
+		ImpactText:       "No externally-visible per-IP throttling on this endpoint. Not a vulnerability by itself; relevant to abuse/DoS posture for a public service.",
+		EvidenceCmd:      "for i in $(seq 8); do curl -sk -o /dev/null -w '%%{http_code}\n' " + shellQuote(base) + "; done", ProbeKind: "manual", ProbeURL: base,
 		EvidenceRefs: []string{ev}, DetectorID: "http.rate-limit-absent@1",
 	}
 }
@@ -179,9 +179,9 @@ func fingerprintService(wd, base string, code int, hdr http.Header, body string)
 		Title: "Operational service exposed: " + pick.Name, Host: base, Severity: "INFORMATIONAL",
 		Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 		ObservedEvidence: fmt.Sprintf("Fingerprint registry matched %q via %s (HTTP %d). Full stack: %s. Recommended authorized deeper checks: %s.", pick.Name, pick.Via, code, strings.Join(names, "; "), techNextChecks(pick.Name)),
-		ImpactText:   "Recognized " + pick.Name + " on the external surface. Exposure alone is context, not a vulnerability; deeper service-specific auth/config checks are run by the second-stage pack where available.",
-		EvidenceCmd:  "curl -skI " + shellQuote(base),
-		ProbeKind:    "status", ProbeURL: base, EvidenceRefs: []string{ev},
+		ImpactText:       "Recognized " + pick.Name + " on the external surface. Exposure alone is context, not a vulnerability; deeper service-specific auth/config checks are run by the second-stage pack where available.",
+		EvidenceCmd:      "curl -skI " + shellQuote(base),
+		ProbeKind:        "status", ProbeURL: base, EvidenceRefs: []string{ev},
 		DetectorID: "tech.service-fingerprint@1",
 	}
 	// extract a service version (Server header / body) so the runtime planner can
@@ -264,9 +264,9 @@ func oidcSurface(wd, base string) *Finding {
 			Title: "OAuth/OIDC discovery surface exposed", Host: base, Severity: "INFORMATIONAL",
 			Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 			ObservedEvidence: fmt.Sprintf("issuer=%s; endpoints: %s (via %s)", safeField(iss), strings.Join(caps, ", "), wk),
-			ImpactText:   "The identity provider publishes a discovery document. This is expected for OIDC but defines the auth attack surface (token/authorization/JWKS endpoints) an authorized identity-focused pass should validate (redirect URI handling, PKCE, token config).",
-			EvidenceCmd:  "curl -sk " + shellQuote(u),
-			ProbeKind:    "body-contains", ProbeURL: u, ProbeArg: "issuer", EvidenceRefs: []string{ev},
+			ImpactText:       "The identity provider publishes a discovery document. This is expected for OIDC but defines the auth attack surface (token/authorization/JWKS endpoints) an authorized identity-focused pass should validate (redirect URI handling, PKCE, token config).",
+			EvidenceCmd:      "curl -sk " + shellQuote(u),
+			ProbeKind:        "body-contains", ProbeURL: u, ProbeArg: "issuer", EvidenceRefs: []string{ev},
 			DetectorID: "identity.oidc-surface@1",
 		}
 	}
@@ -286,8 +286,8 @@ func apiSchema(wd, base string) *Finding {
 				Title: "API schema exposed (" + p + ")", Host: base, Severity: "LOW",
 				Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 				ObservedEvidence: fmt.Sprintf("GET %s -> HTTP 200; OpenAPI/Swagger document served unauthenticated.", u),
-				ImpactText:   "The full API contract is readable unauthenticated. Not a vulnerability by itself, but it enumerates endpoints, methods, and parameters that widen the tested surface; review for undocumented or state-changing operations.",
-				EvidenceCmd:  "curl -sk " + shellQuote(u), ProbeKind: "body-contains", ProbeURL: u, ProbeArg: "paths",
+				ImpactText:       "The full API contract is readable unauthenticated. Not a vulnerability by itself, but it enumerates endpoints, methods, and parameters that widen the tested surface; review for undocumented or state-changing operations.",
+				EvidenceCmd:      "curl -sk " + shellQuote(u), ProbeKind: "body-contains", ProbeURL: u, ProbeArg: "paths",
 				EvidenceRefs: []string{ev}, DetectorID: "api.schema-exposure@1",
 			}
 		}
@@ -301,9 +301,9 @@ func apiSchema(wd, base string) *Finding {
 				Title: "GraphQL introspection enabled (" + p + ")", Host: base, Severity: "LOW",
 				Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 				ObservedEvidence: "A read-only __schema introspection query returned the full type system unauthenticated.",
-				ImpactText:   "Introspection exposes the entire GraphQL schema, aiding enumeration of queries/mutations. Disable introspection in production unless intentionally public.",
-				EvidenceCmd:  "curl -sk -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{queryType{name}}}\"}' " + shellQuote(u),
-				ProbeKind:  "manual", ProbeURL: u, EvidenceRefs: []string{ev}, DetectorID: "api.schema-exposure@1",
+				ImpactText:       "Introspection exposes the entire GraphQL schema, aiding enumeration of queries/mutations. Disable introspection in production unless intentionally public.",
+				EvidenceCmd:      "curl -sk -H 'Content-Type: application/json' -d '{\"query\":\"{__schema{queryType{name}}}\"}' " + shellQuote(u),
+				ProbeKind:        "manual", ProbeURL: u, EvidenceRefs: []string{ev}, DetectorID: "api.schema-exposure@1",
 			}
 		}
 	}
@@ -375,8 +375,8 @@ func danglingCNAME(wd, base string) *Finding {
 		Title: "Dangling CNAME — subdomain-takeover candidate (" + provider + ")", Host: base, Severity: "MEDIUM",
 		Status: "open", Confidence: "Low", Validation: "config-inferred",
 		ObservedEvidence: fmt.Sprintf("%s → CNAME %s (%s); the CNAME target does not currently resolve, which is a takeover precondition. Claimability NOT verified (non-destructive scope).", host, cname, provider),
-		ImpactText:   "If the pointed-to " + provider + " resource is unclaimed, an attacker may register it and serve content on this hostname. This is a candidate: provider-specific claimability was not tested.",
-		EvidenceCmd:  "dig +short CNAME " + shellQuote(host), ProbeKind: "manual", ProbeURL: base,
+		ImpactText:       "If the pointed-to " + provider + " resource is unclaimed, an attacker may register it and serve content on this hostname. This is a candidate: provider-specific claimability was not tested.",
+		EvidenceCmd:      "dig +short CNAME " + shellQuote(host), ProbeKind: "manual", ProbeURL: base,
 		EvidenceRefs: []string{ev}, DetectorID: "dns.dangling-cname@1",
 	}
 }
@@ -400,17 +400,10 @@ func publicBucket(wd, base string, code int, hdr http.Header, body string) *Find
 		Title: "Public object storage exposed (" + kind + ")", Host: base, Severity: "MEDIUM",
 		Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 		ObservedEvidence: fmt.Sprintf("HTTP %d; response matched an anonymous %s. Object keys may be enumerable.", code, kind),
-		ImpactText:   "Anonymous listing of an object store discloses stored object names and can expose their contents. Review bucket policy; require authentication and disable anonymous listing.",
-		EvidenceCmd:  "curl -sk " + shellQuote(base), ProbeKind: "body-contains", ProbeURL: base, ProbeArg: "<ListBucketResult",
+		ImpactText:       "Anonymous listing of an object store discloses stored object names and can expose their contents. Review bucket policy; require authentication and disable anonymous listing.",
+		EvidenceCmd:      "curl -sk " + shellQuote(base), ProbeKind: "body-contains", ProbeURL: base, ProbeArg: "<ListBucketResult",
 		EvidenceRefs: []string{ev}, DetectorID: "storage.public-bucket@1",
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // title extracts the <title> text from an HTML body (best-effort, lowercased-safe).
@@ -431,5 +424,3 @@ func title(body string) string {
 	}
 	return strings.TrimSpace(body[start : start+k])
 }
-
-

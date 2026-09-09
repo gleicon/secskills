@@ -426,4 +426,3 @@ func loadOrLatest(target, wd string) []Finding {
 	}
 	return nil
 }
-

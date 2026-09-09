@@ -94,7 +94,6 @@ type osvVuln struct {
 	} `json:"affected"`
 }
 
-
 // fixedAfter reports whether the vuln has a fixed version strictly greater than
 // ver (i.e. our version is genuinely unpatched for it). If no range data exists,
 // returns ok=false so the caller can treat it as low-confidence.
@@ -197,12 +196,12 @@ func cveLookup(host, serverHeader string) *Finding {
 		ids = ids[:10]
 	}
 	f := &Finding{
-		Title:        fmt.Sprintf("Potentially vulnerable %s version %s — manual validation required (%d CVEs correlate via OSV)", name, ver, count),
-		Host:         host,
-		Severity:     sev,
-		Status:       "open",
-		Confidence:   "Low",
-		Validation:   "version-inferred",
+		Title:      fmt.Sprintf("Potentially vulnerable %s version %s — manual validation required (%d CVEs correlate via OSV)", name, ver, count),
+		Host:       host,
+		Severity:   sev,
+		Status:     "open",
+		Confidence: "Low",
+		Validation: "version-inferred",
 		ImpactText: fmt.Sprintf("The %s version is inferred from the Server banner. OSV lists %d CVEs for %s/%s in the %s ecosystem, but this does NOT establish that the host runs the vulnerable build/config or that any CVE is remotely exploitable here (backported distro patches keep the same upstream version). Treat as a lead for manual validation, not a confirmed vulnerability.",
 			name, count, name, ver, eco),
 		EvidenceCmd:  fmt.Sprintf(`curl -s -X POST https://api.osv.dev/v1/query -d '{"version":"%s","package":{"name":"%s","ecosystem":"%s"}}' | jq '[.vulns[]|select(.affected[].ranges[].events[].fixed)]|length'`, ver, pkg, eco),

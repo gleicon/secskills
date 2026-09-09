@@ -13,10 +13,10 @@ import (
 type Profile int
 
 const (
-	ProfilePassive         Profile = iota // OSINT only, no target traffic beyond discovery
-	ProfileSafeActive                     // header/TLS/exposure checks (the classic scanner)
-	ProfileAdversarialRO                  // + bypass variants, safe exploit primitives, OAST, stateful pivots
-	ProfileAuthorizedExploit              // + credentialed/state-changing (requires --intrusive)
+	ProfilePassive           Profile = iota // OSINT only, no target traffic beyond discovery
+	ProfileSafeActive                       // header/TLS/exposure checks (the classic scanner)
+	ProfileAdversarialRO                    // + bypass variants, safe exploit primitives, OAST, stateful pivots
+	ProfileAuthorizedExploit                // + credentialed/state-changing (requires --intrusive)
 )
 
 func parseProfile(s string) Profile {

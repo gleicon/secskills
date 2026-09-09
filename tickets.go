@@ -42,20 +42,20 @@ func cmdTickets(args []string) error {
 	}
 
 	type ticket struct {
-		Key         string   `json:"finding_key"`
-		ID          string   `json:"id"`
-		Title       string   `json:"title"`
-		Severity    string   `json:"severity"`
-		SLA         string   `json:"sla"`
-		Priority    string   `json:"priority"`
-		Asset       string   `json:"affected_asset"`
-		OWASP       string   `json:"owasp"`
-		CWE         string   `json:"cwe"`
-		CVEs        string   `json:"cves"`
-		Team        string   `json:"assignee_team"`
-		BusinessRisk string  `json:"business_risk"`
-		Remediation string   `json:"remediation_ref"`
-		Labels      []string `json:"labels"`
+		Key          string   `json:"finding_key"`
+		ID           string   `json:"id"`
+		Title        string   `json:"title"`
+		Severity     string   `json:"severity"`
+		SLA          string   `json:"sla"`
+		Priority     string   `json:"priority"`
+		Asset        string   `json:"affected_asset"`
+		OWASP        string   `json:"owasp"`
+		CWE          string   `json:"cwe"`
+		CVEs         string   `json:"cves"`
+		Team         string   `json:"assignee_team"`
+		BusinessRisk string   `json:"business_risk"`
+		Remediation  string   `json:"remediation_ref"`
+		Labels       []string `json:"labels"`
 	}
 	mk := func(i int, f Finding) ticket {
 		if f.KBClass == "" {
@@ -118,7 +118,7 @@ func priorityFor(sev string) string {
 // TLS 1.1 on the same host both key to that host's tls-config) into one ticket,
 // keeping the highest severity. Prevents three tickets for one edge config.
 func dedupeByKey(fs []Finding) []Finding {
-	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
+
 	best := map[string]int{} // key -> index into out
 	var out []Finding
 	for i := range fs {
@@ -128,7 +128,7 @@ func dedupeByKey(fs []Finding) []Finding {
 			k = observationKey(&f)
 		}
 		if j, ok := best[k]; ok {
-			if rank[f.Severity] < rank[out[j].Severity] {
+			if severityOrder[f.Severity] < severityOrder[out[j].Severity] {
 				out[j] = f
 			}
 			continue

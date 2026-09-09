@@ -106,8 +106,8 @@ func runPlanner(wd, host string, findings []Finding) []Finding {
 				Title: "Disclosed internal hostname is publicly resolvable: " + name, Host: "https://" + host, Severity: "MEDIUM",
 				Status: "open", Confidence: "Confirmed", Validation: "behavior-confirmed",
 				ObservedEvidence: fmt.Sprintf("An internal hostname disclosed by this host (%s) resolves publicly to %s. The disclosure is not merely informational — the named service is externally addressable, expanding the attack surface.", name, strings.Join(addrs, ", ")),
-				ImpactText:   "A disclosed internal service name that resolves publicly can be targeted directly. Confirm the service should be internet-facing; if not, remove the public DNS record and the disclosure.",
-				EvidenceCmd:  "dig +short " + shellQuote(name), ProbeKind: "manual", ProbeURL: "https://" + host,
+				ImpactText:       "A disclosed internal service name that resolves publicly can be targeted directly. Confirm the service should be internet-facing; if not, remove the public DNS record and the disclosure.",
+				EvidenceCmd:      "dig +short " + shellQuote(name), ProbeKind: "manual", ProbeURL: "https://" + host,
 				EvidenceRefs: []string{ev}, DetectorID: "pivot.internal-host-reachable@1",
 				Capabilities: []string{capPublicService}, Pivots: []string{"resolved=" + name},
 			})
@@ -140,8 +140,8 @@ func runPlanner(wd, host string, findings []Finding) []Finding {
 			Host:  "https://" + host, Severity: capSev(maxSev), Status: "open",
 			Confidence: "Low", Validation: "version-inferred", CVEs: capList(ids, 12),
 			ObservedEvidence: fmt.Sprintf("Version %s of %s was fingerprinted; OSV reports %d advisories for this version (%s). Banner-inferred — confirm the exact build and feature exposure before scheduling emergency patching.", ver, tech, len(ids), strings.Join(capList(ids, 8), ", ")),
-			ImpactText:   "Version-inferred CVE lead. Exploitability is not established; hiding the banner is not remediation. Validate applicability, then upgrade if genuinely affected.",
-			EvidenceCmd:  "echo query OSV for " + pkg + "@" + ver, ProbeKind: "manual", ProbeURL: "https://" + host,
+			ImpactText:       "Version-inferred CVE lead. Exploitability is not established; hiding the banner is not remediation. Validate applicability, then upgrade if genuinely affected.",
+			EvidenceCmd:      "echo query OSV for " + pkg + "@" + ver, ProbeKind: "manual", ProbeURL: "https://" + host,
 			EvidenceRefs: []string{ev}, DetectorID: "component.banner-osv-correlation@1", Capabilities: []string{capServiceVersion},
 		})
 		persistEdge(wd, PlannerEdge{Host: host, FromCap: capServiceVersion,

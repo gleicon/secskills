@@ -16,26 +16,26 @@ import (
 type EvidenceState string
 
 const (
-	StDiscovered      EvidenceState = "DISCOVERED"
-	StObserved        EvidenceState = "OBSERVED"
-	StInferred        EvidenceState = "INFERRED"
-	StConfirmed       EvidenceState = "CONFIRMED"
+	StDiscovered       EvidenceState = "DISCOVERED"
+	StObserved         EvidenceState = "OBSERVED"
+	StInferred         EvidenceState = "INFERRED"
+	StConfirmed        EvidenceState = "CONFIRMED"
 	StExploitValidated EvidenceState = "EXPLOIT_VALIDATED"
-	StSuppressed      EvidenceState = "SUPPRESSED"
-	StNotApplicable   EvidenceState = "NOT_APPLICABLE"
-	StInconclusive    EvidenceState = "INCONCLUSIVE"
-	StError           EvidenceState = "ERROR"
+	StSuppressed       EvidenceState = "SUPPRESSED"
+	StNotApplicable    EvidenceState = "NOT_APPLICABLE"
+	StInconclusive     EvidenceState = "INCONCLUSIVE"
+	StError            EvidenceState = "ERROR"
 )
 
 // evidenceTransitions defines the only legal state moves. A transition not in
 // this table is rejected by canTransition — the state machine is closed.
 var evidenceTransitions = map[EvidenceState][]EvidenceState{
-	StDiscovered:      {StObserved, StInferred, StNotApplicable, StInconclusive, StError, StSuppressed},
-	StObserved:        {StConfirmed, StInferred, StInconclusive, StNotApplicable, StError, StSuppressed},
-	StInferred:        {StConfirmed, StExploitValidated, StSuppressed, StInconclusive, StNotApplicable, StError},
-	StConfirmed:       {StExploitValidated, StSuppressed, StInconclusive, StError},
+	StDiscovered:       {StObserved, StInferred, StNotApplicable, StInconclusive, StError, StSuppressed},
+	StObserved:         {StConfirmed, StInferred, StInconclusive, StNotApplicable, StError, StSuppressed},
+	StInferred:         {StConfirmed, StExploitValidated, StSuppressed, StInconclusive, StNotApplicable, StError},
+	StConfirmed:        {StExploitValidated, StSuppressed, StInconclusive, StError},
 	StExploitValidated: {StSuppressed},
-	StInconclusive:    {StObserved, StConfirmed, StInferred, StNotApplicable, StError, StSuppressed},
+	StInconclusive:     {StObserved, StConfirmed, StInferred, StNotApplicable, StError, StSuppressed},
 	// terminal-ish states
 	StSuppressed:    {},
 	StNotApplicable: {},
@@ -160,11 +160,11 @@ func severityDrift(f *Finding) string {
 // ---------------------------------------------------------------------------
 
 type DetectorMeta struct {
-	ID                  string `json:"id"`
-	Supersedes          string `json:"supersedes,omitempty"`
-	IdentityCompatible  bool   `json:"identity_compatible"`
-	SeverityModelChanged bool  `json:"severity_model_changed"`
-	Description         string `json:"description"`
+	ID                   string `json:"id"`
+	Supersedes           string `json:"supersedes,omitempty"`
+	IdentityCompatible   bool   `json:"identity_compatible"`
+	SeverityModelChanged bool   `json:"severity_model_changed"`
+	Description          string `json:"description"`
 }
 
 // detectorRegistry is the authoritative detector-pack manifest. rulesetSHA()

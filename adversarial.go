@@ -15,8 +15,8 @@ import (
 // protected (401/403) endpoint. Each is a defined class so a *pass* can be stated
 // as "resisted N bypass classes" rather than a bare 403.
 var bypassClasses = []struct {
-	name    string
-	mutate  func(req *http.Request, u string) *http.Request
+	name   string
+	mutate func(req *http.Request, u string) *http.Request
 }{
 	{"X-Forwarded-For spoof", func(r *http.Request, u string) *http.Request { r.Header.Set("X-Forwarded-For", "127.0.0.1"); return r }},
 	{"X-Original-URL override", func(r *http.Request, u string) *http.Request { r.Header.Set("X-Original-URL", "/"); return r }},
@@ -79,9 +79,9 @@ func bypassProbe(wd, protectedURL string, baseCode int) *Finding {
 			Title: "Authorization bypass via " + bypassed, Host: protectedURL, Severity: "HIGH", Status: "open",
 			Confidence: "Confirmed", Validation: "exploited",
 			ObservedEvidence: fmt.Sprintf("Endpoint returned HTTP %d normally; the %q variant returned HTTP 200, bypassing the control.", baseCode, bypassed),
-			ImpactText:  "A defined authorization-bypass variant reached protected content. This is a validated access-control weakness.",
-			EvidenceCmd: "curl -sk " + shellQuote(protectedURL) + " with variant " + shellQuote(bypassed),
-			ProbeKind:   "status", ProbeURL: protectedURL, EvidenceRefs: []string{ev}, DetectorID: "http.authz-bypass@1",
+			ImpactText:       "A defined authorization-bypass variant reached protected content. This is a validated access-control weakness.",
+			EvidenceCmd:      "curl -sk " + shellQuote(protectedURL) + " with variant " + shellQuote(bypassed),
+			ProbeKind:        "status", ProbeURL: protectedURL, EvidenceRefs: []string{ev}, DetectorID: "http.authz-bypass@1",
 			Capabilities: []string{capAuthBoundary},
 		}
 	}
@@ -92,8 +92,8 @@ func bypassProbe(wd, protectedURL string, baseCode int) *Finding {
 		Title: fmt.Sprintf("Authorization boundary resisted %d bypass classes", resisted), Host: protectedURL, Severity: "INFORMATIONAL", Status: "open",
 		Confidence: "Confirmed", Validation: "behavior-confirmed",
 		ObservedEvidence: fmt.Sprintf("Protected endpoint (HTTP %d) resisted %d/%d defined read-only bypass classes (forwarded headers, URL-override headers, path normalization, case, encoding).", baseCode, resisted, len(bypassClasses)),
-		ImpactText:  "Negative evidence: the authorization boundary held against the tested bypass variants. Not a weakness.",
-		ProbeKind:   "status", ProbeURL: protectedURL, EvidenceRefs: []string{ev}, DetectorID: "http.authz-boundary@1",
+		ImpactText:       "Negative evidence: the authorization boundary held against the tested bypass variants. Not a weakness.",
+		ProbeKind:        "status", ProbeURL: protectedURL, EvidenceRefs: []string{ev}, DetectorID: "http.authz-boundary@1",
 		Capabilities: []string{capAuthBoundary},
 	}
 }
@@ -139,8 +139,8 @@ func openRedirectProbe(wd, base string) *Finding {
 				Title: "Open redirect via ?" + param, Host: base, Severity: "MEDIUM", Status: "open",
 				Confidence: "Confirmed", Validation: "exploited",
 				ObservedEvidence: fmt.Sprintf("GET with %s=%s returned Location: %s (redirect to attacker-controlled host).", param, canary, loc),
-				ImpactText:  "The endpoint redirects to an attacker-supplied absolute URL, enabling phishing and OAuth-flow abuse. Validate/allow-list redirect targets.",
-				EvidenceCmd: "curl -skI " + shellQuote(u) + " | grep -i location", ProbeKind: "status", ProbeURL: u,
+				ImpactText:       "The endpoint redirects to an attacker-supplied absolute URL, enabling phishing and OAuth-flow abuse. Validate/allow-list redirect targets.",
+				EvidenceCmd:      "curl -skI " + shellQuote(u) + " | grep -i location", ProbeKind: "status", ProbeURL: u,
 				EvidenceRefs: []string{ev}, DetectorID: "http.open-redirect@1", Capabilities: []string{capRedirect},
 			}
 		}
@@ -181,8 +181,8 @@ func sstiArithmeticProbe(wd, base string) *Finding {
 					Title: "Potential server-side template injection (arithmetic evaluated) via ?" + param, Host: base, Severity: "HIGH", Status: "open",
 					Confidence: "High", Validation: "behavior-confirmed",
 					ObservedEvidence: fmt.Sprintf("Input %s in %s was reflected as the evaluated product %s (= %d*%d); the literal expression was absent and the value did not appear in the un-injected control response — the template expression was executed server-side.", marker, param, product, a, bb),
-					ImpactText:  "Server-side template injection can lead to remote code execution depending on the engine. Proof boundary: arithmetic evaluation only — no code execution was attempted.",
-					EvidenceCmd: "curl -sk " + shellQuote(u), ProbeKind: "body-contains", ProbeURL: u, ProbeArg: product,
+					ImpactText:       "Server-side template injection can lead to remote code execution depending on the engine. Proof boundary: arithmetic evaluation only — no code execution was attempted.",
+					EvidenceCmd:      "curl -sk " + shellQuote(u), ProbeKind: "body-contains", ProbeURL: u, ProbeArg: product,
 					EvidenceRefs: []string{ev}, DetectorID: "ssti.arithmetic@1", Capabilities: []string{capServerSideFetch},
 				}
 			}
@@ -211,8 +211,8 @@ func ssrfOASTProbe(wd, base string, o *OAST) *Finding {
 			Title: "Server-side request forgery (OAST-validated)", Host: base, Severity: "HIGH", Status: "open",
 			Confidence: "Confirmed", Validation: "exploited",
 			ObservedEvidence: "The target performed a server-side fetch to our OAST canary (" + host + "), confirming SSRF. Proof boundary: out-of-band interaction only; no internal resource was read.",
-			ImpactText:  "SSRF lets the server make attacker-directed requests (cloud metadata, internal services). Validated out-of-band without reading internal data.",
-			ProbeKind: "manual", ProbeURL: base, EvidenceRefs: []string{ev}, DetectorID: "http.ssrf@1", Capabilities: []string{capServerSideFetch},
+			ImpactText:       "SSRF lets the server make attacker-directed requests (cloud metadata, internal services). Validated out-of-band without reading internal data.",
+			ProbeKind:        "manual", ProbeURL: base, EvidenceRefs: []string{ev}, DetectorID: "http.ssrf@1", Capabilities: []string{capServerSideFetch},
 		}
 	}
 	return nil

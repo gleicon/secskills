@@ -19,7 +19,7 @@ import (
 // (findingType + assessSeverity + evidence-state) without touching the network.
 type Fixture struct {
 	Name           string `json:"name"`
-	Class          string `json:"class"`    // positive-simple|positive-edge|negative|not-applicable
+	Class          string `json:"class"` // positive-simple|positive-edge|negative|not-applicable
 	ExpectDetector string `json:"expect_detector"`
 	ExpectSeverity string `json:"expect_severity"`
 	// synthetic finding inputs

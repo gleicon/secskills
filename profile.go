@@ -233,7 +233,6 @@ func parseShodanBrief(s string) (ips, orgs, saas []string) {
 	return
 }
 
-
 func kvLine(m map[string]int, n int) string {
 	type kv struct {
 		k string

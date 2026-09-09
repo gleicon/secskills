@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"crypto/sha256"
 	"encoding/json"
 	"flag"
@@ -9,23 +8,24 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
 // Finding mirrors the redteam-pentest findings-store schema (D-4).
 type Finding struct {
-	ID                string   `json:"id"`
-	Title             string   `json:"title"`
-	Host              string   `json:"host"`
-	Severity          string   `json:"severity"`
-	Status            string   `json:"status"` // open|mitigated|regressed|accepted|manual
-	EvidenceCmd       string   `json:"evidence_cmd"`
-	ExpectedOpen      string   `json:"expected_open_pattern"`
-	LastResponse      string   `json:"last_response,omitempty"`
-	ResponseHash      string   `json:"response_hash"`
-	FirstSeenRun      string   `json:"first_seen_run"`
-	LastTestedRun     string   `json:"last_tested_run"`
-	RetestHistory     []map[string]string `json:"retest_history"`
+	ID            string              `json:"id"`
+	Title         string              `json:"title"`
+	Host          string              `json:"host"`
+	Severity      string              `json:"severity"`
+	Status        string              `json:"status"` // open|mitigated|regressed|accepted|manual
+	EvidenceCmd   string              `json:"evidence_cmd"`
+	ExpectedOpen  string              `json:"expected_open_pattern"`
+	LastResponse  string              `json:"last_response,omitempty"`
+	ResponseHash  string              `json:"response_hash"`
+	FirstSeenRun  string              `json:"first_seen_run"`
+	LastTestedRun string              `json:"last_tested_run"`
+	RetestHistory []map[string]string `json:"retest_history"`
 	// Framework mapping (OWASP / CWE / cheatsheet / CVE) — filled by classify().
 	OWASP      string   `json:"owasp,omitempty"`
 	CWE        string   `json:"cwe,omitempty"`
@@ -52,8 +52,8 @@ type Finding struct {
 	// Audit identity: DetectorID names the detector; Key is a stable hash so a
 	// finding persists across runs (open→mitigated→regressed) independent of F-NNN.
 	DetectorID string `json:"detector_id,omitempty"`
-	Key        string `json:"finding_key,omitempty"`         // observation identity (asset+detector+condition)
-	RootKey    string `json:"root_finding_key,omitempty"`    // collapse identity (asset+detector family)
+	Key        string `json:"finding_key,omitempty"`      // observation identity (asset+detector+condition)
+	RootKey    string `json:"root_finding_key,omitempty"` // collapse identity (asset+detector family)
 	// Formal evidence state (state machine) + immutable evidence object ids.
 	State        string   `json:"evidence_state,omitempty"`
 	EvidenceRefs []string `json:"evidence_refs,omitempty"`
@@ -66,10 +66,10 @@ type Finding struct {
 	PotentialSeverity   string `json:"potential_severity,omitempty"`
 	EscalationCondition string `json:"escalation_condition,omitempty"`
 	// per-observation time (audit forensics): exact capture time of the evidence.
-	ObservedAt string `json:"observed_at,omitempty"`
-	FirstSeen  string `json:"first_seen,omitempty"`
-	LastSeen   string `json:"last_seen,omitempty"`
-	FixedAt    string `json:"fixed_at,omitempty"`
+	ObservedAt  string `json:"observed_at,omitempty"`
+	FirstSeen   string `json:"first_seen,omitempty"`
+	LastSeen    string `json:"last_seen,omitempty"`
+	FixedAt     string `json:"fixed_at,omitempty"`
 	RegressedAt string `json:"regressed_at,omitempty"`
 	// Adversarial model: capabilities this finding grants an attacker (drives the
 	// attack graph), and any pivot intelligence extracted from it.
@@ -162,11 +162,12 @@ func doRender(target, output string) error {
 	return os.WriteFile(output, []byte(report), 0o644)
 }
 
-func sortFindings(fs []Finding) {
-	rank := map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
-	sort.SliceStable(fs, func(i, j int) bool { return rank[fs[i].Severity] < rank[fs[j].Severity] })
-}
+// severityOrder ranks severities most-severe first; shared by every sort/collapse.
+var severityOrder = map[string]int{"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFORMATIONAL": 4}
 
+func sortFindings(fs []Finding) {
+	sort.SliceStable(fs, func(i, j int) bool { return severityOrder[fs[i].Severity] < severityOrder[fs[j].Severity] })
+}
 
 func doRetest(target string) error {
 	latest := filepath.Join(storeDir(target), "latest")

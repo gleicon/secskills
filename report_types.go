@@ -140,7 +140,6 @@ func businessRiskFor(f *Finding) string {
 	return businessRisk(f.KBClass, f.Severity)
 }
 
-
 // severityFromScore maps a CVSS base score to the qualitative band (FIRST.org).
 func severityFromScore(score float64) string {
 	switch {

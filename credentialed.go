@@ -153,7 +153,7 @@ func authzDifferential(wd, url string, credA, credB map[string]string) *Finding 
 			ImpactText:       "Broken object-level authorization (BOLA/IDOR) lets a user read another user's objects. Confirm the object should be user-scoped, then enforce per-object authorization.",
 			EvidenceCmd:      "compare: curl -sk -H 'Authorization: <A>' " + shellQuote(url) + " vs <B>",
 			ProbeKind:        "manual", ProbeURL: url, EvidenceRefs: []string{ev}, DetectorID: "authz.bola-candidate@1",
-			Capabilities:     []string{capAuthBoundary},
+			Capabilities: []string{capAuthBoundary},
 		}
 	}
 	return nil
