@@ -48,6 +48,7 @@ COMMANDS:
   fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
   shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
   mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
+  watch       Continuous mode: re-assess on an interval, report posture drift (NEW/FIXED/REGRESSED)
   selftest    End-to-end pipeline test against a local disposable server
   version     Print version
 
@@ -119,6 +120,8 @@ func main() {
 		err = cmdOASTServer(args)
 	case "export":
 		err = cmdExport(args)
+	case "watch":
+		err = cmdWatch(args)
 	case "mcp":
 		err = cmdMCP(args)
 	case "version", "-v", "--version":
