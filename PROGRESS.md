@@ -16,7 +16,7 @@ listed at the bottom.
 - [x] M4 — Adversarial ledger real instrumentation (advstats.go: measured per-probe counters)
 - [x] M5 — Second-stage depth: fingerprint extracts service version → runtime planner OSV CVE-applicability chains per service
 - [x] M6 — Engine self-measurement corpus (measure.go: local vuln+safe servers, per-detector precision/recall; caught a real SSTI bug)
-- [ ] M7 — Self-hostable OAST collaborator (`secskills oast-server`) + wire SSRF/XXE validation
+- [x] M7 — Self-hostable OAST collaborator (`secskills oast-server`, HTTP callback + /poll); DNS-based OAST = future (needs DNS lib)
 - [ ] M8 — Origin looking-glass depth (JARM fingerprint; Censys / passive-DNS adapters, key-gated)
 - [ ] M9 — Interop exports (SARIF + CycloneDX/VEX)
 - [ ] M10 — Continuous mode (`secskills watch`: scheduled retest + posture drift)
@@ -25,6 +25,8 @@ listed at the bottom.
 
 ## Status log
 (append newest at top)
+
+- M7 DONE — oastserver.go + `secskills oast-server`: self-hostable HTTP OAST collaborator. Captures canary interactions (token from Host label / path), persists JSONL, exposes /poll?token= for the engine confirmation channel already wired in ssrfOASTProbe. Smoke-tested: interaction recorded + poll 200/404. DNS-based OAST tracked as future (needs a DNS server lib, out of stdlib). Next: M8 origin looking-glass depth.
 
 - M6 DONE — measure.go + `secskills measure`: local corpus of deliberately-vulnerable + deliberately-safe servers, runs the LIVE adversarial detectors, measures precision/recall/FP per detector. 7 detectors at 100/100. CAUGHT A REAL BUG: the SSTI arithmetic product constant was wrong (73819*91193 = 6731776067, not 6731738867) so the detector would never have fired in production — now fixed + gated by measure_test.go. Next: M7 self-hostable OAST collaborator.
 
