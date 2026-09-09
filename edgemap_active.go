@@ -56,14 +56,20 @@ func originReach(wd, target, candidateIP string, edge edgeInfo, wantTitle string
 		return nil
 	}
 	advHit("origin-lookingglass")
+	// strongest same-origin proof: does the candidate serve the SAME leaf cert?
+	certMatch, certSHA := sameLeafCert(target, candidateIP)
+	certNote := "page title matched the through-edge baseline"
+	if certMatch {
+		certNote = "SAME leaf certificate (sha256 " + certSHA[:16] + "...) AND page title matched — high-confidence origin"
+	}
 	ev := captureEvidence(wd, "edge.origin-exposure@1", target, "http-response", "text/plain",
 		"GET https://"+candidateIP+"/ (Host: "+target+")", "redacted",
-		[]byte(statusLine+"\nmatched page title: "+gotTitle+"\n(no edge marker in response headers)"))
+		[]byte(statusLine+"\n"+certNote+"\n(no edge marker in response headers)"))
 	return &Finding{
 		Title: "Origin reachable directly, bypassing " + edgeLabel(edge) + " (" + candidateIP + ")",
 		Host:  "https://" + target, Severity: "HIGH", Status: "open",
-		Confidence: "High", Validation: "behavior-confirmed",
-		ObservedEvidence: fmt.Sprintf("Direct TLS to %s with Host: %s returned %q, no edge (%s) marker, and the SAME page title %q as the through-edge baseline — the origin answers requests that do not traverse the CDN/WAF.", candidateIP, target, statusLine, edgeLabel(edge), gotTitle),
+		Confidence: certConfidence(certMatch), Validation: "behavior-confirmed",
+		ObservedEvidence: fmt.Sprintf("Direct TLS to %s with Host: %s returned %q, no edge (%s) marker; %s — the origin answers requests that do not traverse the CDN/WAF.", candidateIP, target, statusLine, edgeLabel(edge), certNote),
 		ImpactText:       "Origin exposure defeats edge security controls: WAF rulesets, rate-limiting, DDoS and bot management are all bypassed by connecting to the origin IP directly. Restrict the origin to accept traffic only from the CDN (IP allow-list / authenticated origin pulls / mTLS).",
 		EvidenceCmd:      "curl -sk --resolve " + shellQuote(target) + ":443:" + candidateIP + " https://" + target + "/ -I",
 		ProbeKind:        "manual", ProbeURL: "https://" + target, EvidenceRefs: []string{ev},
@@ -192,6 +198,10 @@ func runEdgeRecon(wd, target string, prof Profile) (edgeInfo, []Finding) {
 	for _, ip := range shodanSearchIPs("ssl.cert.subject.CN:"+hostOf(target), 15) {
 		candidates[ip] = true
 	}
+	// widen the net with Censys (key-gated, like Shodan)
+	for _, ip := range censysSearchIPs("services.tls.certificates.leaf_data.subject.common_name: "+hostOf(target), 15) {
+		candidates[ip] = true
+	}
 	tested := 0
 	for ip := range candidates {
 		if tested >= 12 {
@@ -241,4 +251,11 @@ func renderEdgeMap(wd, target string) string {
 	}
 	b.WriteString("\n_The favicon hash and certificate CN can be searched on Shodan/Censys (`http.favicon.hash:<h>`, `ssl.cert.subject.CN:<host>`) to enumerate every IP presenting this identity — the looking glass for origin IPs that answer directly and bypass the edge. Origin-bypass findings, if any, are listed among the findings above._")
 	return b.String()
+}
+
+func certConfidence(certMatch bool) string {
+	if certMatch {
+		return "Confirmed"
+	}
+	return "High"
 }
