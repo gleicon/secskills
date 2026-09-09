@@ -21,10 +21,12 @@ listed at the bottom.
 - [x] M9 — Interop exports: `secskills export --format sarif|cyclonedx` (SARIF 2.1.0 + CycloneDX 1.5 with embedded VEX analysis state)
 - [x] M10 — Continuous mode: `secskills watch --interval` re-assesses + reports posture drift (NEW/FIXED/REGRESSED/PERSISTING by finding_key)
 - [x] M11 — Per-evidence signing: signed evidence hash-chain; verify detects manifest edits AND blob-content tampering
-- [ ] M12 — Credentialed depth (authorized-exploit: BOLA/IDOR user-A-vs-B, session/JWT/cookie, OAuth flow)
+- [x] M12 — Credentialed depth: JWT inspection (alg:none/weak/no-exp/sensitive claim), session-cookie flags, BOLA/IDOR authz differential (--auth-token-b/--cookie-b)
 
 ## Status log
 (append newest at top)
+
+- M12 DONE — credentialed.go: jwtInspect (alg:none HIGH, weak/symmetric, missing/expired exp, sensitive claims), cookieSecurity (session cookie missing Secure/HttpOnly/SameSite), authzDifferential (same object-style URL fetched as identity A and B; identical 200 -> potential BOLA/IDOR, manual-confirm). New flags --auth-token-b/--cookie-b. Proven by credentialed_test.go. ALL 12 MILESTONES COMPLETE.
 
 - M11 DONE — evidence hash-chain (deterministic root over sorted manifest by id+sha) signed ed25519 into evidence-chain.sig; auto-signed at end of test. attest --verify now checks run attestation + evidence-chain signature + re-hashes every blob vs the manifest. Proven: manifest edit AND blob-content tamper both detected. Next: M12 credentialed depth.
 
