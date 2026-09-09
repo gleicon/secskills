@@ -20,11 +20,13 @@ listed at the bottom.
 - [x] M8 — Origin looking-glass depth: leaf-cert SHA-256 correlation (Confirmed origin) + Censys adapter (key-gated). JARM/JA3 = future (needs raw-TLS lib)
 - [x] M9 — Interop exports: `secskills export --format sarif|cyclonedx` (SARIF 2.1.0 + CycloneDX 1.5 with embedded VEX analysis state)
 - [x] M10 — Continuous mode: `secskills watch --interval` re-assesses + reports posture drift (NEW/FIXED/REGRESSED/PERSISTING by finding_key)
-- [ ] M11 — Per-evidence signing (evidence manifest hash-chain + signature)
+- [x] M11 — Per-evidence signing: signed evidence hash-chain; verify detects manifest edits AND blob-content tampering
 - [ ] M12 — Credentialed depth (authorized-exploit: BOLA/IDOR user-A-vs-B, session/JWT/cookie, OAuth flow)
 
 ## Status log
 (append newest at top)
+
+- M11 DONE — evidence hash-chain (deterministic root over sorted manifest by id+sha) signed ed25519 into evidence-chain.sig; auto-signed at end of test. attest --verify now checks run attestation + evidence-chain signature + re-hashes every blob vs the manifest. Proven: manifest edit AND blob-content tamper both detected. Next: M12 credentialed depth.
 
 - M10 DONE — watch.go + `secskills watch`: re-assess on an interval (discover+test each cycle), diff the two latest persisted runs by stable finding_key into posture drift (NEW/FIXED/PERSISTING), append to watch-drift.jsonl. --interval 0 = one-shot. Drift classification proven by watch_test.go. Next: M11 per-evidence signing.
 

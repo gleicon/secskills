@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -110,3 +111,28 @@ func renderEvidenceIndex(wd string) string {
 	b.WriteString("\n_Each finding references the evidence objects it derives from. Objects are content-addressed and append-only; the bundle hash in the Run Attestation covers them._")
 	return b.String()
 }
+
+// M11 — Tamper-evident evidence chain.
+// evidenceChainRoot computes a deterministic hash chain over the evidence
+// manifest (sorted by id): root_i = sha256(root_{i-1} | id | sha256). Altering or
+// removing any evidence object changes the root. The root is signed separately
+// from run-meta, so evidence integrity is provable independently of the findings.
+func evidenceChainRoot(wd string) string {
+	objs := loadEvidenceManifest(wd)
+	ids := make([]string, 0, len(objs))
+	byID := map[string]EvidenceObject{}
+	for _, o := range objs {
+		ids = append(ids, o.ID)
+		byID[o.ID] = o
+	}
+	sort.Strings(ids)
+	root := ""
+	for _, id := range ids {
+		o := byID[id]
+		h := sha256.Sum256([]byte(root + "|" + id + "|" + o.SHA256))
+		root = fmt.Sprintf("%x", h[:])
+	}
+	return root
+}
+
+

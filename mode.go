@@ -386,6 +386,9 @@ func cmdTest(args []string) error {
 	if _, err := signRunManifest(wd); err == nil {
 		fmt.Println("run attestation signed (ed25519): run-attestation.sig")
 	}
+	if _, err := signEvidenceChain(wd); err == nil {
+		fmt.Println("evidence chain signed (ed25519): evidence-chain.sig")
+	}
 	fmt.Printf("\n%d findings -> %s\n", total, workFindings(wd))
 	fmt.Println("Remediation per finding: secskills kb <class>. Report: secskills report --render", target)
 	if *save {
