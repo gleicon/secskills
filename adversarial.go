@@ -154,12 +154,12 @@ func openRedirectProbe(wd, base string) *Finding {
 func sstiArithmeticProbe(wd, base string) *Finding {
 	advProbe("ssti", 1)
 	// Rare operands so a coincidental match is near-impossible: 73819 * 91193 =
-	// 6,731,738,867 (a distinctive 10-digit number). We require the evaluated
+	// 6,731,776,067 (a distinctive 10-digit number). We require the evaluated
 	// result to appear ONLY when injected (differential vs a control request),
 	// the literal expression to be absent, and the template braces to be gone —
 	// three independent conditions to keep false positives near zero.
 	const a, bb = 73819, 91193
-	const product = "6731738867"
+	const product = "6731776067"
 	const expr = "73819*91193"
 	// control body (no injection) — the number must NOT already be present
 	if _, _, ctrl, ok := getWithBody(strings.TrimRight(base, "/")+"/", 32*1024); ok && strings.Contains(ctrl, product) {
