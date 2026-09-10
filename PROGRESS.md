@@ -47,3 +47,17 @@ listed at the bottom.
 - M2+M3 DONE — planner.go: runtime planner fires follow-up probes from discovered capabilities. Rule 1: disclosed internal hostname resolved externally -> MEDIUM pivot finding if publicly resolvable (proven by planner_test.go). Rule 2: service version -> OSV CVE-applicability probe (version-inferred, MEDIUM cap). Rules 3/4: credential/SSRF -> STOP_POLICY_BOUNDARY edges. Every decision persisted to planner-graph.jsonl (append-only, in evidence-bundle hash) + rendered as Runtime planner attack-graph section. Next: M4 adversarial ledger instrumentation.
 
 - M1 DONE — fingerprint registry (fingerprints.json + fingerprints.go), `fp` command, wired into fingerprintService. 56 seed signatures, growable via ~/.secskills-fingerprints.json overlay. Next: M2 runtime capability planner.
+
+- v0.29.0 — adversarial DEPTH (per CISO v0.28 review):
+  - Runtime planner is now ITERATIVE (maxPlannerDepth=3): each round's pivot
+    findings feed the next, so one discovery chains 2-5 decisions. Edges carry a
+    depth. Technology chaining rules added (plannerTechRound): publicly-resolvable
+    internal host -> fingerprint it (depth 2); object-store anon-read -> enumerate
+    decision; OIDC surface -> JWKS retrieval + auth-flow assessment. Depth-2 chain
+    proven by planner_depth_test.go.
+  - Attack-graph metrics block (renderGraphMetrics): edges, max depth, capabilities
+    produced/consumed/dead, policy-blocked branches, proof boundaries — measures
+    reasoning, not probe volume. Wired into md + HTML reports.
+  - Ledger header fixed ("Probe attempts").
+  - Metrology corpus deepened: deceptive catch-all-200 negative case (baseline-
+    differential must suppress exposure FPs) — measure still PASS.

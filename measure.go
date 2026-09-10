@@ -100,6 +100,16 @@ func exposureServer(vuln bool) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
+// deceptiveServer returns HTTP 200 with generic HTML for EVERY path (a catch-all
+// / SPA fallback). Exposure detection must NOT fire here — baseline-differential
+// should recognize that the signature paths look identical to random ones.
+func deceptiveServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, "<html><title>App</title><body>page not found, here is the app</body></html>")
+	}))
+}
+
 type mScore struct{ tp, fp, fn, tn int }
 
 // cmdMeasure runs the corpus and prints the detector quality scorecard.
@@ -190,6 +200,13 @@ func cmdMeasure(args []string) error {
 	record("http.exposure-path@1", true, efired["http.exposure-path@1"])
 	record("http.prometheus.public-metrics@1", true, efired["http.prometheus.public-metrics@1"])
 	ev.Close()
+
+	// deceptive catch-all 200: exposure detectors must stay silent (no false positive)
+	dv := deceptiveServer()
+	df := firedS(checkExposure(dv.URL))
+	record("http.exposure-path@1", false, df["http.exposure-path@1"])
+	record("http.prometheus.public-metrics@1", false, df["http.prometheus.public-metrics@1"])
+	dv.Close()
 
 	dets := make([]string, 0, len(scores))
 	for k := range scores {
