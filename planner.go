@@ -18,6 +18,7 @@ import (
 
 type PlannerEdge struct {
 	Host        string `json:"host"`
+	Depth       int    `json:"depth"`
 	FromCap     string `json:"from_capability"`
 	Decision    string `json:"decision"`
 	Probe       string `json:"probe"`
@@ -61,7 +62,7 @@ func loadPlannerGraph(wd string) []PlannerEdge {
 // runPlanner consumes a host's findings and fires runtime follow-up probes based
 // on the capabilities/pivots they emit. Returns any new findings; records every
 // decision as an attack-graph edge. Bounded to one pivot round per host.
-func runPlanner(wd, host string, findings []Finding) []Finding {
+func plannerRound(wd, host string, findings []Finding, depth int) []Finding {
 	var out []Finding
 	// aggregate capabilities + pivots across this host's findings
 	caps := map[string]bool{}
@@ -95,7 +96,7 @@ func runPlanner(wd, host string, findings []Finding) []Finding {
 			tested++
 			addrs, err := net.LookupHost(name)
 			if err != nil || len(addrs) == 0 {
-				persistEdge(wd, PlannerEdge{Host: host, FromCap: capInternalHosts,
+				persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capInternalHosts,
 					Decision: "resolve disclosed internal hostname externally", Probe: "DNS A " + name,
 					Result: "does not resolve from the external vantage", Stop: "STOP_NO_REACHABLE_TARGET"})
 				continue
@@ -111,7 +112,7 @@ func runPlanner(wd, host string, findings []Finding) []Finding {
 				EvidenceRefs: []string{ev}, DetectorID: "pivot.internal-host-reachable@1",
 				Capabilities: []string{capPublicService}, Pivots: []string{"resolved=" + name},
 			})
-			persistEdge(wd, PlannerEdge{Host: host, FromCap: capInternalHosts,
+			persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capInternalHosts,
 				Decision: "resolve disclosed internal hostname externally", Probe: "DNS A " + name,
 				Result: "RESOLVES PUBLICLY -> new capability publicly_resolvable_service", EvidenceRef: ev})
 		}
@@ -121,14 +122,14 @@ func runPlanner(wd, host string, findings []Finding) []Finding {
 	for tech, ver := range techVersions {
 		pkg, eco := techToOSV(tech)
 		if pkg == "" {
-			persistEdge(wd, PlannerEdge{Host: host, FromCap: capServiceVersion,
+			persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capServiceVersion,
 				Decision: "CVE applicability for " + tech + " " + ver, Probe: "OSV query",
 				Result: "no OSV ecosystem mapping for this technology", Stop: "STOP_NO_PRIMITIVE"})
 			continue
 		}
 		ids, maxSev := osvQuery(pkg, eco, ver)
 		if len(ids) == 0 {
-			persistEdge(wd, PlannerEdge{Host: host, FromCap: capServiceVersion,
+			persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capServiceVersion,
 				Decision: "CVE applicability for " + tech + " " + ver, Probe: "OSV " + pkg + "@" + ver,
 				Result: "no known vulnerabilities affect this version", Stop: "STOP_NO_PRIMITIVE"})
 			continue
@@ -144,22 +145,104 @@ func runPlanner(wd, host string, findings []Finding) []Finding {
 			EvidenceCmd:      "echo query OSV for " + pkg + "@" + ver, ProbeKind: "manual", ProbeURL: "https://" + host,
 			EvidenceRefs: []string{ev}, DetectorID: "component.banner-osv-correlation@1", Capabilities: []string{capServiceVersion},
 		})
-		persistEdge(wd, PlannerEdge{Host: host, FromCap: capServiceVersion,
+		persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capServiceVersion,
 			Decision: "CVE applicability for " + tech + " " + ver, Probe: "OSV " + pkg + "@" + ver,
 			Result: fmt.Sprintf("%d CVEs correlate (version-inferred)", len(ids)), Stop: "STOP_REQUIRES_AUTHORIZED_EXPLOIT", EvidenceRef: ev})
 	}
 
 	// Rule 3 — credential_material_candidate -> policy STOP (valuable evidence).
 	if caps[capCredCandidate] {
-		persistEdge(wd, PlannerEdge{Host: host, FromCap: capCredCandidate,
+		persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capCredCandidate,
 			Decision: "attempt to read/validate the credential-like value", Probe: "none",
 			Result: "credential use is prohibited under adversarial-readonly", Stop: "STOP_POLICY_BOUNDARY"})
 	}
 	// Rule 4 — server_side_fetch already validated out-of-band; record the edge.
 	if caps[capServerSideFetch] {
-		persistEdge(wd, PlannerEdge{Host: host, FromCap: capServerSideFetch,
+		persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capServerSideFetch,
 			Decision: "map reachable internal targets via SSRF", Probe: "OAST canary only",
 			Result: "stopped at out-of-band interaction; no internal resource read", Stop: "STOP_POLICY_BOUNDARY"})
+	}
+	return out
+}
+
+// runPlanner drives the planner over multiple rounds: each round's new findings
+// (pivots) feed the next round, so a single discovery can chain into 2-5
+// decisions. Bounded by maxPlannerDepth to stay deterministic and terminating.
+const maxPlannerDepth = 3
+
+func runPlanner(wd, host string, findings []Finding) []Finding {
+	var all []Finding
+	work := findings
+	for depth := 1; depth <= maxPlannerDepth; depth++ {
+		produced := plannerRound(wd, host, work, depth)
+		produced = append(produced, plannerTechRound(wd, host, work, depth)...)
+		if len(produced) == 0 {
+			break
+		}
+		all = append(all, produced...)
+		work = produced // chain: next round reasons over what this round discovered
+	}
+	return all
+}
+
+// plannerTechRound holds the technology-specific chaining rules: a discovery's
+// capability triggers a specialized follow-up decision (recorded as an edge),
+// deepening the attack graph beyond the generic rules.
+func plannerTechRound(wd, host string, findings []Finding, depth int) []Finding {
+	var out []Finding
+	for i := range findings {
+		f := &findings[i]
+		caps := f.Capabilities
+		if len(caps) == 0 {
+			caps = capabilitiesFor(f)
+		}
+		det := detectorOf(f)
+		// Rule T1 — publicly_resolvable_service (from the internal-host pivot):
+		// fingerprint the newly-reachable host to decide the next move.
+		if contains(caps, capPublicService) {
+			for _, pv := range f.Pivots {
+				if !strings.HasPrefix(pv, "resolved=") {
+					continue
+				}
+				rh := strings.TrimPrefix(pv, "resolved=")
+				code, hdr, body, ok := getWithBody("https://"+rh, 16*1024)
+				if !ok {
+					persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capPublicService,
+						Decision: "fingerprint newly-reachable internal host " + rh, Probe: "GET https://" + rh,
+						Result: "not reachable over HTTPS from the external vantage", Stop: "STOP_NO_REACHABLE_TARGET"})
+					continue
+				}
+				matches := matchFingerprints(hdr, body, 0)
+				techs := ""
+				for _, m := range matches {
+					techs += m.Name + " "
+				}
+				persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capPublicService,
+					Decision: "fingerprint newly-reachable internal host " + rh, Probe: "GET https://" + rh,
+					Result: fmt.Sprintf("HTTP %d; stack: %s", code, orNone(strings.TrimSpace(techs)))})
+			}
+		}
+		// Rule T2 — anonymous_read on an object store: decide to confirm object
+		// enumeration depth (harmless — count listed keys, no downloads).
+		if det == "storage.public-bucket@1" && contains(caps, capAnonRead) {
+			persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capAnonRead,
+				Decision: "enumerate object keys on the anonymously-listable store", Probe: "GET listing (already captured)",
+				Result: "listing confirmed; object downloads not attempted", Stop: "STOP_POLICY_BOUNDARY"})
+		}
+		// Rule T3 — OIDC surface: decide to retrieve JWKS + inspect redirect handling.
+		if det == "identity.oidc-surface@1" && contains(caps, capAuthBoundary) {
+			jwks := strings.TrimRight(f.ProbeURL, "/")
+			code, _, body, ok := getWithBody(strings.TrimSuffix(jwks, "/.well-known/openid-configuration")+"/.well-known/jwks.json", 16*1024)
+			res := "JWKS not retrievable unauthenticated"
+			stop := "STOP_NO_PRIMITIVE"
+			if ok && code == 200 && strings.Contains(body, "keys") {
+				res = "JWKS published (signing keys enumerable); redirect-URI/flow validation needs an authorized identity pass"
+				stop = "STOP_REQUIRES_AUTHORIZED_EXPLOIT"
+			}
+			persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: capAuthBoundary,
+				Decision: "retrieve OIDC JWKS + assess auth-flow surface", Probe: "GET /.well-known/jwks.json",
+				Result: res, Stop: stop})
+		}
 	}
 	return out
 }
@@ -240,4 +323,54 @@ func capSev(maxSev int) string {
 		return "MEDIUM"
 	}
 	return "LOW"
+}
+
+// renderGraphMetrics summarizes the adversarial attack graph quantitatively —
+// the metrics a researcher uses to judge adversarial depth, not just volume.
+func renderGraphMetrics(wd string, findings []Finding) string {
+	edges := loadPlannerGraph(wd)
+	produced := map[string]bool{}
+	for i := range findings {
+		caps := findings[i].Capabilities
+		if len(caps) == 0 {
+			caps = capabilitiesFor(&findings[i])
+		}
+		for _, c := range caps {
+			produced[c] = true
+		}
+	}
+	consumed := map[string]bool{}
+	maxDepth, policyStops, proofBoundary, blocked := 0, 0, 0, 0
+	for _, e := range edges {
+		consumed[e.FromCap] = true
+		if e.Depth > maxDepth {
+			maxDepth = e.Depth
+		}
+		switch {
+		case e.Stop == "STOP_POLICY_BOUNDARY":
+			policyStops++
+			blocked++
+		case e.Stop == "STOP_REQUIRES_CREDENTIALS" || e.Stop == "STOP_REQUIRES_AUTHORIZED_EXPLOIT":
+			blocked++
+		case strings.HasPrefix(e.Stop, "REACHED_PROOF_BOUNDARY"):
+			proofBoundary++
+		}
+	}
+	dead := 0
+	for c := range produced {
+		if !consumed[c] {
+			dead++
+		}
+	}
+	var b strings.Builder
+	b.WriteString("| Metric | Value |\n|---|--:|\n")
+	fmt.Fprintf(&b, "| Planner attack-graph edges | %d |\n", len(edges))
+	fmt.Fprintf(&b, "| Maximum attack-graph depth | %d |\n", maxDepth)
+	fmt.Fprintf(&b, "| Capability types produced | %d |\n", len(produced))
+	fmt.Fprintf(&b, "| Capability types consumed by planner | %d |\n", len(consumed))
+	fmt.Fprintf(&b, "| Dead capabilities (produced, never pivoted) | %d |\n", dead)
+	fmt.Fprintf(&b, "| Branches blocked by engagement policy | %d |\n", blocked)
+	fmt.Fprintf(&b, "| Proof boundaries reached (validated, then stopped) | %d |\n", proofBoundary)
+	b.WriteString("\n_Depth/branch metrics measure adversarial *reasoning*, not probe volume: a high edge count with depth 1 is broad-but-shallow; depth >1 means a discovery chained into further decisions. Policy-blocked branches are where the engine could have continued but the adversarial-readonly boundary stopped it._")
+	return b.String()
 }

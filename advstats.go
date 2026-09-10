@@ -94,7 +94,7 @@ func renderMeasuredLedger(wd string) string {
 	}
 	sort.Strings(mods)
 	var b strings.Builder
-	b.WriteString("| Adversarial module | Candidates probed | Positive | Inconclusive |\n|---|--:|--:|--:|\n")
+	b.WriteString("| Adversarial module | Probe attempts | Positive | Inconclusive |\n|---|--:|--:|--:|\n")
 	var tc, tp, ti int
 	for _, m := range mods {
 		c := stats[m]

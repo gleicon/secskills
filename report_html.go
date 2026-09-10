@@ -66,6 +66,7 @@ type htmlVM struct {
 	ObservationDetail                  template.HTML
 	AttackNarr                         string
 	AttackGraph, PlannerGraph          template.HTML
+	GraphMetrics                       template.HTML
 	AdvLedger, HumanQueue, EdgeMap     template.HTML
 	Compliance                         []htmlComp
 	Appendices, Clustering, Scorecard  template.HTML
@@ -104,6 +105,7 @@ func renderHTMLReport(target, wd string, findings []Finding) string {
 		AttackNarr:        attackNarrative(findings, live, subs),
 		AttackGraph:       md(renderAttackGraph(findings, readProfile(wd))),
 		PlannerGraph:      md(renderPlannerGraph(wd)),
+		GraphMetrics:      md(renderGraphMetrics(wd, findings)),
 		AdvLedger:         md(renderAdversarialLedger(findings, live, wd, registrableDomain(hostOf(target)), subs)),
 		HumanQueue:        md(renderHumanQueue(findings)),
 		EdgeMap:           md(renderEdgeMap(wd, target)),
@@ -286,6 +288,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html><htm
 	`<section class="page"><h2>5. Attack Narrative</h2><p>{{.AttackNarr}}</p>
   <h3>Attack-path exploration</h3><div class="rem">{{.AttackGraph}}</div>
   <h3>Runtime planner attack-graph</h3><div class="rem">{{.PlannerGraph}}</div>
+  <h3>Attack-graph metrics</h3><div class="rem">{{.GraphMetrics}}</div>
   <h3>Adversarial control ledger</h3><div class="rem">{{.AdvLedger}}</div>
   <h3>Human red-team queue</h3><div class="rem">{{.HumanQueue}}</div></section>
   <section class="page"><h2>Edge &amp; Defense Map (CDN / WAF / origin looking-glass)</h2><div class="rem">{{.EdgeMap}}</div></section>` +
