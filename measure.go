@@ -110,6 +110,38 @@ func deceptiveServer() *httptest.Server {
 	}))
 }
 
+// wafServer returns a Cloudflare-style challenge for the sensitive paths — the
+// engine must mark the exposure check INCONCLUSIVE (could-not-observe), never a
+// silent pass and never a confirmed finding.
+func wafServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Server", "cloudflare")
+		w.WriteHeader(503)
+		fmt.Fprint(w, "<html><title>Just a moment...</title>cf-challenge please enable JavaScript</html>")
+	}))
+}
+
+// privateStoreServer returns 403 for the store root — a properly locked-down
+// object store. The object-storage detector must NOT fire.
+func privateStoreServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(403)
+		fmt.Fprint(w, "AccessDenied")
+	}))
+}
+
+// decoyMetricsServer exposes /metrics with a credential-LIKE pattern (not a
+// confirmed secret). The metrics detector must fire at MEDIUM (impact-if-true),
+// never HIGH, because the value is unvalidated.
+func decoyMetricsServer() *httptest.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "# HELP up\nup 1\napi_key=\"looks-like-a-secret-but-is-a-decoy\"\n")
+	})
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "home") })
+	return httptest.NewServer(mux)
+}
+
 type mScore struct{ tp, fp, fn, tn int }
 
 // cmdMeasure runs the corpus and prints the detector quality scorecard.
@@ -208,6 +240,51 @@ func cmdMeasure(args []string) error {
 	record("http.prometheus.public-metrics@1", false, df["http.prometheus.public-metrics@1"])
 	dv.Close()
 
+	// WAF/CAPTCHA: exposure must be INCONCLUSIVE, not a pass or a confirmed finding.
+	inconclusiveOK, wafFalsePos := false, false
+	wv := wafServer()
+	for _, f := range checkExposure(wv.URL) {
+		if f.Validation == "inconclusive" {
+			inconclusiveOK = true
+		}
+		if f.Validation == "behavior-confirmed" && findingType(&f) == "exposure-path" {
+			wafFalsePos = true
+		}
+	}
+	wv.Close()
+	if !inconclusiveOK {
+		mism = append(mism, "waf-challenge: expected an INCONCLUSIVE exposure result, got none")
+	}
+	if wafFalsePos {
+		mism = append(mism, "waf-challenge: produced a CONFIRMED exposure (false positive behind a challenge)")
+	}
+
+	// private (403) object store: detector must stay silent.
+	pv := privateStoreServer()
+	record("storage.public-bucket@1", false, firedS(ssObjectStore(wd, pv.URL))["storage.public-bucket@1"])
+	pv.Close()
+
+	// decoy credential-like metrics: detector fires, but at MEDIUM, not HIGH.
+	decoyOK := false
+	mv := decoyMetricsServer()
+	for _, f := range checkExposure(mv.URL) {
+		if findingType(&f) == "metrics-exposed" {
+			ff := f
+			ensureEvidenceFields(&ff)
+			enforceSeverityPolicy(&ff)
+			if ff.Severity == "MEDIUM" {
+				decoyOK = true
+			}
+			if ff.Severity == "HIGH" {
+				mism = append(mism, "decoy-metrics: credential-like PATTERN escalated to HIGH (must be MEDIUM without a validated value)")
+			}
+		}
+	}
+	mv.Close()
+	if !decoyOK {
+		mism = append(mism, "decoy-metrics: expected a MEDIUM metrics finding, got none")
+	}
+
 	dets := make([]string, 0, len(scores))
 	for k := range scores {
 		dets = append(dets, k)
@@ -236,8 +313,15 @@ func cmdMeasure(args []string) error {
 			fmt.Println("  - " + m)
 		}
 	}
-	fmt.Printf("\nScorecard -> measure-report.json. Result: %s\n", passLabel(allPass))
-	if !allPass {
+	var TP, FP, FN, TN int
+	for _, sc := range scores {
+		TP, FP, FN, TN = TP+sc.tp, FP+sc.fp, FN+sc.fn, TN+sc.tn
+	}
+	fmt.Printf("\nAggregate: precision %.0f%% recall %.0f%% across %d detector families; %d corpus checks (TP=%d FP=%d FN=%d TN=%d).\n",
+		ratio(TP, TP+FP)*100, ratio(TP, TP+FN)*100, len(scores), TP+FP+FN+TN, TP, FP, FN, TN)
+	fmt.Printf("Negative-control cases (deceptive 200, WAF challenge, private 403, decoy secret) enforced.\n")
+	fmt.Printf("\nScorecard -> measure-report.json. Result: %s\n", passLabel(allPass && len(mism) == 0))
+	if !allPass || len(mism) > 0 {
 		os.Exit(1)
 	}
 	return nil

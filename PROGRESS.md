@@ -61,3 +61,15 @@ listed at the bottom.
   - Ledger header fixed ("Probe attempts").
   - Metrology corpus deepened: deceptive catch-all-200 negative case (baseline-
     differential must suppress exposure FPs) — measure still PASS.
+
+- v0.30.0 — per-technology mini-workflows + metrology depth:
+  - techworkflows.go: a fingerprinted service triggers an ordered pivot tree
+    (object-store: ListBuckets -> benign-object -> CORS; Harbor: catalog ->
+    systeminfo/version; Kong: admin /status exposure; Grafana: /api/health ->
+    anonymous /api/org; Elasticsearch: cluster -> indices; Vault: seal-status).
+    Each step is a depth-stamped planner edge; stops at the proof boundary.
+  - measure corpus deepened with negative controls: deceptive catch-all 200,
+    WAF/CAPTCHA challenge (-> INCONCLUSIVE, never a silent pass/FP), private
+    403 object store (silent), decoy credential-like metrics (-> MEDIUM not
+    HIGH). Aggregate precision/recall + TP/FP/FN/TN printed. 7 families, 13
+    checks, PASS.

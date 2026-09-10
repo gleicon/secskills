@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-const version = "0.29.0"
+const version = "0.30.0"
 
 func usage() {
 	fmt.Fprint(os.Stderr, `secskills `+version+` — security assessment orchestrator

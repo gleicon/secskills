@@ -197,6 +197,15 @@ func plannerTechRound(wd, host string, findings []Finding, depth int) []Finding 
 			caps = capabilitiesFor(f)
 		}
 		det := detectorOf(f)
+		// Rule T0 — a fingerprinted service triggers its technology-specific
+		// mini-workflow: an ordered pivot tree of bounded decisions recorded as
+		// attack-graph edges (one discovery -> 2-5 follow-ups).
+		if det == "tech.service-fingerprint@1" {
+			tech := fpNameFromTitle(f.Title)
+			if steps := techWorkflowFor(tech); steps != nil {
+				out = append(out, runTechWorkflow(wd, host, f.Host, tech, steps, depth)...)
+			}
+		}
 		// Rule T1 — publicly_resolvable_service (from the internal-host pivot):
 		// fingerprint the newly-reachable host to decide the next move.
 		if contains(caps, capPublicService) {
