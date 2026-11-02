@@ -119,7 +119,7 @@ func openRedirectProbe(wd, base string) *Finding {
 	advProbe("open-redirect", 1)
 	canary := "https://secskills-canary.example"
 	for _, param := range []string{"url", "redirect", "next", "return", "returnUrl", "dest", "destination", "continue", "r"} {
-		u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape(canary)
+		u := joinBase(base, "/?"+param+"="+url.QueryEscape(canary))
 		if err := ssrfSafeURL(u); err != nil {
 			continue
 		}
@@ -162,13 +162,13 @@ func sstiArithmeticProbe(wd, base string) *Finding {
 	const product = "6731776067"
 	const expr = "73819*91193"
 	// control body (no injection) — the number must NOT already be present
-	if _, _, ctrl, ok := getWithBody(strings.TrimRight(base, "/")+"/", 32*1024); ok && strings.Contains(ctrl, product) {
+	if _, _, ctrl, ok := getWithBody(joinBase(base, "/"), 32*1024); ok && strings.Contains(ctrl, product) {
 		return nil
 	}
 	for _, tmpl := range []struct{ open, close string }{{"{{", "}}"}, {"${", "}"}, {"#{", "}"}} {
 		marker := tmpl.open + expr + tmpl.close
 		for _, param := range []string{"q", "search", "name", "s", "query", "input"} {
-			u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape(marker)
+			u := joinBase(base, "/?"+param+"="+url.QueryEscape(marker))
 			code, _, body, ok := getWithBody(u, 32*1024)
 			if !ok || code != 200 {
 				continue
@@ -200,7 +200,7 @@ func ssrfOASTProbe(wd, base string, o *OAST) *Finding {
 	advProbe("ssrf-oast", 1)
 	host, id := o.token()
 	for _, param := range []string{"url", "uri", "target", "dest", "callback", "webhook", "image", "fetch"} {
-		u := strings.TrimRight(base, "/") + "/?" + param + "=" + url.QueryEscape("http://"+host+"/")
+		u := joinBase(base, "/?"+param+"="+url.QueryEscape("http://"+host+"/"))
 		getWithBody(u, 2048) // fire; the target may perform a server-side fetch
 	}
 	if o.interacted(id) {

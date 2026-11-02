@@ -60,7 +60,7 @@ func ssHTTPPaths(service, sev string, paths []string, sig string) func(wd, base 
 	return func(wd, base string) []Finding {
 		var out []Finding
 		for _, p := range paths {
-			u := strings.TrimRight(base, "/") + p
+			u := joinBase(base, p)
 			code, _, body, ok := getWithBody(u, 16*1024)
 			if !ok || code != 200 {
 				continue
@@ -89,7 +89,7 @@ func ssJSONPaths(service string, paths []string) func(wd, base string) []Finding
 	return func(wd, base string) []Finding {
 		var out []Finding
 		for _, p := range paths {
-			u := strings.TrimRight(base, "/") + p
+			u := joinBase(base, p)
 			code, hdr, body, ok := getWithBody(u, 16*1024)
 			if !ok || code != 200 || !strings.Contains(strings.ToLower(hdr.Get("Content-Type")), "json") {
 				continue
@@ -116,7 +116,7 @@ func ssJSONPaths(service string, paths []string) func(wd, base string) []Finding
 // root listing plus console/health surface. GET-only; never attempts writes.
 func ssObjectStore(wd, base string) []Finding {
 	var out []Finding
-	if code, _, body, ok := getWithBody(strings.TrimRight(base, "/")+"/", 32*1024); ok && code == 200 &&
+	if code, _, body, ok := getWithBody(joinBase(base, "/"), 32*1024); ok && code == 200 &&
 		(strings.Contains(body, "<ListAllMyBucketsResult") || strings.Contains(body, "<ListBucketResult")) {
 		ev := captureEvidence(wd, "storage.public-bucket@1", base, "http-response", "application/xml", "GET "+base+"/", "redacted", []byte(body[:min(len(body), 8192)]))
 		out = append(out, Finding{
@@ -129,7 +129,7 @@ func ssObjectStore(wd, base string) []Finding {
 		})
 	}
 	for _, p := range []string{"/minio/health/live", "/minio/", "/minio/login"} {
-		u := strings.TrimRight(base, "/") + p
+		u := joinBase(base, p)
 		if code, _, body, ok := getWithBody(u, 8*1024); ok && code == 200 &&
 			(p == "/minio/health/live" || strings.Contains(strings.ToLower(body), "minio")) {
 			ev := captureEvidence(wd, "tech.second-stage@1", base, "http-response", "text/plain", "GET "+u, "none", []byte(fmt.Sprintf("HTTP %d at %s", code, p)))
@@ -150,7 +150,7 @@ func ssObjectStore(wd, base string) []Finding {
 // ssElasticsearch: anonymous cluster info + index listing.
 func ssElasticsearch(wd, base string) []Finding {
 	var out []Finding
-	if code, _, body, ok := getWithBody(strings.TrimRight(base, "/")+"/_cat/indices", 32*1024); ok && code == 200 && len(strings.TrimSpace(body)) > 0 && !strings.Contains(body, "security_exception") {
+	if code, _, body, ok := getWithBody(joinBase(base, "/_cat/indices"), 32*1024); ok && code == 200 && len(strings.TrimSpace(body)) > 0 && !strings.Contains(body, "security_exception") {
 		ev := captureEvidence(wd, "tech.second-stage@1", base, "http-response", "text/plain", "GET "+base+"/_cat/indices", "redacted", []byte(body[:min(len(body), 8192)]))
 		out = append(out, Finding{
 			Title: "Elasticsearch anonymous index listing (/_cat/indices)", Host: base, Severity: "HIGH", Status: "open",
@@ -166,7 +166,7 @@ func ssElasticsearch(wd, base string) []Finding {
 
 // ssConsul: anonymous service catalog.
 func ssConsul(wd, base string) []Finding {
-	u := strings.TrimRight(base, "/") + "/v1/catalog/services"
+	u := joinBase(base, "/v1/catalog/services")
 	code, hdr, body, ok := getWithBody(u, 16*1024)
 	if !ok || code != 200 || !strings.Contains(strings.ToLower(hdr.Get("Content-Type")), "json") {
 		return nil
@@ -185,7 +185,7 @@ func ssConsul(wd, base string) []Finding {
 // ssHarbor: anonymous registry catalog + system info.
 func ssHarbor(wd, base string) []Finding {
 	var out []Finding
-	if code, _, body, ok := getWithBody(strings.TrimRight(base, "/")+"/v2/_catalog", 16*1024); ok && code == 200 && strings.Contains(body, "repositories") {
+	if code, _, body, ok := getWithBody(joinBase(base, "/v2/_catalog"), 16*1024); ok && code == 200 && strings.Contains(body, "repositories") {
 		ev := captureEvidence(wd, "tech.second-stage@1", base, "http-response", "application/json", "GET "+base+"/v2/_catalog", "redacted", []byte(body[:min(len(body), 4096)]))
 		out = append(out, Finding{
 			Title: "Container registry anonymous catalog (/v2/_catalog)", Host: base, Severity: "HIGH", Status: "open",
