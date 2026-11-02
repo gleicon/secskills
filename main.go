@@ -81,6 +81,8 @@ func main() {
 		err = cmdSource(args)
 	case "discover":
 		err = cmdDiscover(args)
+	case "match":
+		err = cmdMatch(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
