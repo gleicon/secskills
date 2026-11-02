@@ -185,6 +185,32 @@ func goProbe(hosts []string, workers int) []LiveHost {
 
 // ---- test --------------------------------------------------------------------
 
+// runAdversarialStage is the adversarial-readonly module list for one host.
+// It lives outside the test closure so per-host orchestration stays scannable as
+// modules are added. Modules that issue their own request sequence (the LLM
+// probes) take the rate gate and charge one tick per request; single-pass
+// modules take one tick here.
+func runAdversarialStage(wd, u string, lh LiveHost, oast *OAST, tick *time.Ticker) []Finding {
+	var fnd []Finding
+	<-tick.C
+	fnd = append(fnd, runAdversarial(wd, u, oast)...)
+	if f := llmWarmupProbe(wd, u, tick.C); f != nil {
+		fnd = append(fnd, *f)
+	}
+	fnd = append(fnd, llmChatbotProbe(wd, u, oast, tick.C)...)
+	if lh.Status == 401 || lh.Status == 403 {
+		<-tick.C
+		if f := bypassProbe(wd, u, lh.Status); f != nil {
+			fnd = append(fnd, *f)
+		}
+		<-tick.C
+		if f := trustedHeaderBypass(wd, u, lh.Status); f != nil {
+			fnd = append(fnd, *f)
+		}
+	}
+	return fnd
+}
+
 func cmdTest(args []string) error {
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	confirm := fs.Bool("confirm", false, "authorization confirmed")
@@ -281,23 +307,17 @@ func cmdTest(args []string) error {
 		fnd = append(fnd, checkExposure(u)...)
 		<-tick.C
 		fnd = append(fnd, runDetectorPacks(wd, u)...)
+		// LLM canary reflection (AC-2): one benign POST, safe for every profile,
+		// SSRF-guarded; it charges its own rate-gate tick per request.
+		if f := llmCanaryProbe(wd, u, tick.C); f != nil {
+			fnd = append(fnd, *f)
+		}
 		<-tick.C
 		if f := corsDifferential(wd, u); f != nil {
 			fnd = append(fnd, *f)
 		}
 		if prof.adversarial() {
-			<-tick.C
-			fnd = append(fnd, runAdversarial(wd, u, oast)...)
-			if lh.Status == 401 || lh.Status == 403 {
-				<-tick.C
-				if f := bypassProbe(wd, u, lh.Status); f != nil {
-					fnd = append(fnd, *f)
-				}
-				<-tick.C
-				if f := trustedHeaderBypass(wd, u, lh.Status); f != nil {
-					fnd = append(fnd, *f)
-				}
-			}
+			fnd = append(fnd, runAdversarialStage(wd, u, lh, oast, tick)...)
 		}
 		if c := cveLookup(u, lh.Server); c != nil {
 			fnd = append(fnd, *c)
