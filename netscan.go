@@ -83,7 +83,12 @@ func nextIP(ip net.IP) net.IP {
 // Observation per reachable pair. tick gates every dial so a whole-block sweep
 // respects the global rate (NFR-2); a nil tick runs unthrottled (tests). asn and
 // prefix are stamped onto every observation for inventory context.
-func connectScan(ips []net.IP, ports []int, asnNum int, prefix string, tick <-chan time.Time, workers int) []probe.Observation {
+//
+// Each hit is streamed to sink (if non-nil) the moment it is found, so a sweep
+// killed mid-prefix keeps every observation already made — the resumable-sweep
+// guarantee (AC-7). A sink error stops that worker but not the scan; the
+// returned slice is the authoritative in-memory result regardless.
+func connectScan(ips []net.IP, ports []int, asnNum int, prefix string, tick <-chan time.Time, workers int, sink func(probe.Observation) error) []probe.Observation {
 	type job struct {
 		ip   string
 		port int
@@ -119,6 +124,9 @@ func connectScan(ips []net.IP, ports []int, asnNum int, prefix string, tick <-ch
 				}
 				mu.Lock()
 				obs = append(obs, o)
+				if sink != nil {
+					_ = sink(o)
+				}
 				mu.Unlock()
 			}
 		}()
@@ -234,11 +242,18 @@ func discoverBlock(asn, cidr string, allowLarge, confirm bool, workers int) erro
 		if dropped := len(expanded) - len(ips); dropped > 0 {
 			fmt.Printf("[scope] %s: %d/%d addresses out of scope, not scanned\n", pfx, dropped, len(expanded))
 		}
-		obs := connectScan(ips, defaultScanPorts, asnNum, pfx, tick.C, workers)
-		for _, o := range obs {
+		// Stream each hit to the store as it is found (AC-7): a kill mid-prefix
+		// keeps every observation already written.
+		var storeErr error
+		obs := connectScan(ips, defaultScanPorts, asnNum, pfx, tick.C, workers, func(o probe.Observation) error {
 			if err := store.Append(o); err != nil {
-				return fmt.Errorf("observation store: %w", err)
+				storeErr = err
+				return err
 			}
+			return nil
+		})
+		if storeErr != nil {
+			return fmt.Errorf("observation store: %w", storeErr)
 		}
 		allObs = append(allObs, obs...)
 		fmt.Printf("[scan] %s: %d IPs, %d reachable services\n", pfx, len(ips), len(obs))

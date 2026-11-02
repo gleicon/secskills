@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gleicon/secskills/internal/probe"
 	"net"
 	"testing"
 	"time"
@@ -60,7 +61,7 @@ func TestConnectScanReachable(t *testing.T) {
 	port := ln.Addr().(*net.TCPAddr).Port
 
 	ips := []net.IP{net.ParseIP("127.0.0.1")}
-	obs := connectScan(ips, []int{port, port + 1}, 64500, "127.0.0.0/8", nil, 4)
+	obs := connectScan(ips, []int{port, port + 1}, 64500, "127.0.0.0/8", nil, 4, nil)
 
 	// The open port is observed; the (almost certainly) closed neighbor is not.
 	var sawOpen bool
@@ -84,8 +85,29 @@ func TestConnectScanHonorsRateGate(t *testing.T) {
 	defer tick.Stop()
 	ips := []net.IP{net.ParseIP("127.0.0.1")}
 	start := time.Now()
-	connectScan(ips, []int{1, 2}, 0, "", tick.C, 1)
+	connectScan(ips, []int{1, 2}, 0, "", tick.C, 1, nil)
 	if time.Since(start) < 50*time.Millisecond {
 		t.Fatal("connectScan must wait on the rate gate")
+	}
+}
+
+// TestConnectScanStreamsEachHit proves the sink receives every observation as it
+// is found, so a sweep killed mid-prefix keeps its progress (AC-7).
+func TestConnectScanStreamsEachHit(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	port := ln.Addr().(*net.TCPAddr).Port
+
+	var streamed int
+	ips := []net.IP{net.ParseIP("127.0.0.1")}
+	obs := connectScan(ips, []int{port}, 0, "", nil, 2, func(_ probe.Observation) error {
+		streamed++
+		return nil
+	})
+	if streamed != len(obs) || streamed == 0 {
+		t.Fatalf("sink must fire once per hit: streamed=%d obs=%d", streamed, len(obs))
 	}
 }
