@@ -31,6 +31,16 @@ func findingType(f *Finding) string {
 		return "component-lead"
 	case strings.Contains(t, "prompt-injection"):
 		return "prompt-injection"
+	case strings.Contains(t, "system prompt"):
+		return "llm-sysleak"
+	case strings.Contains(t, "canary"):
+		return "llm-canary"
+	case strings.Contains(t, "oracle drift"):
+		return "llm-drift"
+	case strings.Contains(t, "chatbot performs"):
+		// distinct condition from parameter SSRF: both carry http.ssrf@1 and
+		// ProbeKind manual, so without this they share one observation key.
+		return "llm-chatbot-fetch"
 	}
 	return ""
 }
@@ -55,6 +65,12 @@ func remediationByType(f *Finding) string {
 		return "- Enforce an egress allow-list; block requests to internal/link-local ranges and cloud metadata (169.254.169.254).\n- Resolve and pin destinations server-side; reject user-controlled URLs/schemes.\n- Require authentication on internal services (defense in depth)."
 	case "http.rate-limit-absent@1":
 		return "- Add per-IP / per-identity rate-limiting and abuse controls on unauthenticated endpoints (WAF rule, gateway policy, or app middleware).\n- Return `429` with `Retry-After` and monitor for abuse."
+	case "llm.canary-reflection@1":
+		return "- Treat the LLM path as untrusted: rotate every real credential that crossed it; never send production secrets through a third-party router.\n- Add a fail-closed tool policy gate (allow-listed installer domains AND package names) and response-side anomaly screening on tool-call args.\n- Keep an append-only log of executed tool calls and diff it against model-side logs."
+	case "llm.response-drift@1":
+		return "- Pin the model version and set temperature 0 for a reference run; persistent drift indicates trigger-gated rewriting upstream.\n- Collapse relay chains to the fewest trusted hops and re-probe; inventory every token flow behind the endpoint."
+	case "llm.system-prompt-leak@1":
+		return "- Move secrets, policy, and tool capability details out of the system prompt; nothing in the prompt is confidential against this attack.\n- Enforce authorization and safety server-side (capability gates on tool execution), never by instruction text alone."
 	case "identity.oidc-surface@1":
 		return "- Confirm the OIDC discovery exposure is intended; review authorization/token endpoints, redirect-URI validation, PKCE enforcement, and token audience/lifetime in an authorized identity-focused pass."
 	case "api.schema-exposure@1", "api.verbose-error@1":
@@ -199,6 +215,12 @@ func detectorIDFor(f *Finding) string {
 		return "http.header.xfo-missing@1"
 	case "cors":
 		return "http.cors@1"
+	case "llm-canary":
+		return "llm.canary-reflection@1"
+	case "llm-drift":
+		return "llm.response-drift@1"
+	case "llm-sysleak":
+		return "llm.system-prompt-leak@1"
 	case "metrics-exposed":
 		return "http.prometheus.public-metrics@1"
 	case "exposure-path":

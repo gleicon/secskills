@@ -34,6 +34,8 @@ type Finding struct {
 	References []string `json:"references,omitempty"`
 	// Structured probe — how retest re-verifies the finding in Go, with no shell.
 	// ProbeKind: header-missing | tls-weak | body-contains | status | manual.
+	// Response-integrity baselines are verified by `secskills integrity verify`,
+	// not by retest (a POST chat surface cannot be re-fetched with a GET).
 	ProbeKind string `json:"probe_kind,omitempty"`
 	ProbeURL  string `json:"probe_url,omitempty"`
 	ProbeArg  string `json:"probe_arg,omitempty"`
