@@ -22,6 +22,7 @@ An authorized, unexpired scope file lets `discover`/`test` pass the gate without
 | `secskills source <path>` | Static ast-grep review (embedded rules). No network, no gate. |
 | `secskills sandbox <ctx> --confirm [--port N]` | Docker-isolated build/run, then probe the instance. |
 | `secskills graph <seed...> [--output dir]` | Cross-domain exploration graph (OSINT pivots: cert-SAN/CNAME/shared-infra). Discovered domains are NOT tested; each carries an authorization status. |
+| `secskills integrity <snapshot\|verify> <url> --confirm [--store file]` | sha256 baseline of a stable endpoint response, re-checked later for drift — AC-1 indicator for a rewriting LLM intermediary. Baselines land in `integrity-baselines.jsonl`. |
 
 Flags work in any position. Live/sandbox refuse without `--confirm` or an
 authorized scope file. `--intrusive` requires `--intrusive-confirm`.

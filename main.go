@@ -45,6 +45,7 @@ COMMANDS:
   conformance Detector quality scorecard from the offline regression corpus
   measure     Engine self-measurement against a local vulnerable+safe corpus (precision/recall)
   oast-server Run a self-hostable OAST collaborator (HTTP callback listener + /poll) for blind-SSRF validation
+  integrity   Snapshot/verify sha256 response baselines (AC-1 intermediary-rewrite detection)
   fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
   shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
   mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
@@ -118,6 +119,8 @@ func main() {
 		err = cmdMeasure(args)
 	case "oast-server":
 		err = cmdOASTServer(args)
+	case "integrity":
+		err = cmdIntegrity(args)
 	case "export":
 		err = cmdExport(args)
 	case "watch":

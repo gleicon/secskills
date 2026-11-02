@@ -26,6 +26,19 @@ listed at the bottom.
 ## Status log
 (append newest at top)
 
+- LLM-intermediary depth (arXiv:2604.08407): `llmproxy.go` — canary-reflection
+  probe (AC-2, all profiles, plants + ledgers canaries into the evidence bundle),
+  warm-up drift probe to 60 rounds (AC-1.b, adversarial profile, baseline-
+  required + repeat-confirmed), `secskills integrity snapshot|verify --confirm`
+  (AC-1, gated, sha256 baselines in `integrity-baselines.jsonl`). Every request
+  goes through the shared rate gate and the SSRF-guarded non-destructive client.
+  New detectors in registry/severity/remediation maps, conformance fixtures at
+  100%, unit tests incl. refusal-FP and observation-identity guards.
+- Chatbot attack surface: `llmChatbotProbe` (adversarial profile) — direct
+  system-prompt extraction (`llm.system-prompt-leak@1`) + OAST-validated
+  server-side fetch via instruction (reuses `http.ssrf@1`, needs collaborator;
+  never guessed). 4 unit tests + conformance fixture; KB chatbot section.
+
 - M12 DONE — credentialed.go: jwtInspect (alg:none HIGH, weak/symmetric, missing/expired exp, sensitive claims), cookieSecurity (session cookie missing Secure/HttpOnly/SameSite), authzDifferential (same object-style URL fetched as identity A and B; identical 200 -> potential BOLA/IDOR, manual-confirm). New flags --auth-token-b/--cookie-b. Proven by credentialed_test.go. ALL 12 MILESTONES COMPLETE.
 
 - M11 DONE — evidence hash-chain (deterministic root over sorted manifest by id+sha) signed ed25519 into evidence-chain.sig; auto-signed at end of test. attest --verify now checks run attestation + evidence-chain signature + re-hashes every blob vs the manifest. Proven: manifest edit AND blob-content tamper both detected. Next: M12 credentialed depth.
@@ -72,4 +85,5 @@ listed at the bottom.
     WAF/CAPTCHA challenge (-> INCONCLUSIVE, never a silent pass/FP), private
     403 object store (silent), decoy credential-like metrics (-> MEDIUM not
     HIGH). Aggregate precision/recall + TP/FP/FN/TN printed. 7 families, 13
-    checks, PASS.
+    record() checks, plus 3 mism-enforced negatives (WAF inconclusive, WAF
+    no-FP, decoy MEDIUM), PASS.
