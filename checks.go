@@ -12,18 +12,6 @@ import (
 	"time"
 )
 
-// nonDestructiveClient is a rate-limited, redirect-capturing HTTP client used for
-// all active checks. It never sends state-changing methods.
-func nonDestructiveClient() *http.Client {
-	return &http.Client{
-		Timeout: 8 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // we assess the cert ourselves
-		},
-		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-	}
-}
-
 // headParams is the security-header assessment (A05/A02). Returns findings for a
 // single URL. Each finding carries a curl evidence command for later retest.
 func checkSecurityHeaders(url string) []Finding {

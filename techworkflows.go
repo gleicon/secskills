@@ -16,7 +16,7 @@ import (
 type wfStep struct {
 	cap      string
 	decision string
-	run      func(wd, base string) (result, stop string, f *Finding)
+	run      func(base string) (result, stop string, f *Finding)
 }
 
 // techWorkflowFor returns the ordered workflow for a fingerprinted technology
@@ -45,7 +45,7 @@ func techWorkflowFor(name string) []wfStep {
 func runTechWorkflow(wd, host, base, tech string, steps []wfStep, depth int) []Finding {
 	var out []Finding
 	for i, s := range steps {
-		result, stop, f := s.run(wd, base)
+		result, stop, f := s.run(base)
 		persistEdge(wd, PlannerEdge{Host: host, Depth: depth + i, FromCap: s.cap,
 			Decision: tech + ": " + s.decision, Probe: "GET " + base, Result: result, Stop: stop})
 		if f != nil {
@@ -62,19 +62,19 @@ func runTechWorkflow(wd, host, base, tech string, steps []wfStep, depth int) []F
 
 func objectStoreWorkflow() []wfStep {
 	return []wfStep{
-		{capAnonRead, "anonymous ListBuckets at the store root", func(wd, base string) (string, string, *Finding) {
-			code, _, body, ok := getWithBody(strings.TrimRight(base, "/")+"/", 32*1024)
-			if ok && code == 200 && strings.Contains(body, "<ListBucketResult") || strings.Contains(body, "<ListAllMyBucketsResult") {
+		{capAnonRead, "anonymous ListBuckets at the store root", func(base string) (string, string, *Finding) {
+			code, _, body, ok := getWithBody(joinBase(base, "/"), 32*1024)
+			if ok && code == 200 && (strings.Contains(body, "<ListBucketResult") || strings.Contains(body, "<ListAllMyBucketsResult")) {
 				return "anonymous bucket listing confirmed", "", nil
 			}
 			return "root listing not anonymous (HTTP " + itoa(code) + ")", "STOP_NO_PRIMITIVE", nil
 		}},
-		{capAnonRead, "probe anonymous object read on a benign well-known key", func(wd, base string) (string, string, *Finding) {
-			code, _, _, _ := getWithBody(strings.TrimRight(base, "/")+"/health", 2048)
+		{capAnonRead, "probe anonymous object read on a benign well-known key", func(base string) (string, string, *Finding) {
+			code, _, _, _ := getWithBody(joinBase(base, "/health"), 2048)
 			return fmt.Sprintf("benign key probe returned HTTP %d; object downloads not attempted", code), "STOP_POLICY_BOUNDARY", nil
 		}},
-		{capAuthBoundary, "check cross-origin policy on the store", func(wd, base string) (string, string, *Finding) {
-			refl, creds, ok := corsOriginMatrix(strings.TrimRight(base, "/") + "/")
+		{capAuthBoundary, "check cross-origin policy on the store", func(base string) (string, string, *Finding) {
+			refl, creds, ok := corsOriginMatrix(joinBase(base, "/"))
 			if ok && refl {
 				return fmt.Sprintf("reflects arbitrary Origin (credentials=%v)", creds), "", nil
 			}
@@ -85,15 +85,15 @@ func objectStoreWorkflow() []wfStep {
 
 func harborWorkflow() []wfStep {
 	return []wfStep{
-		{capAnonRead, "anonymous registry catalog (/v2/_catalog)", func(wd, base string) (string, string, *Finding) {
-			code, _, body, ok := getWithBody(strings.TrimRight(base, "/")+"/v2/_catalog", 16*1024)
+		{capAnonRead, "anonymous registry catalog (/v2/_catalog)", func(base string) (string, string, *Finding) {
+			code, _, body, ok := getWithBody(joinBase(base, "/v2/_catalog"), 16*1024)
 			if ok && code == 200 && strings.Contains(body, "repositories") {
 				return "anonymous catalog readable — image names enumerable", "", nil
 			}
 			return "catalog not anonymous (HTTP " + itoa(code) + ")", "STOP_NO_PRIMITIVE", nil
 		}},
-		{capServiceVersion, "read system info / version (/api/v2.0/systeminfo)", func(wd, base string) (string, string, *Finding) {
-			code, _, body, _ := getWithBody(strings.TrimRight(base, "/")+"/api/v2.0/systeminfo", 16*1024)
+		{capServiceVersion, "read system info / version (/api/v2.0/systeminfo)", func(base string) (string, string, *Finding) {
+			code, _, body, _ := getWithBody(joinBase(base, "/api/v2.0/systeminfo"), 16*1024)
 			if code == 200 && strings.Contains(body, "harbor_version") {
 				return "systeminfo exposes harbor_version (feeds CVE applicability)", "STOP_REQUIRES_AUTHORIZED_EXPLOIT", nil
 			}
@@ -104,15 +104,15 @@ func harborWorkflow() []wfStep {
 
 func kongWorkflow() []wfStep {
 	return []wfStep{
-		{capAnonRead, "distinguish proxy vs admin API and probe /status", func(wd, base string) (string, string, *Finding) {
-			code, _, body, _ := getWithBody(strings.TrimRight(base, "/")+"/status", 8192)
+		{capAnonRead, "distinguish proxy vs admin API and probe /status", func(base string) (string, string, *Finding) {
+			code, _, body, _ := getWithBody(joinBase(base, "/status"), 8192)
 			if code == 200 && strings.Contains(body, "database") {
 				return "Kong admin /status reachable unauthenticated (admin API exposed)", "", &Finding{
 					Title: "Kong admin API exposed (/status)", Host: base, Severity: "HIGH", Status: "open",
 					Confidence: "Confirmed", Validation: "behavior-confirmed",
 					ObservedEvidence: "GET /status returned Kong admin status unauthenticated — the admin API controls routing/auth and must never be public.",
-					ImpactText:   "An exposed Kong admin API lets an attacker reconfigure routes, plugins and auth. Restrict the admin API to localhost/mTLS.",
-					ProbeKind:    "status", ProbeURL: strings.TrimRight(base, "/") + "/status", DetectorID: "tech.second-stage@1",
+					ImpactText:       "An exposed Kong admin API lets an attacker reconfigure routes, plugins and auth. Restrict the admin API to localhost/mTLS.",
+					ProbeKind:        "status", ProbeURL: joinBase(base, "/status"), DetectorID: "tech.second-stage@1",
 					Capabilities: []string{capAuthBoundary},
 				}
 			}
@@ -123,22 +123,22 @@ func kongWorkflow() []wfStep {
 
 func grafanaWorkflow() []wfStep {
 	return []wfStep{
-		{capServiceVersion, "read /api/health for version", func(wd, base string) (string, string, *Finding) {
-			code, _, body, _ := getWithBody(strings.TrimRight(base, "/")+"/api/health", 8192)
+		{capServiceVersion, "read /api/health for version", func(base string) (string, string, *Finding) {
+			code, _, body, _ := getWithBody(joinBase(base, "/api/health"), 8192)
 			if code == 200 && strings.Contains(body, "version") {
 				return "/api/health exposes Grafana version (feeds CVE applicability)", "STOP_REQUIRES_AUTHORIZED_EXPLOIT", nil
 			}
 			return fmt.Sprintf("/api/health HTTP %d", code), "STOP_NO_PRIMITIVE", nil
 		}},
-		{capAuthBoundary, "probe anonymous org access (/api/org)", func(wd, base string) (string, string, *Finding) {
-			code, _, _, _ := getWithBody(strings.TrimRight(base, "/")+"/api/org", 8192)
+		{capAuthBoundary, "probe anonymous org access (/api/org)", func(base string) (string, string, *Finding) {
+			code, _, _, _ := getWithBody(joinBase(base, "/api/org"), 8192)
 			if code == 200 {
 				return "anonymous org access enabled (/api/org readable)", "", &Finding{
 					Title: "Grafana anonymous organization access", Host: base, Severity: "MEDIUM", Status: "open",
 					Confidence: "Confirmed", Validation: "behavior-confirmed",
 					ObservedEvidence: "GET /api/org returned 200 unauthenticated — anonymous access is enabled.",
-					ImpactText:   "Anonymous Grafana access can expose dashboards, datasource names and internal metrics. Disable anonymous auth.",
-					ProbeKind:    "status", ProbeURL: strings.TrimRight(base, "/") + "/api/org", DetectorID: "tech.second-stage@1",
+					ImpactText:       "Anonymous Grafana access can expose dashboards, datasource names and internal metrics. Disable anonymous auth.",
+					ProbeKind:        "status", ProbeURL: joinBase(base, "/api/org"), DetectorID: "tech.second-stage@1",
 					Capabilities: []string{capAnonRead},
 				}
 			}
@@ -149,15 +149,15 @@ func grafanaWorkflow() []wfStep {
 
 func elasticWorkflow() []wfStep {
 	return []wfStep{
-		{capAnonRead, "anonymous cluster info (/)", func(wd, base string) (string, string, *Finding) {
-			code, _, body, _ := getWithBody(strings.TrimRight(base, "/")+"/", 16*1024)
+		{capAnonRead, "anonymous cluster info (/)", func(base string) (string, string, *Finding) {
+			code, _, body, _ := getWithBody(joinBase(base, "/"), 16*1024)
 			if code == 200 && strings.Contains(body, "cluster_name") {
 				return "cluster info readable anonymously (version + cluster name)", "", nil
 			}
 			return fmt.Sprintf("/ HTTP %d", code), "STOP_NO_PRIMITIVE", nil
 		}},
-		{capAnonRead, "anonymous index listing (/_cat/indices)", func(wd, base string) (string, string, *Finding) {
-			code, _, body, _ := getWithBody(strings.TrimRight(base, "/")+"/_cat/indices", 16*1024)
+		{capAnonRead, "anonymous index listing (/_cat/indices)", func(base string) (string, string, *Finding) {
+			code, _, body, _ := getWithBody(joinBase(base, "/_cat/indices"), 16*1024)
 			if code == 200 && !strings.Contains(body, "security_exception") && len(strings.TrimSpace(body)) > 0 {
 				return "indices enumerable anonymously — data likely readable", "STOP_POLICY_BOUNDARY", nil
 			}
@@ -168,8 +168,8 @@ func elasticWorkflow() []wfStep {
 
 func vaultWorkflow() []wfStep {
 	return []wfStep{
-		{capServiceVersion, "read seal status (/v1/sys/seal-status)", func(wd, base string) (string, string, *Finding) {
-			code, _, body, _ := getWithBody(strings.TrimRight(base, "/")+"/v1/sys/seal-status", 8192)
+		{capServiceVersion, "read seal status (/v1/sys/seal-status)", func(base string) (string, string, *Finding) {
+			code, _, body, _ := getWithBody(joinBase(base, "/v1/sys/seal-status"), 8192)
 			if code == 200 && strings.Contains(body, "version") {
 				return "seal-status discloses version + seal state (operational intel)", "STOP_REQUIRES_AUTHORIZED_EXPLOIT", nil
 			}

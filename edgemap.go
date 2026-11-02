@@ -86,7 +86,7 @@ func fingerprintEdge(hdr http.Header) edgeInfo {
 // --- Favicon hash (Shodan-compatible mmh3 of base64 favicon) ---------------
 
 func faviconHash(base string) (int32, bool) {
-	u := strings.TrimRight(base, "/") + "/favicon.ico"
+	u := joinBase(base, "/favicon.ico")
 	code, _, body, ok := getWithBody(u, 256*1024)
 	if !ok || code != 200 || len(body) == 0 {
 		return 0, false

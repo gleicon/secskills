@@ -11,32 +11,12 @@ import (
 )
 
 // Items 6 & 7 — Technology-aware and identity/API/DNS/storage detector packs.
-// All packs are strictly non-destructive: unauthenticated GETs (plus one
-// read-only GraphQL introspection query) with SSRF guards. They add semantic
-// depth beyond header checks without attacking anything.
+// All packs in this file are strictly non-destructive: unauthenticated GETs
+// (plus one read-only GraphQL introspection query). Request plumbing lives in
+// httpdo.go; the one POST-based pack (LLM intermediary) runs from the `test`
+// orchestrator, never from here.
 
-// getWithBody performs a guarded non-destructive GET and returns status, headers
-// and a bounded body. SSRF-guarded; empty ok on any failure.
-func getWithBody(url string, maxBytes int64) (int, http.Header, string, bool) {
-	if err := ssrfSafeURL(url); err != nil {
-		return 0, nil, "", false
-	}
-	c := nonDestructiveClient()
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, nil, "", false
-	}
-	req.Header.Set("User-Agent", userAgent)
-	resp, err := c.Do(req)
-	if err != nil {
-		return 0, nil, "", false
-	}
-	defer resp.Body.Close()
-	b, _ := io.ReadAll(io.LimitReader(resp.Body, maxBytes))
-	return resp.StatusCode, resp.Header, string(b), true
-}
-
-// runDetectorPacks runs all live packs for one base URL and returns findings.
+// runDetectorPacks runs all live GET packs for one base URL and returns findings.
 // Evidence bodies are captured as immutable evidence objects in the workdir.
 func runDetectorPacks(wd, base string) []Finding {
 	var out []Finding
@@ -73,7 +53,7 @@ func runDetectorPacks(wd, base string) []Finding {
 // and detect verbose error/stack-trace leakage on a non-existent path.
 func apiMethodsAndErrors(wd, base string) *Finding {
 	// verbose error on a random path
-	rnd := strings.TrimRight(base, "/") + "/secskills-" + randToken()
+	rnd := joinBase(base, "/secskills-") + randToken()
 	code, _, body, ok := getWithBody(rnd, 32*1024)
 	if ok && verboseError(body) {
 		ev := captureEvidence(wd, "api.verbose-error@1", base, "http-response", "text/plain", "GET "+rnd, "redacted", []byte(body[:min(len(body), 4096)]))
@@ -242,7 +222,7 @@ func techNextChecks(service string) string {
 func oidcSurface(wd, base string) *Finding {
 	advProbe("oidc", 1)
 	for _, wk := range []string{"/.well-known/openid-configuration", "/.well-known/oauth-authorization-server"} {
-		u := strings.TrimRight(base, "/") + wk
+		u := joinBase(base, wk)
 		code, _, body, ok := getWithBody(u, 32*1024)
 		if !ok || code != 200 || !strings.Contains(body, "issuer") {
 			continue
@@ -278,7 +258,7 @@ func oidcSurface(wd, base string) *Finding {
 func apiSchema(wd, base string) *Finding {
 	advProbe("api-schema", 1)
 	for _, p := range []string{"/openapi.json", "/swagger.json", "/v2/api-docs", "/api-docs", "/swagger/v1/swagger.json"} {
-		u := strings.TrimRight(base, "/") + p
+		u := joinBase(base, p)
 		code, _, body, ok := getWithBody(u, 64*1024)
 		if ok && code == 200 && (strings.Contains(body, "\"swagger\"") || strings.Contains(body, "\"openapi\"") || strings.Contains(body, "\"paths\"")) {
 			ev := captureEvidence(wd, "api.schema-exposure@1", base, "http-response", "application/json", "GET "+u, "none", []byte(body[:min(len(body), 8192)]))
@@ -294,7 +274,7 @@ func apiSchema(wd, base string) *Finding {
 	}
 	// GraphQL introspection (read-only)
 	for _, p := range []string{"/graphql", "/api/graphql", "/v1/graphql"} {
-		u := strings.TrimRight(base, "/") + p
+		u := joinBase(base, p)
 		if body, ok := graphqlIntrospect(u); ok {
 			ev := captureEvidence(wd, "api.schema-exposure@1", base, "http-response", "application/json", "POST "+u+" (introspection)", "none", []byte(body[:min(len(body), 8192)]))
 			return &Finding{
