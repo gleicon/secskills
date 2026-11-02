@@ -3,10 +3,22 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
 )
+
+// cidrContains reports whether entry is a CIDR prefix containing ip. A non-CIDR
+// entry or a nil ip is never a match, so hostname and CIDR scope entries coexist
+// in one targets list (spec N-1: the scope file accepts CIDR and asn: entries).
+func cidrContains(entry string, ip net.IP) bool {
+	if ip == nil || !strings.Contains(entry, "/") {
+		return false
+	}
+	_, n, err := net.ParseCIDR(entry)
+	return err == nil && n.Contains(ip)
+}
 
 // The engagement scope file (.secskills-scope.yml) is written by the intake
 // interview and honored by the authorization gate: a target listed in an
@@ -111,13 +123,14 @@ func scopeAuthorizes(host string) (bool, string) {
 			return false, "scope file expired " + s.Expires.Format("2006-01-02")
 		}
 		h := strings.ToLower(hostOf(host))
+		ip := net.ParseIP(h)
 		for _, o := range s.OutOfScope {
-			if h == o || strings.HasSuffix(h, "."+o) {
+			if h == o || strings.HasSuffix(h, "."+o) || cidrContains(o, ip) {
 				return false, "host is explicitly out of scope"
 			}
 		}
 		for _, t := range s.Targets {
-			if h == t || strings.HasSuffix(h, "."+t) {
+			if h == t || strings.HasSuffix(h, "."+t) || cidrContains(t, ip) {
 				return true, "authorized by " + path + " (" + s.ConfirmedBy + ")"
 			}
 		}

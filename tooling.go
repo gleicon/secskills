@@ -83,6 +83,11 @@ type LiveHost struct {
 	Status int    `json:"status_code"`
 	Title  string `json:"title"`
 	Server string `json:"webserver"`
+	// Inventory context, populated by ASN/CIDR discovery (spec N-1). Empty for
+	// the domain-driven path, so existing consumers are unaffected.
+	IP     string `json:"ip,omitempty"`
+	Prefix string `json:"prefix,omitempty"`
+	ASN    int    `json:"asn,omitempty"`
 }
 
 // httpxProbe probes resolved hosts with pd httpx, minimal fast flags, writing to
