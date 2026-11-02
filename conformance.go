@@ -55,6 +55,13 @@ func corpus() []Fixture {
 			Title: "Permissive CORS header (ACAO:* without credentials)", ProbeKind: "header-missing", ProbeArg: "access-control-allow-origin", Host: "https://h4.example.com", ProbeURL: "https://h4.example.com/", Validation: "passive"},
 		{Name: "cors-creds", Class: "positive-simple", ExpectDetector: "http.cors@1", ExpectSeverity: "MEDIUM",
 			Title: "Permissive CORS with credentials (ACAO:* + ACAC:true)", ProbeKind: "header-missing", ProbeArg: "access-control-allow-origin", Host: "https://h4.example.com", ProbeURL: "https://h4.example.com/", Validation: "passive"},
+		// --- LLM intermediary (canary reflection + oracle drift) --------------
+		{Name: "llm-canary", Class: "positive-simple", ExpectDetector: "llm.canary-reflection@1", ExpectSeverity: "MEDIUM",
+			Title: "LLM endpoint reflects planted canary token", ProbeKind: "manual", Host: "https://h8.example.com", ProbeURL: "https://h8.example.com/v1/chat/completions", Validation: "behavior-confirmed"},
+		{Name: "llm-drift", Class: "positive-simple", ExpectDetector: "llm.response-drift@1", ExpectSeverity: "LOW",
+			Title: "LLM deterministic-oracle drift across warm-up rounds", ProbeKind: "manual", Host: "https://h8.example.com", ProbeURL: "https://h8.example.com/v1/chat/completions", Validation: "behavior-confirmed"},
+		{Name: "llm-sysleak", Class: "positive-simple", ExpectDetector: "llm.system-prompt-leak@1", ExpectSeverity: "MEDIUM",
+			Title: "LLM chatbot discloses system prompt", ProbeKind: "manual", Host: "https://h8.example.com", ProbeURL: "https://h8.example.com/v1/chat/completions", Validation: "behavior-confirmed"},
 		// --- unauth exposure: metrics severity by content ------------------
 		{Name: "metrics-generic", Class: "negative", ExpectDetector: "http.prometheus.public-metrics@1", ExpectSeverity: "LOW",
 			Title: "Prometheus metrics exposed unauthenticated (generic runtime metrics only)", ProbeKind: "body-contains", Host: "https://h5.example.com", ProbeURL: "https://h5.example.com/metrics", Validation: "behavior-confirmed",

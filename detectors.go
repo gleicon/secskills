@@ -133,6 +133,12 @@ func assessSeverity(f *Finding) (string, string) {
 		return "INFORMATIONAL", "permissive origin without credentials — no authenticated data exposed"
 	case "hsts-missing", "csp-missing", "nosniff-missing", "xfo-missing":
 		return "LOW", "hardening deviation with no demonstrated exploit prerequisite"
+	case "llm-canary":
+		return "MEDIUM", "planted canary echoed by LLM endpoint; intermediary retains/reflects prompt content (AC-2 indicator)"
+	case "llm-drift":
+		return "LOW", "deterministic-oracle drift across warm-up rounds; temperature/instruction confound noted"
+	case "llm-sysleak":
+		return "MEDIUM", "chatbot disclosed system instructions on direct request; enables guardrail-bypass design"
 	case "component-lead":
 		return "LOW", "version-inferred lead; exploitability not established"
 	}
@@ -181,6 +187,9 @@ func detectorRegistry() []DetectorMeta {
 		{ID: "http.exposure-path@1", IdentityCompatible: true, Description: "unauthenticated sensitive path"},
 		{ID: "component.banner-osv-correlation@1", IdentityCompatible: true, Description: "banner-inferred component CVE lead"},
 		{ID: "content.prompt-injection@1", IdentityCompatible: true, Description: "prompt-injection content in target data"},
+		{ID: "llm.canary-reflection@1", IdentityCompatible: true, Description: "LLM endpoint reflects planted canary (AC-2 logging indicator)"},
+		{ID: "llm.response-drift@1", IdentityCompatible: true, Description: "deterministic-oracle drift across warm-up rounds (AC-1.b indicator)"},
+		{ID: "llm.system-prompt-leak@1", IdentityCompatible: true, Description: "chatbot discloses system prompt on direct request"},
 		{ID: "tech.service-fingerprint@1", IdentityCompatible: true, Description: "known operational service fingerprint"},
 		{ID: "identity.oidc-surface@1", IdentityCompatible: true, Description: "OAuth/OIDC discovery surface"},
 		{ID: "api.schema-exposure@1", IdentityCompatible: true, Description: "OpenAPI/GraphQL schema exposure"},
