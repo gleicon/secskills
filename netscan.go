@@ -208,18 +208,31 @@ func discoverBlock(asn, cidr string, allowLarge, confirm bool, workers int) erro
 	tick := rateGate()
 	defer tick.Stop()
 	store := probe.Store{Path: filepath.Join(wd, "observations.jsonl")}
+	// Authorization is decided per IP, not per prefix: authorizing a prefix's
+	// network address must never authorize addresses the scope does not cover,
+	// and out_of_scope is honored for every address even under --confirm.
+	allow := scopeIPFilter(confirm)
 	var allObs []probe.Observation
 	for _, pfx := range prefixes {
-		// Per-prefix authorization: --confirm, or an unexpired scope file whose
-		// CIDR/host targets cover the prefix's network address.
+		// Fast-fail with the authorization notice when nothing in this prefix
+		// could be in scope; the per-IP filter below is the real enforcement.
 		netIP, _, _ := net.ParseCIDR(pfx)
 		if err := gateNotice("discover", netIP.String(), confirm); err != nil {
 			return err
 		}
-		ips, err := expandCIDR(pfx, allowLarge)
+		expanded, err := expandCIDR(pfx, allowLarge)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "[scan] skip %s: %v\n", pfx, err)
 			continue
+		}
+		ips := make([]net.IP, 0, len(expanded))
+		for _, ip := range expanded {
+			if allow(ip) {
+				ips = append(ips, ip)
+			}
+		}
+		if dropped := len(expanded) - len(ips); dropped > 0 {
+			fmt.Printf("[scope] %s: %d/%d addresses out of scope, not scanned\n", pfx, dropped, len(expanded))
 		}
 		obs := connectScan(ips, defaultScanPorts, asnNum, pfx, tick.C, workers)
 		for _, o := range obs {
