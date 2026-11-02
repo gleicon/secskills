@@ -32,13 +32,7 @@ func plannerGraphPath(wd string) string { return filepath.Join(wd, "planner-grap
 
 func persistEdge(wd string, e PlannerEdge) {
 	e.Timestamp = nowRFC()
-	f, err := os.OpenFile(plannerGraphPath(wd), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	b, _ := json.Marshal(e)
-	f.Write(append(b, '\n'))
+	_ = appendJSONL(plannerGraphPath(wd), e)
 }
 
 func loadPlannerGraph(wd string) []PlannerEdge {
