@@ -58,12 +58,18 @@ func cmdDiscover(args []string) error {
 	fs := flag.NewFlagSet("discover", flag.ContinueOnError)
 	confirm := fs.Bool("confirm", false, "authorization confirmed")
 	workers := fs.Int("workers", 20, "resolver/probe concurrency")
+	asn := fs.String("asn", "", "discover by ASN (e.g. AS64500): announced prefixes -> IP inventory")
+	cidr := fs.String("cidr", "", "discover by CIDR (e.g. 203.0.113.0/24): IP inventory")
+	allowLarge := fs.Bool("allow-large", false, "permit a block wider than /20 (deliberate, logged)")
 	pos, err := parseMixed(fs, args)
 	if err != nil {
 		return err
 	}
+	if *asn != "" || *cidr != "" {
+		return discoverBlock(*asn, *cidr, *allowLarge, *confirm, *workers)
+	}
 	if len(pos) == 0 {
-		return fmt.Errorf("usage: secskills discover <domain> --confirm")
+		return fmt.Errorf("usage: secskills discover <domain> --confirm  |  discover --asn AS64500 --confirm  |  discover --cidr 203.0.113.0/24 --confirm")
 	}
 	target := pos[0]
 	if err := gateNotice("discover", target, *confirm); err != nil {
