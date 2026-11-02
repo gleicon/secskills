@@ -144,12 +144,11 @@ func decoyMetricsServer() *httptest.Server {
 
 type mScore struct{ tp, fp, fn, tn int }
 
-// cmdMeasure runs the corpus and prints the detector quality scorecard.
-func cmdMeasure(args []string) error {
-	allowLocalProbes = true
-	defer func() { allowLocalProbes = false }()
-	wd, _ := os.MkdirTemp("", "sk-measure")
-	defer os.RemoveAll(wd)
+// runMeasureCorpus executes the local vulnerable+safe corpus and returns the
+// per-detector scorecard plus every mismatch. `secskills measure` prints it and
+// the conformance test asserts on it, so the corpus is specified exactly once.
+// The caller owns allowLocalProbes and the workdir.
+func runMeasureCorpus(wd string) (map[string]*mScore, []string) {
 	scores := map[string]*mScore{}
 	var mism []string
 	get := func(d string) *mScore {
@@ -174,21 +173,21 @@ func cmdMeasure(args []string) error {
 			s.tn++
 		}
 	}
-	fired := func(fs ...*Finding) map[string]bool {
-		m := map[string]bool{}
-		for _, f := range fs {
-			if f != nil {
-				m[detectorOf(f)] = true
-			}
-		}
-		return m
-	}
 	firedS := func(fs []Finding) map[string]bool {
 		m := map[string]bool{}
 		for i := range fs {
 			m[detectorOf(&fs[i])] = true
 		}
 		return m
+	}
+	fired := func(fs ...*Finding) map[string]bool {
+		out := make([]Finding, 0, len(fs))
+		for _, f := range fs {
+			if f != nil {
+				out = append(out, *f)
+			}
+		}
+		return firedS(out)
 	}
 
 	// open redirect
@@ -284,6 +283,17 @@ func cmdMeasure(args []string) error {
 	if !decoyOK {
 		mism = append(mism, "decoy-metrics: expected a MEDIUM metrics finding, got none")
 	}
+	return scores, mism
+}
+
+// cmdMeasure prints the detector quality scorecard for the local corpus.
+func cmdMeasure(args []string) error {
+	_ = args // no flags: the corpus is fixed
+	allowLocalProbes = true
+	defer func() { allowLocalProbes = false }()
+	wd, _ := os.MkdirTemp("", "sk-measure")
+	defer os.RemoveAll(wd)
+	scores, mism := runMeasureCorpus(wd)
 
 	dets := make([]string, 0, len(scores))
 	for k := range scores {
