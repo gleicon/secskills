@@ -99,11 +99,12 @@ func loadScopeFile(path string) (*scopeFile, error) {
 	return s, nil
 }
 
-// scopeAuthorizes reports whether an unexpired, confirmed scope file covers host.
-// A scope file only authorizes when it is owned by the invoking user and not
-// group/other-writable — so a scope file planted in a repo you cd into cannot
-// silently authorize testing. An explicit SECSKILLS_SCOPE path is honored first.
-func scopeAuthorizes(host string) (bool, string) {
+// loadTrustedScope resolves and loads the engagement scope file, enforcing the
+// trust check (owned by the invoking user, not group/other-writable) so a scope
+// file planted in a repo you cd into cannot silently authorize testing. An
+// explicit SECSKILLS_SCOPE path is honored first. Returns the parsed scope, the
+// path it came from, and whether a trusted, readable scope file was found.
+func loadTrustedScope() (*scopeFile, string, bool) {
 	paths := []string{".secskills-scope.yml", ".secskills-scope.yaml"}
 	if env := os.Getenv("SECSKILLS_SCOPE"); env != "" {
 		paths = []string{env}
@@ -116,27 +117,68 @@ func scopeAuthorizes(host string) (bool, string) {
 		if err != nil {
 			continue
 		}
-		if !s.Authorized {
-			return false, "scope file present but authorized: false"
+		return s, path, true
+	}
+	return nil, "", false
+}
+
+// scopeAuthorizes reports whether an unexpired, confirmed scope file covers host.
+func scopeAuthorizes(host string) (bool, string) {
+	s, path, ok := loadTrustedScope()
+	if !ok {
+		return false, "no scope file"
+	}
+	if !s.Authorized {
+		return false, "scope file present but authorized: false"
+	}
+	if !s.Expires.IsZero() && time.Now().After(s.Expires) {
+		return false, "scope file expired " + s.Expires.Format("2006-01-02")
+	}
+	h := strings.ToLower(hostOf(host))
+	ip := net.ParseIP(h)
+	for _, o := range s.OutOfScope {
+		if h == o || strings.HasSuffix(h, "."+o) || cidrContains(o, ip) {
+			return false, "host is explicitly out of scope"
 		}
-		if !s.Expires.IsZero() && time.Now().After(s.Expires) {
-			return false, "scope file expired " + s.Expires.Format("2006-01-02")
+	}
+	for _, t := range s.Targets {
+		if h == t || strings.HasSuffix(h, "."+t) || cidrContains(t, ip) {
+			return true, "authorized by " + path + " (" + s.ConfirmedBy + ")"
 		}
-		h := strings.ToLower(hostOf(host))
-		ip := net.ParseIP(h)
-		for _, o := range s.OutOfScope {
-			if h == o || strings.HasSuffix(h, "."+o) || cidrContains(o, ip) {
-				return false, "host is explicitly out of scope"
+	}
+	return false, "host not listed in scope file targets"
+}
+
+// scopeIPFilter returns a per-IP authorization predicate for block scanning,
+// loading the trusted scope once. out_of_scope is honored for every IP even
+// when the whole block was confirmed on the CLI. Without --confirm, an IP is
+// scanned only if a trusted, unexpired, authorized scope file lists a target
+// (host or CIDR) that covers it — so authorizing a prefix's network address
+// never authorizes addresses the scope does not actually cover.
+func scopeIPFilter(confirm bool) func(net.IP) bool {
+	s, _, ok := loadTrustedScope()
+	expired := ok && !s.Expires.IsZero() && time.Now().After(s.Expires)
+	return func(ip net.IP) bool {
+		if ok {
+			for _, o := range s.OutOfScope {
+				if cidrContains(o, ip) || o == ip.String() {
+					return false // explicit exclusion overrides even --confirm
+				}
 			}
+		}
+		if confirm {
+			return true
+		}
+		if !ok || !s.Authorized || expired {
+			return false
 		}
 		for _, t := range s.Targets {
-			if h == t || strings.HasSuffix(h, "."+t) || cidrContains(t, ip) {
-				return true, "authorized by " + path + " (" + s.ConfirmedBy + ")"
+			if cidrContains(t, ip) || t == ip.String() {
+				return true
 			}
 		}
-		return false, "host not listed in scope file targets"
+		return false
 	}
-	return false, "no scope file"
 }
 
 // scopeFileTrusted requires the scope file to exist, be owned by the invoking
