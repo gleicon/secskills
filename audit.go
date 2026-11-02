@@ -135,11 +135,12 @@ func detectorManifest() []string {
 }
 
 // evidenceBundleSHA hashes the raw-evidence artifacts in the workdir (findings,
-// nuclei output, sslscan/shodan data, screenshot filenames), so the attestation
-// covers the evidence bundle, not just the findings summary.
+// nuclei output, sslscan/shodan data, planner graph, canary ledger, screenshot
+// filenames), so the attestation covers the evidence bundle, not just the
+// findings summary.
 func evidenceBundleSHA(wd string) string {
 	h := sha256.New()
-	arts := []string{"findings.json", "nuclei.jsonl", "resolved.txt", "ips.txt", "live_hosts.json", "subs.txt", "planner-graph.jsonl", "evidence-manifest.jsonl", "adv-stats.json"}
+	arts := []string{"findings.json", "nuclei.jsonl", "resolved.txt", "ips.txt", "live_hosts.json", "subs.txt", "planner-graph.jsonl", "evidence-manifest.jsonl", "adv-stats.json", "canary-ledger.jsonl"}
 	sort.Strings(arts)
 	for _, a := range arts {
 		if b, err := os.ReadFile(filepath.Join(wd, a)); err == nil {

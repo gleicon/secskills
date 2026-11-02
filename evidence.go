@@ -65,15 +65,30 @@ func readRunID(wd string) string {
 	return m.RunID
 }
 
+// appendJSONL appends v to path as one JSON line, creating the file if needed.
+// JSONL ledgers in the workdir (evidence manifest, planner graph, canary ledger,
+// watch drift, OAST interactions) all persist through this one writer.
+func appendJSONL(path string, v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(append(b, '\n')); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
 // appendManifest keeps evidence-manifest.jsonl append-only (one object per line).
 func appendManifest(wd string, obj EvidenceObject) {
-	f, err := os.OpenFile(filepath.Join(wd, "evidence-manifest.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return
+	if err := appendJSONL(filepath.Join(wd, "evidence-manifest.jsonl"), obj); err != nil {
+		fmt.Fprintf(os.Stderr, "[evidence] manifest append failed: %v\n", err)
 	}
-	defer f.Close()
-	b, _ := json.Marshal(obj)
-	f.Write(append(b, '\n'))
 }
 
 // loadEvidenceManifest reads all evidence objects for a run.

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -45,11 +43,7 @@ func (c *oastCollab) record(i oastInteraction) {
 	c.seen[i.Token] = true
 	c.mu.Unlock()
 	if c.store != "" {
-		if f, err := os.OpenFile(c.store, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
-			b, _ := json.Marshal(i)
-			f.Write(append(b, '\n'))
-			f.Close()
-		}
+		_ = appendJSONL(c.store, i)
 	}
 }
 

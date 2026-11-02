@@ -141,12 +141,5 @@ func computeDrift(target string) *driftEntry {
 }
 
 func appendDrift(target string, d driftEntry) {
-	path := filepath.Join(workdir(target), "watch-drift.jsonl")
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	b, _ := json.Marshal(d)
-	f.Write(append(b, '\n'))
+	_ = appendJSONL(filepath.Join(workdir(target), "watch-drift.jsonl"), d)
 }
