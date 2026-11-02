@@ -6,25 +6,25 @@ git	baseline	core	ingest	git	git	KB refresh, findings backup
 tldt	optimizer	optimizer	all	pipx:tldt	go:github.com/gleicon/tldt@latest	Compress OSINT output + scrub PII + injection detect
 subfinder	power	osint	discover	subfinder	go:github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest	Passive subdomain enum
 amass	power	osint	discover	amass	go:github.com/owasp-amass/amass/v4/...@master	Graph subdomain enum + intel/ASN
-assetfinder	power	osint	discover	assetfinder	go:github.com/tomnomnom/assetfinder@latest	Fast subdomain discovery
+assetfinder	power	osint	discover	go:github.com/tomnomnom/assetfinder@latest	go:github.com/tomnomnom/assetfinder@latest	Fast subdomain discovery
 findomain	power	osint	discover	findomain	cargo:findomain	Subdomain enum (CT + sources)
 github-subdomains	power	osint	discover	go:github.com/gwen001/github-subdomains@latest	go:github.com/gwen001/github-subdomains@latest	Subdomains from GitHub code search
-chaos	power	osint	discover	chaos	go:github.com/projectdiscovery/chaos-client/cmd/chaos@latest	ProjectDiscovery Chaos subdomain dataset
+chaos	power	osint	discover	go:github.com/projectdiscovery/chaos-client/cmd/chaos@latest	go:github.com/projectdiscovery/chaos-client/cmd/chaos@latest	ProjectDiscovery Chaos subdomain dataset
 theharvester	power	osint	discover	pipx:theHarvester	pipx:theHarvester	Emails/hosts/subdomains OSINT
-waybackurls	power	osint	discover	waybackurls	go:github.com/tomnomnom/waybackurls@latest	Historical URLs from Wayback
+waybackurls	power	osint	discover	go:github.com/tomnomnom/waybackurls@latest	go:github.com/tomnomnom/waybackurls@latest	Historical URLs from Wayback
 gau	power	osint	discover	gau	go:github.com/lc/gau/v2/cmd/gau@latest	URLs from Wayback/CommonCrawl/OTX
 shodan	power	osint	discover	shodan	pipx:shodan	Internet-connected asset search (needs API key)
 fofax	power	osint	discover	go:github.com/xiecat/fofax/cmd/fofax@latest	go:github.com/xiecat/fofax/cmd/fofax@latest	FOFA network-asset search CLI (needs API key)
 dnsx	power	dns	discover	dnsx	go:github.com/projectdiscovery/dnsx/cmd/dnsx@latest	Fast DNS resolver/toolkit
-puredns	power	dns	discover	puredns	go:github.com/d3mondev/puredns/v2@latest	Resolve + bruteforce subdomains (massdns)
+puredns	power	dns	discover	go:github.com/d3mondev/puredns/v2@latest	go:github.com/d3mondev/puredns/v2@latest	Resolve + bruteforce subdomains (massdns)
 shuffledns	power	dns	discover	shuffledns	go:github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest	massdns wrapper for subdomain brute
 httpx	power	http	discover,test	httpx	go:github.com/projectdiscovery/httpx/cmd/httpx@latest	HTTP probe + tech detect (projectdiscovery)
 katana	power	http	test	katana	go:github.com/projectdiscovery/katana/cmd/katana@latest	Crawler (URLs, forms, JS params)
-hakrawler	power	http	test	hakrawler	go:github.com/hakluke/hakrawler@latest	Fast endpoint crawler
-gospider	power	http	test	gospider	go:github.com/jaeles-project/gospider@latest	Web spider
-unfurl	power	http	test	unfurl	go:github.com/tomnomnom/unfurl@latest	Pull parts (domains/paths) from URLs
-anew	power	http	test	anew	go:github.com/tomnomnom/anew@latest	Append-only dedup for streaming recon
-qsreplace	power	http	test	qsreplace	go:github.com/tomnomnom/qsreplace@latest	Swap query-string values for fuzzing
+hakrawler	power	http	test	go:github.com/hakluke/hakrawler@latest	go:github.com/hakluke/hakrawler@latest	Fast endpoint crawler
+gospider	power	http	test	go:github.com/jaeles-project/gospider@latest	go:github.com/jaeles-project/gospider@latest	Web spider
+unfurl	power	http	test	go:github.com/tomnomnom/unfurl@latest	go:github.com/tomnomnom/unfurl@latest	Pull parts (domains/paths) from URLs
+anew	power	http	test	go:github.com/tomnomnom/anew@latest	go:github.com/tomnomnom/anew@latest	Append-only dedup for streaming recon
+qsreplace	power	http	test	go:github.com/tomnomnom/qsreplace@latest	go:github.com/tomnomnom/qsreplace@latest	Swap query-string values for fuzzing
 gf	power	http	test	gf	go:github.com/tomnomnom/gf@latest	grep-wrapper patterns (xss/ssrf/sqli)
 naabu	power	port	discover	naabu	go:github.com/projectdiscovery/naabu/v2/cmd/naabu@latest	Fast port scanner
 nmap	power	port	discover,test	nmap	nmap	Port/service/version scanning + NSE
@@ -32,7 +32,7 @@ masscan	power	port	discover	masscan	masscan	Internet-scale port scanner
 rustscan	power	port	discover	rustscan	cargo:rustscan	Fast port scan -> nmap
 nuclei	power	vuln	test	nuclei	go:github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest	Template vulnerability scanner
 nikto	power	vuln	test	nikto	nikto	Web server misconfig scanner
-jaeles	power	vuln	test	jaeles	go:github.com/jaeles-project/jaeles@latest	Signature-based web scanner
+jaeles	power	vuln	test	go:github.com/jaeles-project/jaeles@latest	go:github.com/jaeles-project/jaeles@latest	Signature-based web scanner
 dalfox	power	vuln	test	dalfox	go:github.com/hahwul/dalfox/v2@latest	XSS parameter fuzzer
 sqlmap	power	exploit	test	sqlmap	sqlmap	SQL injection detection/exploitation
 commix	power	exploit	test	commix	pipx:commix	Command-injection exploitation
@@ -54,10 +54,11 @@ testssl	power	tls	test	testssl	testssl.sh	Deep TLS/cipher/vuln testing
 sslyze	power	tls	test	pipx:sslyze	pipx:sslyze	TLS config analyzer
 s3scanner	power	cloud	test	pipx:s3scanner	pipx:s3scanner	Enumerate open S3/GCS/Azure buckets
 cloud-enum	power	cloud	test	pipx:cloud_enum	pipx:cloud_enum	Multi-cloud asset enumeration
-interactsh-client	power	oob	test	interactsh-client	go:github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest	OOB/SSRF/blind interaction server
+interactsh-client	power	oob	test	go:github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest	go:github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest	OOB/SSRF/blind interaction server
 notify	power	oob	test	notify	go:github.com/projectdiscovery/notify/cmd/notify@latest	Stream findings to chat/webhook
 ast-grep	power	source	source	ast-grep	cargo:ast-grep	AST source analysis (source-mode engine)
 semgrep	power	source	source	semgrep	pipx:semgrep	SAST rules engine (source mode)
+apktool	power	mobile	test,source	apktool	apktool	APK reverse-engineering (manifest + dex/smali teardown)
 seclists	power	content	test	seclists	git:https://github.com/danielmiessler/SecLists	Wordlists for fuzzing/brute (data)
 docker	power	sandbox	sandbox	cask:docker	docker.io	Sandbox isolation (required for sandbox mode)
 chrome	power	report	report	cask:google-chrome	chromium-browser	Headless browser for PDF report rendering (report --pdf); also powers deep-phase screenshots

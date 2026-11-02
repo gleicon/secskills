@@ -110,6 +110,9 @@ observation is the system of record; the report is a view over it.
   `technologies.json` or favicon mmh3 hashes). Fingerprints trigger second-stage
   packs (object store, Elasticsearch, Grafana, Vault, Consul, Argo CD, Harbor,
   Kubernetes, GitLab, Jenkins, …).
+- **Per-technology mini-workflows** — a fingerprinted service triggers an ordered
+  pivot tree (object store, Harbor, Kong, Grafana, Elasticsearch, Vault), each
+  step a depth-stamped planner edge that stops at the proof boundary.
 - **Edge & defense recon** — CDN/WAF fingerprint, favicon/cert Shodan+Censys
   looking-glass for origin IPs, direct-origin bypass (leaf-cert correlated),
   trusted-header ACL bypass.
@@ -119,7 +122,9 @@ observation is the system of record; the report is a view over it.
   drift (NEW/FIXED/REGRESSED by finding key).
 - **Interop + integrity** — `secskills export --format sarif|cyclonedx` (SARIF 2.1.0,
   CycloneDX 1.5 + VEX); signed tamper-evident evidence chain (`attest --verify`);
-  self-hostable `secskills oast-server` for blind-SSRF validation.
+  self-hostable `secskills oast-server` for blind-SSRF validation;
+  `secskills integrity snapshot|verify --confirm` for sha256 response baselines
+  (AC-1 indicator for a rewriting LLM intermediary).
 - **Credentialed depth** — JWT inspection, session-cookie flags, BOLA/IDOR
   differential (`--auth-token-b`).
 

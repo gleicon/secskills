@@ -32,7 +32,7 @@ func classify(f *Finding) {
 		set("A05:2021 Security Misconfiguration", "CWE-527", "config-exposure")
 	case strings.Contains(t, "xss") || strings.Contains(t, "inject") || strings.Contains(t, "sql"):
 		set("A03:2021 Injection", "CWE-79", "injection")
-	case strings.Contains(t, "ssrf"):
+	case strings.Contains(t, "ssrf") || strings.Contains(t, "request forgery") || strings.Contains(t, "server-side fetch"):
 		set("A10:2021 Server-Side Request Forgery", "CWE-918", "ssrf-xxe")
 	case strings.Contains(t, "xxe"):
 		set("A05:2021 Security Misconfiguration", "CWE-611", "ssrf-xxe")

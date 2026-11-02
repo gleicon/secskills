@@ -21,6 +21,7 @@ secskills doctor      # verify tools; prints install commands for what's missing
 | `secskills discover <domain> --confirm` | live surface discovery | authz |
 | `secskills test <target> --confirm [--intrusive]` | OWASP Top 10 tests | authz |
 | `secskills sandbox <ctx> --confirm` | Docker-isolated build+test | authz |
+| `secskills integrity snapshot\|verify <url> --confirm` | sha256 response baselines (AC-1 intermediary rewrite) | authz |
 | `secskills kb [<class>]` | OWASP guidance, offline | — |
 | `secskills fetch <source> <url>` / `post <source> <url> <json>` | throttled free-source query | — |
 | `secskills compress\|scrub\|scan <file>` | token hygiene + PII/injection | — |
