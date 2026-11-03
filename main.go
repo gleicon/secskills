@@ -85,6 +85,8 @@ func main() {
 		err = cmdMatch(args)
 	case "leakcheck":
 		err = cmdLeakcheck(args)
+	case "prefix-report":
+		err = cmdPrefixReport(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
