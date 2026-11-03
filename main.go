@@ -91,6 +91,8 @@ func main() {
 		err = cmdFeed(args)
 	case "dbcheck":
 		err = cmdDBCheck(args)
+	case "enrich":
+		err = cmdEnrich(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":

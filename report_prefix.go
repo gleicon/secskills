@@ -35,14 +35,20 @@ func cmdPrefixReport(args []string) error {
 	if *wd == "" {
 		return fmt.Errorf("usage: secskills prefix-report --workdir <dir> [--label ...] [--output file]")
 	}
-	obs, err := probe.Load(filepath.Join(*wd, "observations.jsonl"))
+	// Prefer the enriched observations (product/version) when an enrich pass has
+	// run; fall back to the raw sweep output.
+	obsPath := filepath.Join(*wd, "enriched-observations.jsonl")
+	if _, err := os.Stat(obsPath); err != nil {
+		obsPath = filepath.Join(*wd, "observations.jsonl")
+	}
+	obs, err := probe.Load(obsPath)
 	if err != nil {
 		return fmt.Errorf("load observations: %w", err)
 	}
 	leaks := loadLeaks(filepath.Join(*wd, "leaks.jsonl"))    // optional
 	dbc := loadDBChecks(filepath.Join(*wd, "dbcheck.jsonl")) // optional
 
-	report := renderPrefixReport(*label, obs, leaks, dbc)
+	report := renderPrefixReport(*label, obs, leaks, dbc, loadKEVForEnrich())
 	target := *out
 	if target == "" {
 		target = filepath.Join(*wd, "exposure-report.md")
@@ -109,7 +115,7 @@ func loadDBChecks(path string) []dbResult {
 	return out
 }
 
-func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, dbc []dbResult) string {
+func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, dbc []dbResult, kev []KEVEntry) string {
 	if label == "" {
 		label = "scanned prefix"
 	}
@@ -225,12 +231,70 @@ func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, db
 		w("\n")
 	}
 
-	// 3. CVE / KEV status.
-	w("## 3. CVE / KEV status\n\n")
-	w("Per-service CVE matching requires product **versions**, which bare `Server` banners rarely expose, ")
-	w("joined against the live feed (KEV/EPSS/distro) — that ingest is in progress. ")
-	w("This report asserts no CVE matches it cannot evidence; it will be regenerated with the vulnerability join once versions are enriched. ")
-	w("Observed web servers for reference: %s.\n\n", serverList(leaks))
+	// 3. Software inventory + KEV leads.
+	w("## 3. Software inventory and CVE status\n\n")
+	prodVer := map[string]int{}
+	withVer := 0
+	for _, o := range obs {
+		if o.Product == "" {
+			continue
+		}
+		label := o.Product
+		if o.Version != "" {
+			label += " " + o.Version
+			withVer++
+		}
+		prodVer[label]++
+	}
+	if len(prodVer) == 0 {
+		w("Versions not yet enriched — run `secskills enrich` to populate product/version, ")
+		w("then regenerate this report. Observed web servers: %s.\n\n", serverList(leaks))
+	} else {
+		w("Versions fingerprinted on **%d** services (SSH/HTTP/SMTP banners, MySQL handshake).\n\n", withVer)
+		w("| Product / version | Count |\n|---|---|\n")
+		type kv struct {
+			k string
+			v int
+		}
+		var rows []kv
+		for k, v := range prodVer {
+			rows = append(rows, kv{k, v})
+		}
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].v != rows[j].v {
+				return rows[i].v > rows[j].v
+			}
+			return rows[i].k < rows[j].k
+		})
+		for i, r := range rows {
+			if i >= 20 {
+				w("| _(%d more)_ | |\n", len(rows)-20)
+				break
+			}
+			w("| %s | %d |\n", r.k, r.v)
+		}
+		w("\n")
+		if len(kev) > 0 {
+			var leads []string
+			seen := map[string]bool{}
+			for _, o := range obs {
+				if o.Product == "" || seen[o.Product] {
+					continue
+				}
+				if hits := kevProductHits(o.Product, kev); len(hits) > 0 {
+					seen[o.Product] = true
+					leads = append(leads, fmt.Sprintf("`%s` (KEV e.g. %s)", o.Product, hits[0]))
+				}
+			}
+			if len(leads) > 0 {
+				w("**KEV name-level leads** (product appears in CISA KEV — confirm by version before acting): %s.\n\n", strings.Join(leads, "; "))
+			} else {
+				w("No observed product name matches the KEV catalog.\n\n")
+			}
+		}
+		w("> Precise CVE-by-version matching (CPE version ranges from NVD/OSV) is the next ingest; ")
+		w("this section is name-level and must be confirmed against each product's affected range.\n\n")
+	}
 
 	// 4. Per-host inventory.
 	w("## 4. Host inventory\n\n")
