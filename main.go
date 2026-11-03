@@ -93,6 +93,8 @@ func main() {
 		err = cmdDBCheck(args)
 	case "enrich":
 		err = cmdEnrich(args)
+	case "cvematch":
+		err = cmdCVEMatch(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":

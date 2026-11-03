@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gleicon/secskills/internal/intel"
 	"github.com/gleicon/secskills/internal/probe"
 )
 
@@ -48,7 +49,7 @@ func cmdPrefixReport(args []string) error {
 	leaks := loadLeaks(filepath.Join(*wd, "leaks.jsonl"))    // optional
 	dbc := loadDBChecks(filepath.Join(*wd, "dbcheck.jsonl")) // optional
 
-	report := renderPrefixReport(*label, obs, leaks, dbc, loadKEVForEnrich())
+	report := renderPrefixReport(*label, obs, leaks, dbc, loadKEVForEnrich(), loadCandidates(filepath.Join(*wd, "candidates.jsonl")))
 	target := *out
 	if target == "" {
 		target = filepath.Join(*wd, "exposure-report.md")
@@ -115,7 +116,61 @@ func loadDBChecks(path string) []dbResult {
 	return out
 }
 
-func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, dbc []dbResult, kev []KEVEntry) string {
+func loadCandidates(path string) []intel.Candidate {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var out []intel.Candidate
+	for _, ln := range strings.Split(string(b), "\n") {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		var c intel.Candidate
+		if jsonUnmarshalLine(ln, &c) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// renderCandidates writes the version-inferred CVE candidate subsection: the
+// KEV-urgent matches in full (the actionable feed), the rest as a counted
+// summary, with the version-inferred caveat stated once.
+func renderCandidates(w func(string, ...any), cands []intel.Candidate) {
+	if len(cands) == 0 {
+		w("> Precise CVE-by-version matching: run `secskills feed nvd --product <p>` then `cvematch`.\n\n")
+		return
+	}
+	var urgent []intel.Candidate
+	for _, c := range cands {
+		if c.UrgentFeed {
+			urgent = append(urgent, c)
+		}
+	}
+	w("### Version-inferred CVE candidates\n\n")
+	w("Matched by CPE version range against NVD. **Version-inferred** — a distro backport may have ")
+	w("patched the CVE behind an unchanged version string, so each is a lead to confirm, not a finding.\n\n")
+	w("- Total candidates: **%d**\n", len(cands))
+	w("- **KEV-listed (urgent — exploited in the wild): %d**\n\n", len(urgent))
+	if len(urgent) > 0 {
+		sort.Slice(urgent, func(i, j int) bool {
+			if urgent[i].CVE != urgent[j].CVE {
+				return urgent[i].CVE < urgent[j].CVE
+			}
+			return ipLess(urgent[i].AssetIP, urgent[j].AssetIP)
+		})
+		w("| Host | CVE (KEV) | Finding |\n|---|---|---|\n")
+		for _, c := range urgent {
+			w("| `%s` | %s | %s |\n", c.AssetIP, c.CVE, mdEscape(c.Claim))
+		}
+		w("\n")
+	}
+	w("> The non-KEV remainder is a long tail of historical version matches — triage by KEV, then EPSS. ")
+	w("Confirm each against the host's distro backport before action.\n\n")
+}
+
+func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, dbc []dbResult, kev []KEVEntry, cands []intel.Candidate) string {
 	if label == "" {
 		label = "scanned prefix"
 	}
@@ -292,8 +347,7 @@ func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, db
 				w("No observed product name matches the KEV catalog.\n\n")
 			}
 		}
-		w("> Precise CVE-by-version matching (CPE version ranges from NVD/OSV) is the next ingest; ")
-		w("this section is name-level and must be confirmed against each product's affected range.\n\n")
+		renderCandidates(w, cands)
 	}
 
 	// 4. Per-host inventory.

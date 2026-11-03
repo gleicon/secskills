@@ -109,8 +109,10 @@ func cmdFeed(args []string) error {
 		return feedKEV(args[1:])
 	case "epss":
 		return feedEPSS(args[1:])
+	case "nvd":
+		return feedNVD(args[1:])
 	default:
-		return fmt.Errorf("unknown feed source %q (want kev|epss)", args[0])
+		return fmt.Errorf("unknown feed source %q (want kev|epss|nvd)", args[0])
 	}
 }
 
