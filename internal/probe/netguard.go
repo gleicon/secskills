@@ -62,6 +62,13 @@ func SafeURL(rawurl string, allowLocal bool) error {
 		return nil
 	}
 	host := HostOf(rawurl)
+	// HostOf keeps any :port (and IPv6 brackets); strip them before resolving,
+	// or LookupIP of "ip:port" fails and the guard would reject every
+	// port-bearing URL.
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	host = strings.Trim(host, "[]")
 	if !ValidHost(host) {
 		return fmt.Errorf("invalid host")
 	}

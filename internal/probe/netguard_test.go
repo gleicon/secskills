@@ -80,3 +80,16 @@ func TestDialGuardAllowLocal(t *testing.T) {
 		t.Fatalf("allowLocal=true must reach the loopback server: ok=%v code=%d", ok, code)
 	}
 }
+
+// TestSafeURLWithPort proves a port-bearing URL resolves (the port is stripped
+// before LookupIP). Regression: every ip:port probe URL was rejected before.
+func TestSafeURLWithPort(t *testing.T) {
+	// A public IP with an explicit port must pass the guard.
+	if err := SafeURL("http://1.1.1.1:443/", false); err != nil {
+		t.Fatalf("ip:port URL must pass the guard, got %v", err)
+	}
+	// A private IP with a port must still be blocked.
+	if err := SafeURL("http://10.0.0.1:8080/", false); err == nil {
+		t.Fatal("private ip:port must be blocked")
+	}
+}
