@@ -101,6 +101,29 @@ func (c *Client) GetWithBody(url string, maxBytes int64) (int, http.Header, stri
 	return c.DoBounded("GET", url, "", maxBytes)
 }
 
+// GetWithBasicAuth performs a guarded GET with an HTTP Basic credential. It is
+// read-only (GET), shares the guard and connect-time address check, and exists
+// for authorized default-credential exposure checks; the credential is never
+// logged by this package.
+func (c *Client) GetWithBasicAuth(url, user, pass string, maxBytes int64) (int, http.Header, string, bool) {
+	if c.Guard == nil || c.Guard(url) != nil {
+		return 0, nil, "", false
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, nil, "", false
+	}
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.SetBasicAuth(user, pass)
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return 0, nil, "", false
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, maxBytes))
+	return resp.StatusCode, resp.Header, string(b), true
+}
+
 // PostJSONBody performs a guarded bounded POST with a JSON body.
 func (c *Client) PostJSONBody(url, body string, maxBytes int64) (int, string, bool) {
 	code, _, resp, ok := c.DoBounded("POST", url, body, maxBytes)

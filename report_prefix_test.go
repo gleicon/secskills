@@ -15,7 +15,7 @@ func TestRenderPrefixReport(t *testing.T) {
 		{IP: "203.0.113.2", Port: 443, Kind: "exposed-dotenv", Evidence: "dotenv exposed: 2 keys [DB_PASSWORD, APP_KEY] (values redacted)"},
 		{IP: "203.0.113.2", Port: 443, Kind: "banner", Server: "nginx"},
 	}
-	r := renderPrefixReport("AS65000 203.0.113.0/24", obs, leaks)
+	r := renderPrefixReport("AS65000 203.0.113.0/24", obs, leaks, nil)
 
 	// Critical leak surfaced.
 	if !strings.Contains(r, "exposed-dotenv") || !strings.Contains(r, "rotate all secrets") {
@@ -43,11 +43,20 @@ func TestReportCarriesNoSecretValues(t *testing.T) {
 		// values. We assert the renderer passes through only what it is given.
 		{IP: "203.0.113.5", Port: 80, Kind: "exposed-dotenv", Evidence: "dotenv exposed: 1 keys [SECRET] (values redacted)"},
 	}
-	r := renderPrefixReport("x", nil, leaks)
+	r := renderPrefixReport("x", nil, leaks, nil)
 	if strings.Contains(r, "sup3rs3cret") {
 		t.Fatal("renderer must not invent or echo secret values")
 	}
 	if !strings.Contains(r, "values redacted") {
 		t.Error("redaction marker should be preserved")
+	}
+}
+
+func TestReportAnnotatesOpenDatastore(t *testing.T) {
+	obs := []Observation{{IP: "203.0.113.9", Port: 27017, Service: "mongodb"}}
+	dbc := []dbResult{{IP: "203.0.113.9", Port: 27017, Service: "mongodb", Status: "OPEN-NOAUTH", Detail: "listDatabases returned without authentication"}}
+	r := renderPrefixReport("x", obs, nil, dbc)
+	if !strings.Contains(r, "OPEN — NO AUTH") || !strings.Contains(r, "isolate now") {
+		t.Fatalf("open datastore must be flagged critical in the report")
 	}
 }
