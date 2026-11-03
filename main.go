@@ -87,6 +87,8 @@ func main() {
 		err = cmdLeakcheck(args)
 	case "prefix-report":
 		err = cmdPrefixReport(args)
+	case "feed":
+		err = cmdFeed(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
