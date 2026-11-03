@@ -83,6 +83,8 @@ func main() {
 		err = cmdDiscover(args)
 	case "match":
 		err = cmdMatch(args)
+	case "leakcheck":
+		err = cmdLeakcheck(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
