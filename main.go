@@ -89,6 +89,8 @@ func main() {
 		err = cmdPrefixReport(args)
 	case "feed":
 		err = cmdFeed(args)
+	case "dbcheck":
+		err = cmdDBCheck(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":

@@ -39,9 +39,10 @@ func cmdPrefixReport(args []string) error {
 	if err != nil {
 		return fmt.Errorf("load observations: %w", err)
 	}
-	leaks := loadLeaks(filepath.Join(*wd, "leaks.jsonl")) // optional
+	leaks := loadLeaks(filepath.Join(*wd, "leaks.jsonl"))    // optional
+	dbc := loadDBChecks(filepath.Join(*wd, "dbcheck.jsonl")) // optional
 
-	report := renderPrefixReport(*label, obs, leaks)
+	report := renderPrefixReport(*label, obs, leaks, dbc)
 	target := *out
 	if target == "" {
 		target = filepath.Join(*wd, "exposure-report.md")
@@ -90,7 +91,25 @@ var datastorePorts = map[string]bool{
 	"elasticsearch": true, "rdp": true,
 }
 
-func renderPrefixReport(label string, obs []Observation, leaks []leakFinding) string {
+func loadDBChecks(path string) []dbResult {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var out []dbResult
+	for _, ln := range strings.Split(string(b), "\n") {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		var r dbResult
+		if jsonUnmarshalLine(ln, &r) {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, dbc []dbResult) string {
 	if label == "" {
 		label = "scanned prefix"
 	}
@@ -124,8 +143,14 @@ func renderPrefixReport(label string, obs []Observation, leaks []leakFinding) st
 
 	w("# External Exposure Report — %s\n\n", label)
 	w("**Generated:** %s  \n", time.Now().UTC().Format("2006-01-02 15:04 UTC"))
-	w("**Method:** non-destructive, unauthenticated, read-only (TCP connect + HTTP GET). ")
-	w("No credentials, no default-credential attempts, no writes (D-4).  \n")
+	if len(dbc) > 0 {
+		w("**Method:** non-destructive, read-only (TCP connect + HTTP GET), plus an owner-authorized ")
+		w("datastore authentication check (`dbcheck`): a single liveness command and documented *default* ")
+		w("credentials only — no brute force, no data read, no writes.  \n")
+	} else {
+		w("**Method:** non-destructive, unauthenticated, read-only (TCP connect + HTTP GET). ")
+		w("No credentials, no default-credential attempts, no writes (D-4).  \n")
+	}
 	w("**Sensitivity:** contains host addresses and exposure locations — share only with the asset owner's administrators. Credential *values* are deliberately omitted.\n\n")
 
 	w("## Summary\n\n")
@@ -159,15 +184,43 @@ func renderPrefixReport(label string, obs []Observation, leaks []leakFinding) st
 		}
 	}
 
-	// 2. Exposed datastores.
+	// 2. Exposed datastores, annotated with the authentication posture when a
+	// dbcheck pass was run (OPEN-NOAUTH / DEFAULT-CRED are critical).
+	dbStatus := map[string]dbResult{}
+	for _, r := range dbc {
+		dbStatus[fmt.Sprintf("%s:%d", r.IP, r.Port)] = r
+	}
 	w("## 2. Internet-reachable datastores / remote access\n\n")
 	if len(datastores) == 0 {
 		w("_None found._\n\n")
 	} else {
 		w("These ports should sit behind a security group / firewall, not on the public internet.\n\n")
-		w("| Endpoint | Service | Action |\n|---|---|---|\n")
-		for _, d := range datastores {
-			w("| `%s` | %s | restrict to private network; require auth; rotate if it was open unauthenticated |\n", d.ipport, d.svc)
+		if len(dbc) > 0 {
+			w("Authentication posture verified read-only (`dbcheck`): **OPEN-NOAUTH** and **DEFAULT-CRED** are critical.\n\n")
+			w("| Endpoint | Service | Auth posture | Action |\n|---|---|---|---|\n")
+			for _, d := range datastores {
+				r, ok := dbStatus[d.ipport]
+				posture, action := "not tested", "restrict to private network; require auth"
+				if ok {
+					posture = r.Status
+					switch r.Status {
+					case "OPEN-NOAUTH":
+						posture = "**OPEN — NO AUTH**"
+						action = "**isolate now**; enable authentication; assume data read/altered"
+					case "DEFAULT-CRED":
+						posture = "**DEFAULT CREDENTIAL**"
+						action = "**change the default now** (" + mdEscape(r.Detail) + "); restrict network"
+					case "AUTH-ENFORCED":
+						action = "move behind firewall; auth is on (good)"
+					}
+				}
+				w("| `%s` | %s | %s | %s |\n", d.ipport, d.svc, posture, action)
+			}
+		} else {
+			w("| Endpoint | Service | Action |\n|---|---|---|\n")
+			for _, d := range datastores {
+				w("| `%s` | %s | restrict to private network; require auth; rotate if it was open unauthenticated |\n", d.ipport, d.svc)
+			}
 		}
 		w("\n")
 	}
