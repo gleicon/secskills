@@ -97,6 +97,8 @@ func main() {
 		err = cmdCVEMatch(args)
 	case "token":
 		err = cmdToken(args)
+	case "lifecycle":
+		err = cmdLifecycle(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
