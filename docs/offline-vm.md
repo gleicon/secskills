@@ -79,6 +79,53 @@ tar -xzf capture-203_0_113_0_24.tar.gz
 OUT=./capture-203_0_113_0_24 ./process.sh
 ```
 
+## A fleet: ASN → prefixes → VMs, one shared feed
+
+The two costs are independent, so pay each once:
+
+- **Feeds are target-independent.** Fetch the KEV/EPSS/NVD cache **once**,
+  centrally, and give every VM read-only access to that one copy —
+  `SECSKILLS_FEED=/mnt/feed` on an NFS/object-store mount, or bake it into the VM
+  image. N VMs then cost **1× feed bandwidth, not N×**. Never run `feed` per VM.
+- **Capture is target-bound.** Partition the ASN's prefixes across VMs so each IP
+  is scanned by exactly one worker — the total is the size of the ASN,
+  parallelized for speed, never duplicated.
+
+`secskills plan` does the partition: it resolves the ASN (read-only OSINT, no
+scan) and bin-packs the IPv4 prefixes into balanced shards by address count.
+
+```sh
+# 1. Once, centrally: build the single feed cache.
+secskills feed kev && secskills feed epss
+for p in openssh nginx apache; do secskills feed nvd --product "$p"; done
+#    -> ~/.secskills/feed   (publish read-only to /mnt/feed, or bake into image)
+
+# 2. Once, centrally: shard the ASN across the fleet.
+secskills plan --asn AS64500 --shards 8 --out ./plan
+#    -> plan/plan.json, plan/shard-0.txt … plan/shard-7.txt
+
+# 3. On VM i: capture its slice, reading the shared feed, downloading none.
+SECSKILLS_FEED=/mnt/feed PREFIXES=plan/shard-3.txt CONFIRM=yes ./capture.sh
+#    -> capture-shard-3/  (its own append-only workdir)
+```
+
+### Collect and process once
+
+Gather the per-VM workdirs and merge the enriched observations into one workdir,
+then run the join a single time. The store is content-addressed, so any overlap
+dedupes:
+
+```sh
+mkdir -p merged
+cat capture-shard-*/enriched-observations.jsonl | sort -u > merged/enriched-observations.jsonl
+cat capture-shard-*/leaks.jsonl                 2>/dev/null | sort -u > merged/leaks.jsonl
+OUT=./merged ./process.sh      # cvematch + lifecycle + report, offline, once
+```
+
+Lifecycle state (`findings.jsonl`) lives in the merged workdir and persists across
+runs, so week-over-week re-verification is one `process.sh` against the same
+`merged/` — no re-scan, re-using the same feed cache.
+
 ## Notes
 
 - **Authorization is still enforced headless.** `discover` refuses a block
