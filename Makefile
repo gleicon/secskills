@@ -37,7 +37,7 @@ dist:             ## Cross-compile static binaries (no CGO, no LLM) into dist/
 bundle: dist      ## Package a VM capture kit (binary + scripts + feed cache) into dist/secskills-kit.tar.gz
 	@tmp=$$(mktemp -d); kit=$$tmp/secskills-kit; mkdir -p $$kit; \
 	cp dist/$(BINARY)-linux-amd64 $$kit/$(BINARY); chmod +x $$kit/$(BINARY); \
-	cp deploy/capture.sh deploy/process.sh $$kit/; chmod +x $$kit/*.sh; \
+	cp deploy/setup.sh deploy/capture.sh deploy/process.sh $$kit/; chmod +x $$kit/*.sh; \
 	cp deploy/README.md $$kit/ 2>/dev/null || true; \
 	if [ -d "$$HOME/.secskills/feed" ]; then mkdir -p $$kit/feed; cp -R "$$HOME/.secskills/feed/." $$kit/feed/; echo "included feed cache"; else echo "no local feed cache — run 'secskills feed kev' first to ship one"; fi; \
 	tar -C $$tmp -czf dist/secskills-kit.tar.gz secskills-kit; rm -rf $$tmp; \
