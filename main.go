@@ -99,6 +99,8 @@ func main() {
 		err = cmdToken(args)
 	case "lifecycle":
 		err = cmdLifecycle(args)
+	case "kprobe":
+		err = cmdKProbe(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
