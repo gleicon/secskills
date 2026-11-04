@@ -9,27 +9,32 @@
 #   - CONFIRM=yes to assert you are authorized for the block.
 #
 # Usage:
-#   CIDR=203.0.113.0/24 CONFIRM=yes ./capture.sh
-#   ASN=AS64500          CONFIRM=yes ./capture.sh            # whole ASN (large!)
-#   CIDR=203.0.113.0/24 CONFIRM=yes INTRUSIVE=yes ./capture.sh   # +default-cred datastore check
+#   CIDR=203.0.113.0/24   CONFIRM=yes ./capture.sh
+#   ASN=AS64500           CONFIRM=yes ./capture.sh           # whole ASN (large!)
+#   PREFIXES=shard-0.txt  CONFIRM=yes ./capture.sh           # one shard from `secskills plan`
+#   CIDR=203.0.113.0/24   CONFIRM=yes INTRUSIVE=yes ./capture.sh   # +default-cred datastore check
 #
 # Env knobs:
 #   BIN        path to the secskills binary        (default: ./secskills)
 #   OUT        workdir / output directory          (default: ./capture-<label>)
+#   PREFIXES   file of CIDRs (one per line) to sweep into one workdir (sharded fleet)
 #   WORKERS    probe concurrency                   (default: 40)
 #   INTRUSIVE  yes = run dbcheck default-cred pass  (owner-authorized only)
-#   ONLINE     yes = also fetch KEV/EPSS feeds here (else ship a feed cache)
+#   ONLINE     yes = also fetch KEV/EPSS feeds here (else ship/mount a feed cache)
 set -eu
 
 BIN="${BIN:-./secskills}"
 WORKERS="${WORKERS:-40}"
 
-if [ -n "${CIDR:-}" ]; then
+if [ -n "${PREFIXES:-}" ]; then
+  [ -f "$PREFIXES" ] || { echo "error: PREFIXES file not found: $PREFIXES" >&2; exit 2; }
+  LABEL=$(basename "$PREFIXES" .txt)
+elif [ -n "${CIDR:-}" ]; then
   BLOCK_FLAG="--cidr"; BLOCK_VAL="$CIDR"; LABEL=$(echo "$CIDR" | tr '/.:' '___')
 elif [ -n "${ASN:-}" ]; then
   BLOCK_FLAG="--asn"; BLOCK_VAL="$ASN"; LABEL="$ASN"
 else
-  echo "error: set CIDR=<cidr> or ASN=<AS...>" >&2; exit 2
+  echo "error: set PREFIXES=<file>, CIDR=<cidr>, or ASN=<AS...>" >&2; exit 2
 fi
 
 OUT="${OUT:-./capture-$LABEL}"
@@ -39,10 +44,20 @@ mkdir -p "$OUT"
 CONF=""
 [ "${CONFIRM:-}" = "yes" ] && CONF="--confirm"
 
-echo "== capture: $BLOCK_VAL -> $OUT =="
+echo "== capture: ${PREFIXES:-$BLOCK_VAL} -> $OUT =="
 
 # 1. Wide cheap sweep -> observations.jsonl (streamed, resumable after a kill).
-"$BIN" discover $BLOCK_FLAG "$BLOCK_VAL" --workers "$WORKERS" $CONF
+#    The store is append-only and content-addressed, so looping a shard file of
+#    CIDRs into one workdir is safe: each prefix adds its hits, duplicates dedupe.
+if [ -n "${PREFIXES:-}" ]; then
+  while IFS= read -r pfx; do
+    [ -z "$pfx" ] && continue
+    case "$pfx" in \#*) continue ;; esac
+    "$BIN" discover --cidr "$pfx" --workers "$WORKERS" $CONF
+  done < "$PREFIXES"
+else
+  "$BIN" discover $BLOCK_FLAG "$BLOCK_VAL" --workers "$WORKERS" $CONF
+fi
 
 # 2. Banner enrichment (reconnects to targets; must run here, not offline).
 "$BIN" enrich --workdir "$OUT" $CONF || echo "[warn] enrich skipped"

@@ -101,6 +101,8 @@ func main() {
 		err = cmdLifecycle(args)
 	case "kprobe":
 		err = cmdKProbe(args)
+	case "plan":
+		err = cmdPlan(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
