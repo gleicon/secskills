@@ -55,9 +55,37 @@ func cmdCVEMatch(args []string) error {
 			cands = append(cands, c)
 		}
 	}
+
+	// EPSS weighting: fetch exploit probability for the distinct CVEs and score
+	// each candidate so the non-KEV long tail is triageable by likelihood, not
+	// just by presence. score = confidence x (w_kev.KEV + w_epss.EPSS + w_cvss.CVSS/10).
+	cveSet := map[string]bool{}
+	for _, c := range cands {
+		cveSet[c.CVE] = true
+	}
+	distinct := make([]string, 0, len(cveSet))
+	for cve := range cveSet {
+		distinct = append(distinct, cve)
+	}
+	epss := epssLookup(distinct)
+	for i := range cands {
+		c := &cands[i]
+		ep := epss[c.CVE]
+		cvss := c.ScoreTerms["cvss"]
+		kevTerm := 0.0
+		if c.UrgentFeed {
+			kevTerm = 1.0
+		}
+		c.ScoreTerms["epss"] = ep
+		c.ScoreTerms["kev"] = kevTerm
+		c.Score = candidateScore(kevTerm, ep, cvss)
+	}
 	sort.Slice(cands, func(i, j int) bool {
 		if cands[i].UrgentFeed != cands[j].UrgentFeed {
 			return cands[i].UrgentFeed
+		}
+		if cands[i].Score != cands[j].Score {
+			return cands[i].Score > cands[j].Score
 		}
 		return cands[i].AssetIP < cands[j].AssetIP
 	})
@@ -75,12 +103,17 @@ func cmdCVEMatch(args []string) error {
 		}
 	}
 	fmt.Printf("cvematch: %d version-inferred CVE candidates (%d KEV-urgent) -> %s\n", len(cands), urgent, out)
+	shown := 0
 	for _, c := range cands {
-		mark := "  "
+		mark := "   "
 		if c.UrgentFeed {
 			mark = "KEV"
 		}
-		fmt.Printf("%s %-16s %-16s %s\n", mark, c.AssetIP, c.CVE, c.Claim)
+		fmt.Printf("%s %-16s %-16s epss=%.3f score=%.3f  %s\n", mark, c.AssetIP, c.CVE, c.ScoreTerms["epss"], c.Score, c.CVE)
+		if shown++; shown >= 40 && !c.UrgentFeed {
+			fmt.Printf("   ... %d more (see %s)\n", len(cands)-shown, out)
+			break
+		}
 	}
 	return nil
 }
@@ -92,4 +125,11 @@ func kevCVESet() map[string]bool {
 		s[e.CVE] = true
 	}
 	return s
+}
+
+// candidateScore ranks a version-inferred candidate (spec §10, reduced form for
+// the external tier): confidence 0.6, weighting KEV most, then EPSS, then CVSS.
+// All terms are stored on the candidate so the rank is reproducible.
+func candidateScore(kevTerm, epss, cvss float64) float64 {
+	return 0.6 * (0.5*kevTerm + 0.3*epss + 0.2*cvss/10.0)
 }
