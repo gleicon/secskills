@@ -95,6 +95,8 @@ func main() {
 		err = cmdEnrich(args)
 	case "cvematch":
 		err = cmdCVEMatch(args)
+	case "token":
+		err = cmdToken(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
