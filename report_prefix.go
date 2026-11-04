@@ -166,8 +166,49 @@ func renderCandidates(w func(string, ...any), cands []intel.Candidate) {
 		}
 		w("\n")
 	}
-	w("> The non-KEV remainder is a long tail of historical version matches — triage by KEV, then EPSS. ")
-	w("Confirm each against the host's distro backport before action.\n\n")
+	// Rank the non-KEV remainder by EPSS so the long tail is triageable. Collapse
+	// to distinct CVEs (a CVE on many hosts is one triage decision).
+	type cveAgg struct {
+		cve   string
+		epss  float64
+		hosts int
+		claim string
+	}
+	agg := map[string]*cveAgg{}
+	for _, c := range cands {
+		if c.UrgentFeed {
+			continue
+		}
+		a := agg[c.CVE]
+		if a == nil {
+			a = &cveAgg{cve: c.CVE, epss: c.ScoreTerms["epss"], claim: c.Claim}
+			agg[c.CVE] = a
+		}
+		a.hosts++
+	}
+	if len(agg) > 0 {
+		var rows []cveAgg
+		for _, a := range agg {
+			rows = append(rows, *a)
+		}
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].epss != rows[j].epss {
+				return rows[i].epss > rows[j].epss
+			}
+			return rows[i].hosts > rows[j].hosts
+		})
+		w("Non-KEV remainder (%d distinct CVEs across the block), top by EPSS exploit probability:\n\n", len(rows))
+		w("| CVE | EPSS | Hosts |\n|---|---|---|\n")
+		for i, r := range rows {
+			if i >= 10 {
+				w("| _(%d more CVEs)_ | | |\n", len(rows)-10)
+				break
+			}
+			w("| %s | %.3f | %d |\n", r.cve, r.epss, r.hosts)
+		}
+		w("\n")
+	}
+	w("> Triage order: KEV first, then EPSS (above). Confirm each against the host's distro backport before action.\n\n")
 }
 
 func renderPrefixReport(label string, obs []Observation, leaks []leakFinding, dbc []dbResult, kev []KEVEntry, cands []intel.Candidate) string {

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Feed ingest (spec FR-3): incremental, idempotent ingest of free intelligence
@@ -205,6 +206,57 @@ func feedEPSS(args []string) error {
 		fmt.Printf("  %-18s epss=%s percentile=%s\n", s.CVE, s.EPSS, s.Percentile)
 	}
 	return nil
+}
+
+// epssLookup returns EPSS probabilities for the given CVEs, batching the FIRST
+// API and caching per day (spec cache key poc_signal/epss : (cve, day)). A CVE
+// absent from EPSS maps to 0. Network failure yields whatever is cached.
+func epssLookup(cves []string) map[string]float64 {
+	out := map[string]float64{}
+	day := time.Now().UTC().Format("2006-01-02")
+	cachePath := filepath.Join(feedDir(), "epss-"+day+".json")
+	if b, err := os.ReadFile(cachePath); err == nil {
+		json.Unmarshal(b, &out)
+	}
+	var missing []string
+	for _, c := range cves {
+		if _, ok := out[c]; !ok {
+			missing = append(missing, c)
+		}
+	}
+	const batch = 100
+	for i := 0; i < len(missing); i += batch {
+		end := i + batch
+		if end > len(missing) {
+			end = len(missing)
+		}
+		url := "https://api.first.org/data/v1/epss?cve=" + strings.Join(missing[i:end], ",")
+		body, err := httpDo("first-epss", "GET", url, "", 2)
+		if err != nil {
+			break
+		}
+		scores, err := parseEPSS(body)
+		if err != nil {
+			break
+		}
+		for _, s := range scores {
+			var f float64
+			fmt.Sscanf(s.EPSS, "%g", &f)
+			out[s.CVE] = f
+		}
+		// CVEs queried but not returned have no EPSS score — record 0 so they
+		// are not re-queried every run.
+		for _, c := range missing[i:end] {
+			if _, ok := out[c]; !ok {
+				out[c] = 0
+			}
+		}
+	}
+	os.MkdirAll(feedDir(), 0o755)
+	if b, err := json.MarshalIndent(out, "", "  "); err == nil {
+		os.WriteFile(cachePath, b, 0o644)
+	}
+	return out
 }
 
 func splitCSV(s string) []string {
