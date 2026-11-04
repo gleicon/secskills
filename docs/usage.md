@@ -67,3 +67,12 @@ authorized scope file. `--intrusive` requires `--intrusive-confirm`.
 | `secskills doctor [--mode --category --tools --json]` | Tool preflight + install commands + build-collision detection. |
 | `secskills mcp` | Run as an MCP stdio server. |
 | `secskills selftest` | End-to-end pipeline test against a local disposable server. |
+
+## secskills exposure mode — ASN/CIDR exposure intelligence
+
+The wide-sweep + feed-join pipeline (`discover --cidr/--asn`, `enrich`,
+`leakcheck`, `dbcheck`, `feed`, `cvematch`, `lifecycle`, `prefix-report`,
+`token`, `kprobe`) has its own guide: **[Exposure-mode recipes](exposure.md)**.
+To run it headless in a VM with no agent or LLM and process the results later,
+see **[Headless / VM packaging](offline-vm.md)** (`make dist`, `make bundle`,
+`deploy/capture.sh`, `deploy/process.sh`).
