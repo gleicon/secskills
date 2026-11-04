@@ -10,9 +10,20 @@ offline.
 | File | Role |
 |------|------|
 | `secskills` | static linux/amd64 binary (CGO off) |
+| `setup.sh` | install binary + load feed cache once + write env file |
 | `capture.sh` | target-facing sweep → portable workdir of JSONL |
 | `process.sh` | offline join of the workdir against the feeds → report |
 | `feed/` | optional pre-fetched KEV/EPSS/NVD cache (ship it to stay air-gapped) |
+
+## One-time VPS setup
+
+```sh
+./setup.sh                 # installs to /opt/secskills, loads KEV/EPSS/NVD feeds
+. /opt/secskills/secskills.env
+```
+
+Re-run `./setup.sh` any time to refresh the feed. For a fleet, run it on one box
+and export its `$FEED_DIR` read-only to the others (`SECSKILLS_FEED=/mnt/feed`).
 
 ## On the VM
 
