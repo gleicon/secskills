@@ -103,6 +103,10 @@ func main() {
 		err = cmdKProbe(args)
 	case "plan":
 		err = cmdPlan(args)
+	case "precision":
+		err = cmdPrecision(args)
+	case "deliver":
+		err = cmdDeliver(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":

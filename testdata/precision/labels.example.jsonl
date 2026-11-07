@@ -1,0 +1,10 @@
+# Precision label corpus (spec AC-4). One JSON object per line.
+# {"ip": "<host>", "cve": "<CVE-id>", "label": "vuln"|"safe"}
+# label=vuln: the host really is affected (confirmed out of band).
+# label=safe: not affected — e.g. a distro backport fixed it behind an
+#             unchanged version string (the D-9 case the external tier must not flag).
+# AC-4 gate: >= 100 distinct hosts, precision >= 90%. This is a 4-row sample.
+{"ip":"203.0.113.10","cve":"CVE-2024-6387","label":"vuln"}
+{"ip":"203.0.113.11","cve":"CVE-2024-6387","label":"safe"}
+{"ip":"203.0.113.12","cve":"CVE-2023-44487","label":"vuln"}
+{"ip":"203.0.113.13","cve":"CVE-2021-41773","label":"safe"}
