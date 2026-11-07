@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -44,6 +45,21 @@ func findTenant(ts []Tenant, id string) (Tenant, bool) {
 		}
 	}
 	return Tenant{}, false
+}
+
+// tenantOfIP returns the id of the first tenant whose prefixes contain ip, or ""
+// if none. Used to attribute an observation to a tenant for fleet aggregation.
+func tenantOfIP(ts []Tenant, ipStr string) string {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return ""
+	}
+	for _, t := range ts {
+		if ipInAnyPrefix(ip, t.Prefixes) {
+			return t.Tenant
+		}
+	}
+	return ""
 }
 
 // tenantFilter returns only the candidates whose asset IP falls inside the
@@ -157,13 +173,33 @@ func cmdDeliver(args []string) error {
 	fmt.Print(renderTenantBrief(feed))
 
 	if *webhook != "" {
-		guard := func(u string) error { return probe.SafeURL(u, false) }
-		client := probe.NewClient(guard, userAgent, false)
-		code, _, ok := client.PostJSONBody(*webhook, string(b), 1<<20)
-		if !ok || code >= 300 {
-			return fmt.Errorf("webhook POST to %s failed (status %d)", *webhook, code)
+		if err := postWebhook(*webhook, b); err != nil {
+			return err
 		}
-		fmt.Printf("\nwebhook: POST %s -> %d\n", *webhook, code)
 	}
+	return nil
+}
+
+// postWebhook delivers the feed to a webhook over a TLS-VERIFYING client (the
+// feed is sensitive, so the connection must not be MITM-readable), keeping the
+// SSRF dial guard and no-redirect policy. It requires https and never logs the
+// URL's path/query, which routinely carry a secret token (e.g. Slack webhooks) —
+// only scheme+host is printed.
+func postWebhook(webhook string, body []byte) error {
+	u, err := url.Parse(webhook)
+	if err != nil {
+		return fmt.Errorf("invalid webhook URL")
+	}
+	if u.Scheme != "https" {
+		return fmt.Errorf("webhook must be https (got %q) — the feed is sensitive", u.Scheme)
+	}
+	safe := u.Scheme + "://" + u.Host
+	guard := func(u string) error { return probe.SafeURL(u, false) }
+	client := probe.NewVerifyingClient(guard, userAgent, false)
+	code, _, ok := client.PostJSONBody(webhook, string(body), 1<<20)
+	if !ok || code >= 300 {
+		return fmt.Errorf("webhook POST to %s failed (status %d)", safe, code)
+	}
+	fmt.Printf("\nwebhook: POST %s -> %d\n", safe, code)
 	return nil
 }

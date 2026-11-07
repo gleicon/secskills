@@ -34,6 +34,19 @@ type Client struct {
 // self-measurement harness against its own loopback corpus, never on a
 // target-facing path.
 func NewClient(guard Guard, userAgent string, allowLocal bool) *Client {
+	return newClient(guard, userAgent, allowLocal, false)
+}
+
+// NewVerifyingClient is like NewClient but verifies the server's TLS certificate
+// (default tls.Config). Use it whenever we SEND data rather than assess a target:
+// delivering a tenant feed to a webhook must not travel over a connection a MITM
+// can read, so skipping cert verification (right for banner-grabbing a target we
+// are judging) is wrong here. The SSRF dial guard and no-redirect policy are kept.
+func NewVerifyingClient(guard Guard, userAgent string, allowLocal bool) *Client {
+	return newClient(guard, userAgent, allowLocal, true)
+}
+
+func newClient(guard Guard, userAgent string, allowLocal, verifyTLS bool) *Client {
 	dialer := &net.Dialer{Timeout: 8 * time.Second}
 	dialer.Control = func(_, address string, _ syscall.RawConn) error {
 		if allowLocal {
@@ -49,6 +62,12 @@ func NewClient(guard Guard, userAgent string, allowLocal bool) *Client {
 		}
 		return nil
 	}
+	// Scanning assesses the cert itself, so it skips verification; sending data
+	// (verifyTLS) must use the default verifying tls.Config.
+	tlsCfg := &tls.Config{InsecureSkipVerify: true} // we assess the cert ourselves
+	if verifyTLS {
+		tlsCfg = &tls.Config{}
+	}
 	return &Client{
 		Guard:     guard,
 		UserAgent: userAgent,
@@ -57,7 +76,7 @@ func NewClient(guard Guard, userAgent string, allowLocal bool) *Client {
 			Transport: &http.Transport{
 				Proxy:           nil, // never honor a proxy that could bypass the dial guard
 				DialContext:     dialer.DialContext,
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // we assess the cert ourselves
+				TLSClientConfig: tlsCfg,
 			},
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		},
