@@ -107,6 +107,10 @@ func main() {
 		err = cmdPrecision(args)
 	case "deliver":
 		err = cmdDeliver(args)
+	case "notify":
+		err = cmdNotify(args)
+	case "fleet":
+		err = cmdFleet(args)
 	case "graph":
 		err = cmdGraph(args)
 	case "test":
