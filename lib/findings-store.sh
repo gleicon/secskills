@@ -10,7 +10,7 @@
 #   ~/.secskills-findings/<target>/
 #     run-YYYYMMDD-HHMM-XXXX.json   full assessment or retest
 #     latest                        symlink to most recent run
-# WORKDIR (per assessment): ${SECSKILLS_WORKDIR:-/tmp/secskills-<target>}
+# WORKDIR (per assessment): ${SECSKILLS_WORKDIR:-<user cache dir>/secskills/<target>}
 #
 # SENSITIVE: the store holds findings — treat like a credentials store. Encrypt
 # at rest, restrict access, never commit to a public repo.

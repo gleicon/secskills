@@ -21,8 +21,14 @@
 
 ### Security
 
-- Per-target workdirs are now created `0700`. They were `0755` under `$TMPDIR`, so other
-  local users could read evidence.
+- Workdirs moved out of shared temp space. They were a predictable
+  `$TMPDIR/secskills-<target>` path created `0755`. On a shared host another user could
+  pre-create that path, or a symlink, and read or redirect the evidence. The default is now
+  `<user cache dir>/secskills/<target>` (`~/.cache` on Linux, `~/Library/Caches` on macOS),
+  created `0700`. A workdir that is a symlink, isn't a directory, or is owned by another
+  user is refused, and a looser mode is tightened to `0700`. `scope.txt` is written `0600`.
+  **Behaviour change:** existing workdirs under `$TMPDIR` aren't migrated. Retests and
+  reports that need one should set `SECSKILLS_WORKDIR` to the old path.
 - `SECURITY.md`: reports stay private and a person handles each one. There is no automated
   intake.
 

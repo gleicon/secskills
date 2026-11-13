@@ -18,7 +18,10 @@ import (
 // optimized deliverable (the full technical report is a separate archive) — item
 // 25/26 of the audit-grade review: don't hand an auditor 500 pages by default.
 func DoAudit(target, output string) error {
-	wd := workspace.Workdir(target)
+	wd, err := workspace.Workdir(target)
+	if err != nil {
+		return err
+	}
 	findings := LoadOrLatest(target, wd)
 	for i := range findings {
 		finding.EnsureEvidenceFields(&findings[i])

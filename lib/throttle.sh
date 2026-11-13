@@ -22,7 +22,8 @@
 
 : "${SECSKILLS_UA:=secskills/0.2 (+authorized-security-assessment)}"
 : "${SECSKILLS_HTTP_RETRIES:=4}"
-: "${SECSKILLS_WORKDIR:=/tmp/secskills}"
+: "${SECSKILLS_WORKDIR:=${XDG_CACHE_HOME:-$HOME/.cache}/secskills/shell}"
+(umask 077 && mkdir -p "$SECSKILLS_WORKDIR")
 
 # Conservative minimum seconds between calls, per free source. Tuned to stay well
 # under each service's unauthenticated limits so an engagement is never blocked.

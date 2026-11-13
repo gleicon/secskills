@@ -45,7 +45,10 @@ func cmdSelftest(_ []string) error {
 	fmt.Printf("local target: %s\n", url)
 
 	target := "selftest-local"
-	wd := workspace.Workdir(target)
+	wd, err := workspace.Workdir(target)
+	if err != nil {
+		return err
+	}
 	defer os.RemoveAll(wd)
 	workspace.WriteScope(wd, []string{netsec.HostOf(url)})
 

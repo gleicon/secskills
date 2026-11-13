@@ -76,7 +76,8 @@ gets read-only tools; it cannot start a live scan.</p>
 keeps them local and never sends them anywhere you did not ask for.</p>
 <ul>
 <li>The findings store (<code>~/.secskills-findings/</code>) and workdirs are created readable
-by you only. Treat them like a credentials store, and do not commit them; the repository's
+by you only, under your home directory rather than shared <code>/tmp</code>. A workdir that is a
+symlink or owned by someone else is refused, not written into. Treat them like a credentials store, and do not commit them; the repository's
 <code>.gitignore</code> already excludes scope files and generated reports.</li>
 <li>Reports include the fact of an exposure and the names of exposed keys, never credential values.</li>
 <li>API keys for Shodan and Censys are read from the environment or tool config and never

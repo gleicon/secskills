@@ -46,7 +46,10 @@ func cmdDiscover(args []string) error {
 		return err
 	}
 	host := netsec.HostOf(target)
-	wd := workspace.Workdir(target)
+	wd, err := workspace.Workdir(target)
+	if err != nil {
+		return err
+	}
 	workspace.WriteScope(wd, []string{host})
 	fmt.Printf("== discover: %s (workdir %s) ==\n", host, wd)
 
@@ -155,7 +158,10 @@ func cmdTest(args []string) error {
 	if *intrusive && !*intrusiveOK {
 		return fmt.Errorf("--intrusive requires a second confirmation: add --intrusive-confirm")
 	}
-	wd := workspace.Workdir(target)
+	wd, err := workspace.Workdir(target)
+	if err != nil {
+		return err
+	}
 	started := finding.NowRFC()
 	prof := finding.ParseProfile(*profileFlag)
 	if *intrusive && prof < finding.ProfileAuthorizedExploit {
@@ -410,7 +416,10 @@ func cmdSandbox(args []string) error {
 	fmt.Printf("== sandbox: running (cap-drop=ALL, no mounts) at %s ==\n", url)
 	time.Sleep(2 * time.Second) // let the app boot
 
-	wd := workspace.Workdir("sandbox-" + tag)
+	wd, err := workspace.Workdir("sandbox-" + tag)
+	if err != nil {
+		return err
+	}
 	workspace.WriteScope(wd, []string{netsec.HostOf(url)})
 	var fnd []finding.Finding
 	fnd = append(fnd, engine.CheckSecurityHeaders(url)...)

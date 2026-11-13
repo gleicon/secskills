@@ -13,8 +13,10 @@ testing is `/secskills-test`. Detailed methodology in
 1. **Authorization gate** — run `lib/authz-gate.md` first. Do not send a packet
    until the operator types `CONFIRMED` (or an unexpired `.secskills-scope.yml`
    covers the target).
-2. Set `SECSKILLS_WORKDIR=/tmp/secskills-<primary_target>`; create it. Write
-   confirmed hosts to `$SECSKILLS_WORKDIR/scope.txt`.
+2. Leave `SECSKILLS_WORKDIR` unset so the binary uses its private per-user
+   workdir (`<user cache dir>/secskills/<target>`, mode 0700). Never point it at
+   a shared directory such as `/tmp`. Write confirmed hosts to the workdir's
+   `scope.txt`.
 3. `source lib/safety.sh`, `lib/tldt.sh`, `lib/throttle.sh`. Call
    `secskills_scope_check <host>` before every probe, `secskills_rate_limit`
    between target requests (D-6), and **`secskills_fetch <source> <url>`** for

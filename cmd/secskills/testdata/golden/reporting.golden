@@ -1625,12 +1625,12 @@ recorded override for nope: automated=not recorded reviewed=LOW by tester
 
 $ secskills attest --sign app.example.com
 [stderr]
-error: no run-meta.json to sign: open <SANDBOX>/tmp/secskills-app.example.com/run-meta.json: no such file or directory
+error: no run-meta.json to sign: open <CACHE>/secskills/app.example.com/run-meta.json: no such file or directory
 [exit 1]
 
 $ secskills attest --verify app.example.com
 [stderr]
-error: no signature envelope: open <SANDBOX>/tmp/secskills-app.example.com/run-attestation.sig: no such file or directory
+error: no signature envelope: open <CACHE>/secskills/app.example.com/run-attestation.sig: no such file or directory
 [exit 1]
 
 $ secskills report --render never-assessed.example

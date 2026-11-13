@@ -8,7 +8,7 @@
 #   check_prompt_injection <file> <lbl>— flag adversarial text in target output (lifted)
 #
 # Env:
-#   SECSKILLS_WORKDIR   default /tmp/secskills-<target>
+#   SECSKILLS_WORKDIR   default <user cache dir>/secskills/<target> (0700)
 #   SECSKILLS_RATE      max requests/sec, default 5
 #   SECSKILLS_SCOPE     path to .secskills-scope.yml (optional)
 

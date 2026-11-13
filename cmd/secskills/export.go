@@ -23,7 +23,11 @@ func cmdExport(args []string) error {
 		return fmt.Errorf("usage: secskills export <target> [--format sarif|cyclonedx] [--output f]")
 	}
 	target := pos[0]
-	findings := report.LoadOrLatest(target, workspace.Workdir(target))
+	wd, err := workspace.Workdir(target)
+	if err != nil {
+		return err
+	}
+	findings := report.LoadOrLatest(target, wd)
 	if len(findings) == 0 {
 		return fmt.Errorf("no findings for %s", target)
 	}

@@ -200,7 +200,10 @@ func DiscoverBlock(asn, cidr string, allowLarge, confirm bool, workers int) erro
 		label = canonical
 		fmt.Sscanf(number, "%d", &asnNum)
 	}
-	wd := workspace.Workdir(label)
+	wd, err := workspace.Workdir(label)
+	if err != nil {
+		return err
+	}
 	dataDir := filepath.Join(wd, "data")
 	fmt.Printf("== discover block: %s (workdir %s) ==\n", label, wd)
 

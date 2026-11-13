@@ -29,13 +29,24 @@ func cmdReport(args []string) error {
 	case *render != "":
 		return reportpkg.DoRender(*render, *output)
 	case *htmlT != "":
-		return reportpkg.WriteHTMLReport(*htmlT, workspace.Workdir(*htmlT), *output)
+		wd, err := workspace.Workdir(*htmlT)
+		if err != nil {
+			return err
+		}
+		return reportpkg.WriteHTMLReport(*htmlT, wd, *output)
 	case *pdfT != "":
-		return reportpkg.WritePDFReport(*pdfT, workspace.Workdir(*pdfT), *output)
+		wd, err := workspace.Workdir(*pdfT)
+		if err != nil {
+			return err
+		}
+		return reportpkg.WritePDFReport(*pdfT, wd, *output)
 	case *auditT != "":
 		return reportpkg.DoAudit(*auditT, *output)
 	case *lintT != "":
-		wd := workspace.Workdir(*lintT)
+		wd, err := workspace.Workdir(*lintT)
+		if err != nil {
+			return err
+		}
 		vs := reportpkg.ReportLint(*lintT, wd, reportpkg.NormalizedForLint(*lintT, wd, reportpkg.LoadOrLatest(*lintT, wd)))
 		if len(vs) == 0 {
 			fmt.Println("report lint: clean")

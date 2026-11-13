@@ -18,17 +18,25 @@ func cmdAttest(args []string) error {
 	}
 	switch {
 	case *sign != "":
-		out, err := report.SignRunManifest(workspace.Workdir(*sign))
+		wd, err := workspace.Workdir(*sign)
+		if err != nil {
+			return err
+		}
+		out, err := report.SignRunManifest(wd)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("signed: %s\n", out)
 		return nil
 	case *verify != "":
-		if err := report.VerifyRunManifest(workspace.Workdir(*verify)); err != nil {
+		wd, err := workspace.Workdir(*verify)
+		if err != nil {
 			return err
 		}
-		if err := report.VerifyEvidenceChain(workspace.Workdir(*verify)); err != nil {
+		if err := report.VerifyRunManifest(wd); err != nil {
+			return err
+		}
+		if err := report.VerifyEvidenceChain(wd); err != nil {
 			return err
 		}
 		fmt.Println("signature OK — run attestation + evidence chain are authentic and unmodified")

@@ -154,7 +154,10 @@ func FindingsAdd(args []string) error {
 	if *target == "" || *id == "" || *title == "" {
 		return fmt.Errorf("required: --target --id --title")
 	}
-	wd := workspace.Workdir(*target)
+	wd, err := workspace.Workdir(*target)
+	if err != nil {
+		return err
+	}
 	return AddFinding(wd, Finding{
 		ID: *id, Title: *title, Host: *host, Severity: strings.ToUpper(*sev),
 		Status: *status, EvidenceCmd: *ev, ExpectedOpen: *expect,
@@ -171,7 +174,10 @@ func FindingsWriteRun(args []string) error {
 	if *target == "" {
 		return fmt.Errorf("required: --target")
 	}
-	wd := workspace.Workdir(*target)
+	wd, err := workspace.Workdir(*target)
+	if err != nil {
+		return err
+	}
 	path, err := WriteRun(*target, wd, "full")
 	if err != nil {
 		return err

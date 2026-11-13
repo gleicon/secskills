@@ -112,6 +112,7 @@ func newSandbox(t *testing.T) *sandbox {
 		"http_proxy=http://127.0.0.1:9",
 		"https_proxy=http://127.0.0.1:9",
 		"NO_PROXY=127.0.0.1,localhost",
+		"XDG_CACHE_HOME=" + filepath.Join(s.home, ".cache"),
 	}
 	if d := os.Getenv("GOCOVERDIR"); d != "" {
 		s.env = append(s.env, "GOCOVERDIR="+d)
@@ -210,6 +211,15 @@ type rule struct {
 	repl string
 }
 
+// cacheDir is where os.UserCacheDir points inside a sandbox (the default
+// workdir parent): ~/Library/Caches on macOS, $XDG_CACHE_HOME elsewhere.
+func (s *sandbox) cacheDir() string {
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(s.home, "Library", "Caches")
+	}
+	return filepath.Join(s.home, ".cache")
+}
+
 var normalizers = []rule{
 	{regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})`), "<TIME>"},
 	{regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?( UTC)?`), "<TIME>"},
@@ -228,6 +238,7 @@ func (s *sandbox) normalized() string {
 	if repo, err := filepath.Abs(filepath.Join("..", "..")); err == nil {
 		out = strings.ReplaceAll(out, repo, "<REPO>")
 	}
+	out = strings.ReplaceAll(out, s.cacheDir(), "<CACHE>")
 	out = strings.ReplaceAll(out, s.root, "<SANDBOX>")
 	out = strings.ReplaceAll(out, s.raw, "<SANDBOX>")
 	for _, r := range normalizers {
@@ -349,7 +360,7 @@ func TestGoldenGates(t *testing.T) {
 	s.copyTree(filepath.Join(repoRoot(t), "testdata", "exposure", "workdir"), wd)
 	s.run("discover", "example.com")
 	s.run("discover", "--cidr", "203.0.113.0/24")
-	s.write(filepath.Join(s.root, "tmp", "secskills-AS64500", "data", "asn-AS64500-prefixes.json"),
+	s.write(filepath.Join(s.cacheDir(), "secskills", "AS64500", "data", "asn-AS64500-prefixes.json"),
 		`{"asn":"AS64500","prefixes":["203.0.113.0/24"],"source":"ripe-stat","fetched_at":"`+time.Now().UTC().Format(time.RFC3339)+`"}`)
 	s.run("discover", "--asn", "AS64500")
 	s.run("discover", "--cidr", "203.0.0.0/16", "--confirm")

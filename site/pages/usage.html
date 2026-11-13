@@ -17,7 +17,9 @@ or the <code>/secskills-intake</code> skill.</dd>
 <dd>How far <code>test</code> may go. Each level includes the one before it.</dd>
 <dt>Workdir</dt>
 <dd>Per-target scratch space for discovery output, evidence, and logs:
-<code>$SECSKILLS_WORKDIR</code>, or <code>$TMPDIR/secskills-&lt;target&gt;</code>.</dd>
+<code>$SECSKILLS_WORKDIR</code>, or <code>secskills/&lt;target&gt;</code> under your user
+cache directory (<code>~/.cache</code> on Linux, <code>~/Library/Caches</code> on macOS). Created
+readable by you only; a symlinked or foreign-owned workdir is refused.</dd>
 <dt>Findings store</dt>
 <dd>Saved runs per target in <code>~/.secskills-findings/&lt;target&gt;/</code>. Reports,
 tickets, exports, and retests read from it. Treat it like a credentials store.</dd>
@@ -129,7 +131,7 @@ the rest run offline over the workdir. <a href="cases.html#block">Full recipe</a
 <table>
 <thead><tr><th>Name</th><th>Meaning</th></tr></thead>
 <tbody>
-<tr><td><code>SECSKILLS_WORKDIR</code></td><td>Workdir to use instead of <code>$TMPDIR/secskills-&lt;target&gt;</code>.</td></tr>
+<tr><td><code>SECSKILLS_WORKDIR</code></td><td>Workdir to use instead of the per-user default. Keep it private; never a shared directory like <code>/tmp</code>.</td></tr>
 <tr><td><code>SECSKILLS_SCOPE</code></td><td>Scope file path instead of <code>./.secskills-scope.yml</code>.</td></tr>
 <tr><td><code>SECSKILLS_FEED</code></td><td>Feed cache instead of <code>~/.secskills/feed</code>. Share one read-only cache across workers.</td></tr>
 <tr><td><code>SECSKILLS_RATE</code></td><td>Requests per second for sweeps and probes (default 5).</td></tr>

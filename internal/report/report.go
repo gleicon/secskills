@@ -17,7 +17,10 @@ import (
 // DoRender assembles a human-readable markdown report from the workdir findings
 // (or the latest persisted run), following lib/report-template.md.
 func DoRender(target, output string) error {
-	wd := workspace.Workdir(target)
+	wd, err := workspace.Workdir(target)
+	if err != nil {
+		return err
+	}
 	findings := finding.LoadWorkFindings(wd)
 	if len(findings) == 0 {
 		if b, err := os.ReadFile(filepath.Join(finding.StoreDir(target), "latest")); err == nil {
