@@ -1,0 +1,108 @@
+<h1>Common cases</h1>
+<p class="lede">Recipes for the jobs people use secskills for most. Every command that touches a
+target assumes you hold written authorization for it.</p>
+
+<h2 id="repo">Review a repository before it ships</h2>
+<p>No network, no gate. Needs <code>ast-grep</code> on PATH.</p>
+<pre><code>secskills source ./my-service
+secskills source --json ./my-service > findings.json   <span class="c"># machine-readable</span></code></pre>
+<p>The rules cover real sinks (injection, deserialization, SSRF, secrets) and common
+smells in AI-written code. For a fix, read the guidance and a working example for your stack:</p>
+<pre><code>secskills kb injection
+secskills recipes injection</code></pre>
+
+<h2 id="webapp">Assess a web app you are authorized to test</h2>
+<ol class="steps">
+<li><h3>Settle scope first</h3>
+<pre><code>secskills profile app.example.com --output ENGAGEMENT-profile.md
+secskills scope --init</code></pre>
+<p>Edit <code>.secskills-scope.yml</code>: set <code>authorized: true</code> only once you have
+written authorization, list the targets and exclusions, and set an expiry. In Claude Code,
+<code>/secskills-intake app.example.com</code> does this as an interview.</p></li>
+<li><h3>Check what the file allows</h3>
+<pre><code>secskills scope --validate</code></pre></li>
+<li><h3>Discover and test</h3>
+<pre><code>secskills discover app.example.com
+secskills test app.example.com --deep</code></pre>
+<p>With a valid scope file you do not need <code>--confirm</code>. Without one, add it to
+each command.</p></li>
+<li><h3>Report</h3>
+<pre><code>secskills report --pdf app.example.com --output app.pdf
+secskills report --audit app.example.com --output app-audit.md</code></pre></li>
+</ol>
+
+<h2 id="auth">Test the logged-in surface</h2>
+<pre><code>secskills test app.example.com <mark>--confirm</mark> \
+  --auth-token "$USER_A_TOKEN" \
+  --auth-token-b "$USER_B_TOKEN"</code></pre>
+<p>The second identity drives the access-control differential: an object URL that returns
+the same private data to both users is flagged for manual confirmation. Use test accounts,
+not real users' sessions.</p>
+<p class="warn">Credentialed requests verify TLS. If the target uses a self-signed
+certificate, they fail unless you add <code>--insecure-auth</code>, which lets anyone on the
+network path see those credentials.</p>
+
+<h2 id="retest">Check that fixes landed</h2>
+<pre><code>secskills report --retest app.example.com</code></pre>
+<p>Each finding is re-probed with a structured check, not a shell command, and marked fixed,
+still present, or regressed. To keep watching:</p>
+<pre><code>secskills watch app.example.com --confirm --interval 6h</code></pre>
+
+<h2 id="ci">Send findings to CI or a ticket tracker</h2>
+<pre><code>secskills export --format sarif app.example.com --output secskills.sarif
+secskills export --format cyclonedx app.example.com --output bom.json
+secskills tickets app.example.com --format csv --output tickets.csv</code></pre>
+<p>Findings that share a root cause, such as TLS 1.0 and 1.1 on one host, collapse to a
+single ticket at the higher severity.</p>
+
+<h2 id="adjudicate">Change a severity after review</h2>
+<pre><code>secskills findings show app.example.com          <span class="c"># find the finding_key</span>
+secskills override --target app.example.com --key &lt;finding_key&gt; \
+  --severity LOW --reason "compensating WAF rule, verified"</code></pre>
+<p>The reviewed severity, reviewer, and reason are stored next to the automated value, and
+the report shows both.</p>
+
+<h2 id="sandbox">Test a build in isolation</h2>
+<pre><code>secskills sandbox ./build-context <mark>--confirm</mark> --port 8080</code></pre>
+<p>Builds the image, runs it in Docker, and tests only that container. It refuses to run
+without Docker rather than testing something unisolated.</p>
+
+<h2 id="block">Review a network block you own</h2>
+<p>For an ASN or CIDR under your authority. Authorization is checked per IP, and
+<code>out_of_scope</code> entries are never scanned.</p>
+<ol class="steps">
+<li><h3>Sweep and enrich</h3>
+<pre><code>export SECSKILLS_WORKDIR=./acme
+secskills discover --cidr 203.0.113.0/24 <mark>--confirm</mark>
+secskills enrich    --workdir ./acme <mark>--confirm</mark>
+secskills leakcheck --workdir ./acme <mark>--confirm</mark></code></pre></li>
+<li><h3>Load vulnerability intelligence</h3>
+<pre><code>secskills feed kev
+secskills feed epss
+secskills feed nvd --product openssh
+secskills feed nvd --product nginx</code></pre></li>
+<li><h3>Join and report, offline</h3>
+<pre><code>secskills cvematch --workdir ./acme
+secskills lifecycle reconcile --workdir ./acme
+secskills prefix-report --workdir ./acme --label "AS64500 203.0.113.0/24"</code></pre>
+<p>CVEs in CISA KEV lead; the rest are ranked by EPSS. Every match is version-inferred, so
+treat it as a lead to confirm, since distributions backport fixes without changing versions.</p></li>
+</ol>
+<p>Next week, refresh the feeds and re-run step 3. Nothing touches the network, and findings
+whose version moved out of range close as fixed.</p>
+
+<h2 id="offline">Capture on a VM, analyze somewhere else</h2>
+<pre><code>make bundle                                      <span class="c"># binary + scripts + feed cache</span>
+<span class="c"># on a VM near the target network:</span>
+CIDR=203.0.113.0/24 CONFIRM=yes ./capture.sh
+<span class="c"># back home, no network needed:</span>
+OUT=./capture-203_0_113_0_24 ./process.sh</code></pre>
+<p>The workdir is append-only and resumable, so a capture can stop and restart without
+losing data. To split a large block across machines, <code>secskills plan --asn AS64500 --shards 4</code>
+writes one prefix list per worker.</p>
+
+<h2 id="agent">Let an agent help, safely</h2>
+<pre><code>claude mcp add secskills -- secskills mcp</code></pre>
+<p>The agent can look up OWASP guidance, pull fix recipes, and scan source code. It cannot
+start a live scan: <code>discover</code> and <code>test</code> are not exposed over MCP and stay
+behind the CLI gate, where a person confirms authorization.</p>

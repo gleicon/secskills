@@ -34,7 +34,7 @@ func Workdir(target string) string {
 	if wd == "" {
 		wd = filepath.Join(os.TempDir(), "secskills-"+sanitize(target))
 	}
-	os.MkdirAll(wd, 0o755)
+	os.MkdirAll(wd, 0o700) // evidence lives here: owner-only
 	return wd
 }
 

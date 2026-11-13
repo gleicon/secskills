@@ -57,6 +57,24 @@ COMMANDS:
   selftest    End-to-end pipeline test against a local disposable server
   version     Print version
 
+EXPOSURE (ASN/CIDR blocks — see docs/exposure.md):
+  discover    --asn AS… | --cidr …  sweep a block into observations (authorization-gated)
+  enrich      Banner/version/CPE enrichment of stored observations (authorization-gated)
+  leakcheck   Read-only check for exposed .git/.env, listings, open datastores (authorization-gated)
+  dbcheck     Datastore open/default-credential posture (needs --confirm and --intrusive-confirm)
+  kprobe      Single-packet kernel-path reachability probe: MPTCP, IPv4 options (authorization-gated)
+  feed        Fetch and cache KEV, EPSS and NVD intelligence (no target traffic)
+  cvematch    Join enriched observations with cached NVD ranges into ranked CVE candidates (offline)
+  lifecycle   Reconcile or set finding states: open, confirmed, accepted_risk, fixed, false_positive
+  prefix-report Markdown exposure report for a block (offline)
+  precision   Measure candidate precision against a labelled set (release gate)
+  deliver     Write one tenant's feed, optionally POSTed to an HTTPS webhook
+  notify      Check event-to-notification latency against stored candidates (offline)
+  fleet       Anonymised cross-tenant ranking of CVEs and stacks (k-anonymity)
+  plan        Split an ASN's prefixes across N capture workers (OSINT only)
+  token       Sign or verify an HMAC scope token for unattended workers
+  match       Replay the deterministic matcher on a fixture (advisory x distro state x assets)
+
 Run "secskills <command> -h" for command flags. Portable across Claude Code,
 opencode, and any MCP client.
 `)

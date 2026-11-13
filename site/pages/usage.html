@@ -1,0 +1,144 @@
+<h1>Using secskills</h1>
+<p class="lede">Every command is one reproducible step. Run <code>secskills help</code> for the
+list and <code>secskills &lt;command&gt; -h</code> for its flags. This page explains the ideas
+the commands share, then lists them by job.</p>
+
+<h2 id="concepts">Concepts</h2>
+<dl class="terms">
+<dt>Authorization gate</dt>
+<dd>Commands that send traffic to a target refuse to run until you pass <code>--confirm</code>
+or keep an authorized, unexpired scope file that lists the target. See <a href="safety.html">Safety</a>.</dd>
+<dt>Scope file</dt>
+<dd><code>.secskills-scope.yml</code> in the working directory (or the path in
+<code>SECSKILLS_SCOPE</code>). It records the engagement, who confirmed it, targets, exclusions,
+expiry, and whether intrusive tests are allowed. Write it with <code>secskills scope --init</code>
+or the <code>/secskills-intake</code> skill.</dd>
+<dt>Profile</dt>
+<dd>How far <code>test</code> may go. Each level includes the one before it.</dd>
+<dt>Workdir</dt>
+<dd>Per-target scratch space for discovery output, evidence, and logs:
+<code>$SECSKILLS_WORKDIR</code>, or <code>$TMPDIR/secskills-&lt;target&gt;</code>.</dd>
+<dt>Findings store</dt>
+<dd>Saved runs per target in <code>~/.secskills-findings/&lt;target&gt;/</code>. Reports,
+tickets, exports, and retests read from it. Treat it like a credentials store.</dd>
+</dl>
+
+<h3>Test profiles</h3>
+<div class="scroll">
+<table>
+<thead><tr><th>Profile</th><th>Adds</th></tr></thead>
+<tbody>
+<tr><td><code>passive</code></td><td>OSINT only, no target traffic beyond discovery.</td></tr>
+<tr><td><code>safe-active</code> (default)</td><td>Header, TLS, and exposure checks.</td></tr>
+<tr><td><code>adversarial-readonly</code></td><td>Bypass variants, safe exploit primitives, OAST callbacks, stateful pivots. Still read-only.</td></tr>
+<tr><td><code>authorized-exploit</code></td><td>Credentialed and state-changing tests. Needs <code>--intrusive</code> and <code>--intrusive-confirm</code>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="assess">Assess a target</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>Command</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><code>profile &lt;domain&gt;</code></td><td>Passive OSINT brief: subdomains, edge and CDN, Shodan data when a key is set. No target traffic.</td></tr>
+<tr><td><code>scope --init</code> / <code>--validate</code></td><td>Write the scope template, or show what the current file authorizes.</td></tr>
+<tr><td><code>discover &lt;domain&gt;</code></td><td>Subdomains, resolution, live hosts. Writes <code>live_hosts.json</code> to the workdir.</td></tr>
+<tr><td><code>test &lt;target&gt;</code></td><td>OWASP Top 10 checks against the surface. <code>--deep</code> adds nuclei, sslscan, content discovery, and screenshots.</td></tr>
+<tr><td><code>source &lt;path&gt;</code></td><td>Static review with the embedded ast-grep rules. No network, no gate.</td></tr>
+<tr><td><code>sandbox &lt;ctx&gt;</code></td><td>Build and run an artifact in Docker, then test only that container.</td></tr>
+<tr><td><code>graph &lt;seed…&gt;</code></td><td>Related domains from certificates, CNAMEs, and shared infrastructure. They are listed with their authorization status and never tested.</td></tr>
+<tr><td><code>watch &lt;target&gt; --interval 6h</code></td><td>Re-assess on a schedule and report new, fixed, and regressed findings.</td></tr>
+<tr><td><code>integrity snapshot|verify &lt;url&gt;</code></td><td>Record a response hash, then detect later rewriting by an intermediary.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Useful <code>test</code> flags</h3>
+<div class="scroll">
+<table>
+<thead><tr><th>Flag</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>--profile</code></td><td>One of the profiles above.</td></tr>
+<tr><td><code>--auth-token</code>, <code>--cookie</code>, <code>--auth-header</code></td><td>Test the authenticated surface. Without them, authenticated checks are reported as not available.</td></tr>
+<tr><td><code>--auth-token-b</code>, <code>--cookie-b</code></td><td>A second identity for the access-control (BOLA/IDOR) differential.</td></tr>
+<tr><td><code>--insecure-auth</code></td><td>Send credentials to a host with an untrusted certificate. Off by default; only for self-signed targets you accept.</td></tr>
+<tr><td><code>--intrusive</code> + <code>--intrusive-confirm</code></td><td>Allow write and credential tests. Both are required.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="findings">Findings and reports</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>Command</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><code>report --render &lt;target&gt;</code></td><td>Full Markdown report.</td></tr>
+<tr><td><code>report --html|--pdf &lt;target&gt; --output f</code></td><td>Formatted report. PDF needs Chrome or Chromium.</td></tr>
+<tr><td><code>report --audit &lt;target&gt;</code></td><td>Short auditor report: control objectives, test ledger, attestation.</td></tr>
+<tr><td><code>report --retest &lt;target&gt;</code></td><td>Re-probe every finding: fixed, still present, or regressed.</td></tr>
+<tr><td><code>report --lint &lt;target&gt;</code></td><td>Check the report's invariants before you send it.</td></tr>
+<tr><td><code>tickets &lt;target&gt;</code></td><td>One row per finding, CSV or JSON, with severity, SLA, priority, owner, and business risk.</td></tr>
+<tr><td><code>export --format sarif|cyclonedx &lt;target&gt;</code></td><td>SARIF 2.1.0, or CycloneDX 1.5 with VEX.</td></tr>
+<tr><td><code>findings list|show &lt;target&gt;</code></td><td>Inspect stored runs.</td></tr>
+<tr><td><code>override --target … --key … --severity … --reason …</code></td><td>Record a reviewed severity change. The automated value is kept beside it.</td></tr>
+<tr><td><code>attest --sign|--verify &lt;target&gt;</code></td><td>Sign a run with your ed25519 key, or verify a signed run.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="exposure">Network blocks</h2>
+<p>For an ASN or CIDR you are authorized to assess. The capture stages touch the network;
+the rest run offline over the workdir. <a href="cases.html#block">Full recipe</a></p>
+<div class="scroll">
+<table>
+<thead><tr><th>Command</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><code>discover --cidr …</code> / <code>--asn …</code></td><td>Sweep into <code>observations.jsonl</code>. Blocks wider than /20 need <code>--allow-large</code>.</td></tr>
+<tr><td><code>enrich</code>, <code>leakcheck</code>, <code>kprobe</code></td><td>Versions and CPEs; exposed files and open datastores; single-packet kernel-path probes.</td></tr>
+<tr><td><code>dbcheck</code></td><td>Open or vendor-default-credential datastores. Needs <code>--confirm</code> and <code>--intrusive-confirm</code>.</td></tr>
+<tr><td><code>feed kev|epss|nvd</code></td><td>Cache vulnerability intelligence. No target traffic.</td></tr>
+<tr><td><code>cvematch</code>, <code>lifecycle</code>, <code>prefix-report</code></td><td>Rank CVE candidates, track their state, write the block report.</td></tr>
+<tr><td><code>plan</code>, <code>token</code></td><td>Split a block across workers; sign their scope.</td></tr>
+<tr><td><code>precision</code>, <code>deliver</code>, <code>notify</code>, <code>fleet</code></td><td>Precision gate, per-tenant feeds, alert latency, anonymised aggregates.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="knowledge">Knowledge and tooling</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>Command</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><code>kb</code> / <code>kb &lt;class&gt;</code></td><td>OWASP guidance, offline: injection, access-control, auth-session, crypto-secrets, config-exposure, ssrf-xxe, llm-agents, and more.</td></tr>
+<tr><td><code>recipes &lt;class&gt;</code></td><td>Secure and vulnerable examples for Node, Python, and Go.</td></tr>
+<tr><td><code>doctor</code></td><td>Which optional tools are present, with install commands.</td></tr>
+<tr><td><code>fp list|add|import</code></td><td>The technology fingerprint registry. Imports Wappalyzer data.</td></tr>
+<tr><td><code>fetch</code> / <code>post</code></td><td>Throttled queries to free sources (crt.sh, Wayback, OSV) with backoff.</td></tr>
+<tr><td><code>shodan &lt;domain|ip&gt;</code></td><td>Shodan lookup when a key is configured.</td></tr>
+<tr><td><code>compress</code>, <code>scrub</code>, <code>scan</code></td><td>Shrink tool output, redact PII and secrets, flag prompt injection in target output (uses tldt).</td></tr>
+<tr><td><code>oast-server</code></td><td>Self-hosted callback listener for blind SSRF checks.</td></tr>
+<tr><td><code>mcp</code></td><td>Read-only MCP server over stdio.</td></tr>
+<tr><td><code>conformance</code>, <code>measure</code>, <code>selftest</code></td><td>Check the engine itself: detector scorecard, precision on a local corpus, end-to-end pipeline.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="env">Files and environment</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>Name</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>SECSKILLS_WORKDIR</code></td><td>Workdir to use instead of <code>$TMPDIR/secskills-&lt;target&gt;</code>.</td></tr>
+<tr><td><code>SECSKILLS_SCOPE</code></td><td>Scope file path instead of <code>./.secskills-scope.yml</code>.</td></tr>
+<tr><td><code>SECSKILLS_FEED</code></td><td>Feed cache instead of <code>~/.secskills/feed</code>. Share one read-only cache across workers.</td></tr>
+<tr><td><code>SECSKILLS_RATE</code></td><td>Requests per second for sweeps and probes (default 5).</td></tr>
+<tr><td><code>SECSKILLS_TOKEN_KEY</code></td><td>Shared HMAC key for scope tokens.</td></tr>
+<tr><td><code>SECSKILLS_OAST_DOMAIN</code>, <code>SECSKILLS_OAST_POLL_URL</code></td><td>Your OAST collaborator for blind checks.</td></tr>
+<tr><td><code>SHODAN_API_KEY</code>, <code>CENSYS_API_ID</code>, <code>CENSYS_API_SECRET</code></td><td>Optional OSINT keys. Never written into reports.</td></tr>
+<tr><td><code>~/.secskills-findings/</code></td><td>Findings store.</td></tr>
+<tr><td><code>~/.secskills-keys/</code></td><td>Your attestation signing key, created on first use.</td></tr>
+<tr><td><code>~/.secskills-fingerprints.json</code></td><td>Your additions to the fingerprint registry.</td></tr>
+</tbody>
+</table>
+</div>

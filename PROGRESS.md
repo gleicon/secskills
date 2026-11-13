@@ -6,6 +6,8 @@ listed at the bottom.
 
 ## Milestones
 
+Releases from v0.31.0 on are tracked in [`CHANGELOG.md`](CHANGELOG.md).
+
 - [x] M1 — Technology fingerprint registry (data-driven, growable like Shodan/Wappalyzer)
   - [x] Embedded `fingerprints.json` ruleset (56 sigs: headers/cookies/body → tech, category, second-stage pack)
   - [x] Favicon-hash → technology lookup (mmh3), growable overlay
