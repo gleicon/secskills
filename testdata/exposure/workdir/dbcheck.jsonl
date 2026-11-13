@@ -1,0 +1,2 @@
+{"ip":"203.0.113.30","port":6379,"service":"redis","status":"OPEN-NOAUTH","detail":"PING answered without AUTH"}
+{"ip":"203.0.113.20","port":9200,"service":"elasticsearch","status":"AUTH-ENFORCED","detail":"401 on /"}

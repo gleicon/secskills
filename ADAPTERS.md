@@ -9,7 +9,7 @@ Two ways, both included:
 
 - **Skills / plugin:** the `skills/*/SKILL.md` + `.claude-plugin/plugin.json` in
   this repo. Skill bodies call the binary (`secskills <cmd>`) and read
-  `lib/*.md` for methodology. Install the binary first: `make install`.
+  `lib/*.md` for methodology. Install the binary first: `go install github.com/gleicon/secskills/cmd/secskills@latest`.
 - **MCP server:** register the stdio server so tools appear natively:
   ```bash
   claude mcp add secskills -- secskills mcp

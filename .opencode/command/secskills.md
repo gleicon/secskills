@@ -9,7 +9,7 @@ binary. The binary is the portable core; you orchestrate it.
 Target/intent: $ARGUMENTS
 
 Preflight tool status:
-!`secskills doctor --quiet 2>/dev/null | head -30 || echo "secskills not on PATH — build with 'make install' in the secskills repo"`
+!`secskills doctor --quiet 2>/dev/null | head -30 || echo "secskills not on PATH — install with 'go install github.com/gleicon/secskills/cmd/secskills@latest'"`
 
 Steps:
 1. Pick the mode from the target — repo/path → `secskills source <path>`;

@@ -1,0 +1,3 @@
+{"ip":"203.0.113.10","port":80,"url":"http://203.0.113.10/.git/HEAD","kind":"exposed-vcs","status":200,"server":"nginx/1.18.0","evidence":"ref: refs/heads/main"}
+{"ip":"203.0.113.10","port":80,"url":"http://203.0.113.10/.env","kind":"exposed-dotenv","status":200,"server":"nginx/1.18.0","evidence":"keys: DB_PASSWORD, APP_KEY (values redacted)"}
+{"ip":"203.0.113.30","port":6379,"kind":"redis-unauth","evidence":"PING -> PONG without AUTH"}

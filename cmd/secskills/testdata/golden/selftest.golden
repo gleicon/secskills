@@ -1,0 +1,15 @@
+$ secskills selftest
+== secskills selftest ==
+local target: http://127.0.0.1:<PORT>
+  [PASS] security headers: 3 findings (expect >=3)
+  [PASS] exposure: /metrics found (1)
+  [PASS] findings persisted (4)
+  [PASS] run file written
+  [PASS] report renders
+  [PASS] KB serves config-exposure
+  [PASS] registry parses >=60 tools
+  [PASS] scope blocks foreign host
+
+selftest PASSED — discover/check/store/report pipeline verified end-to-end.
+[exit 0]
+

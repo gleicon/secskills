@@ -1,0 +1,33 @@
+$ secskills scope --validate
+[stderr]
+error: cannot read .secskills-scope.yml: open .secskills-scope.yml: no such file or directory
+[exit 1]
+
+$ secskills scope --init
+wrote .secskills-scope.yml — edit it, set authorized: true after you have written authorization.
+[exit 0]
+
+# file <SANDBOX>/cwd/.secskills-scope.yml
+# secskills engagement scope — written by intake, honored by the authorization gate
+engagement: <name>
+authorized: false          # set true ONLY with written authorization from the target owner
+engagement_type: black-box # black-box | grey-box | white-box
+confirmed_by: <you@org>
+expires: <TIME>
+intrusive: false           # true requires a second explicit confirmation at test time
+targets:
+  - <apex-domain>
+out_of_scope:
+  - <host-to-exclude>
+
+# end
+
+$ secskills scope --validate
+scope file: .secskills-scope.yml
+  authorized: false · type: black-box · intrusive: false
+  expires: <TIME> (valid)
+  targets: <apex-domain>
+  out_of_scope: <host-to-exclude>
+  RESULT: NOT authorized — discover/test will require --confirm until authorized: true.
+[exit 0]
+

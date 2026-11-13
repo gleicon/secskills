@@ -1,0 +1,2 @@
+[{"cve":"CVE-2024-6387","vendor":"openbsd","product":"openssh","version_start_including":"8.5p1","version_end_excluding":"9.8p1","cvss":8.1},
+ {"cve":"CVE-2023-38408","vendor":"openbsd","product":"openssh","version_end_excluding":"9.3p2","cvss":9.8}]

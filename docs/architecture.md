@@ -72,12 +72,59 @@ audit-usable.
 ## Source layout
 
 ```
-*.go              command implementations (doctor, profile, scope, mode, checks,
-                  deep, enrich, compliance, report_*, mcp, shodan, tooling, …)
-kb/               OWASP knowledge base (embedded, CC BY-SA)
-recipes/          per-stack secure/vulnerable snippets (embedded)
-rules/            ast-grep rules (source-mode engine, embedded via vendor/)
-skills/           Claude Code SKILL.md adapters
-lib/, tools/      shell reference + doctor.sh/ingest.sh + registry.tsv
-docs/             this documentation
+cmd/secskills/        the CLI (package main): one file per command — flag
+                      parsing and output only; logic lives in internal/
+internal/scope/       authorization: scope file, per-IP CIDR filter, signed
+                      scope tokens, the gate notice
+internal/netsec/      SSRF guard, shell quoting, host parsing
+internal/fetch/       throttled free-source HTTP + non-destructive target client
+internal/finding/     finding model, severity policy, detector registry,
+                      capabilities, CVSS/OWASP/compliance mapping, evidence
+                      ledger, findings store
+internal/engine/      discover/test engine: checks, detector packs, adversarial
+                      planner, edge mapping, deep scans, conformance + measure
+internal/report/      Markdown/HTML/PDF/audit reports, lint, tickets,
+                      SARIF/CycloneDX, run attestation
+internal/exposure/    ASN/CIDR exposure pipeline (sweep → enrich → leak/db
+                      checks → feeds → cvematch → lifecycle → delivery)
+internal/probe/       embeddable probe layer: Observation store, guarded HTTP,
+                      kprobe (no dependency on the rest)
+internal/intel/       deterministic advisory × asset matcher, version ranges
+internal/kb/          embedded OWASP KB, recipes, ast-grep rule materializer
+internal/tooling/     external tool registry/doctor, httpx/shodan/tldt, Chrome
+internal/mcp/         read-only MCP stdio server
+internal/workspace/   per-assessment working directory
+internal/jsonl/, internal/textutil/   JSON Lines I/O; string helpers and
+                      untrusted-output neutralizers
+assets.go, version.go root package secskills: go:embed of the data below + Version
+kb/, recipes/, data/  embedded knowledge base, recipes, fingerprints, default creds
+thirdparty/ast-grep-rules/  embedded ast-grep rules (rules/ is a symlink)
+skills/               Claude Code SKILL.md adapters
+lib/, tools/          shell reference + doctor.sh/ingest.sh + registry.tsv
+examples/embed/       using internal/probe as a library
+docs/                 this documentation
 ```
+
+Dependencies point one way: `cmd/secskills` → `report` → `engine` →
+`finding` → `kb`/`tooling`/`fetch`/`scope` → `netsec`/`textutil`/`jsonl`;
+`exposure` sits beside `engine` on the same lower layers. `internal/probe` and
+`internal/intel` import nothing else from the module.
+
+## Tests
+
+- `go test ./...` runs unit tests per package plus the **golden CLI suite**
+  (`cmd/secskills/cli_golden_test.go`). The suite builds the real binary and runs
+  it in a hermetic sandbox (temp HOME/TMPDIR/feed cache, whitelisted env,
+  `PATH` with only `sh`, outbound HTTP sent to a dead proxy). It diffs
+  normalized output against `cmd/secskills/testdata/golden/`: help and flags of
+  every command, every authorization-gate refusal, the KB, MCP, conformance,
+  measure, selftest, the exposure pipeline over `testdata/exposure/`, scope
+  tokens, and the findings → report/tickets/SARIF/CycloneDX/attest path.
+- It is black-box, so it holds across refactors. After an **intended** output
+  change, regenerate and review the diff:
+  `go test ./cmd/secskills -run TestGolden -update && git diff cmd/secskills/testdata/golden`.
+- Coverage of the black-box suite:
+  `SECSKILLS_GOLDEN_COVER=1 GOCOVERDIR=$(mktemp -d) go test ./cmd/secskills -run TestGolden`
+  then `go tool covdata percent -i <dir>`.
+- CI (`.github/workflows/ci.yml`): gofmt, vet, race tests, staticcheck,
+  `go install`, cross-compile for linux/darwin/windows.

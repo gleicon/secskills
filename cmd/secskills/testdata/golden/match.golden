@@ -1,0 +1,63 @@
+$ secskills match --fixture <REPO>/testdata/cve-2026-98432
+TODAY · CVE-2026-98432 (CVSS 9.8, KEV=false, PoC=7) · 3 candidates
+1. 203.0.113.10    [L3 verified] agent-verified: kernel 5.14.0-570.12.1.el9_8 is below the fixed release for rhel 9.8
+2. 203.0.113.20    [L1 medium] MPTCP listener reachable; kernel patch state unknown — agent or nft mitigation required
+   · 203.0.113.30    [L0] reachable TCP service on a Linux host; kernel patch state unknown — agent required
+[exit 0]
+
+$ secskills match --fixture <REPO>/testdata/cve-2026-98432 --json
+[
+  {
+    "asset_ip": "203.0.113.10",
+    "cve": "CVE-2026-98432",
+    "tier": "L3",
+    "confidence": "verified",
+    "patch_state": "unpatched",
+    "claim": "agent-verified: kernel 5.14.0-570.12.1.el9_8 is below the fixed release for rhel 9.8",
+    "remediation": "Patch the kernel to the fixed release for your distro, then reboot.",
+    "urgent_feed": true,
+    "score": 0.8200000000000001,
+    "score_terms": {
+      "confidence": 1,
+      "exposed": 1,
+      "patch_lag": 1,
+      "poc": 0.7
+    }
+  },
+  {
+    "asset_ip": "203.0.113.20",
+    "cve": "CVE-2026-98432",
+    "tier": "L1",
+    "confidence": "medium",
+    "patch_state": "unknown",
+    "claim": "MPTCP listener reachable; kernel patch state unknown — agent or nft mitigation required",
+    "remediation": "Interim: drop TCP packets with ip hdrlength gt 5, or disable net.mptcp.enabled.",
+    "urgent_feed": true,
+    "score": 0.252,
+    "score_terms": {
+      "confidence": 0.6,
+      "exposed": 1,
+      "patch_lag": 0,
+      "poc": 0.7
+    }
+  },
+  {
+    "asset_ip": "203.0.113.30",
+    "cve": "CVE-2026-98432",
+    "tier": "L0",
+    "confidence": "low",
+    "patch_state": "unknown",
+    "claim": "reachable TCP service on a Linux host; kernel patch state unknown — agent required",
+    "remediation": "Patch the kernel to the fixed release for your distro, then reboot.",
+    "urgent_feed": false,
+    "score": 0.126,
+    "score_terms": {
+      "confidence": 0.3,
+      "exposed": 1,
+      "patch_lag": 0,
+      "poc": 0.7
+    }
+  }
+]
+[exit 0]
+

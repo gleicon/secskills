@@ -68,7 +68,7 @@ authorized scope file. `--intrusive` requires `--intrusive-confirm`.
 | `secskills mcp` | Run as an MCP stdio server. |
 | `secskills selftest` | End-to-end pipeline test against a local disposable server. |
 
-## secskills exposure mode — ASN/CIDR exposure intelligence
+## Exposure mode — ASN/CIDR exposure intelligence
 
 The wide-sweep + feed-join pipeline (`discover --cidr/--asn`, `enrich`,
 `leakcheck`, `dbcheck`, `feed`, `cvematch`, `lifecycle`, `prefix-report`,

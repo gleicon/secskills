@@ -1,0 +1,264 @@
+$ secskills kb
+OWASP knowledge base classes (offline, CC BY-SA 4.0):
+  access-control
+  auth-session
+  components-supply-chain
+  config-exposure
+  crypto-secrets
+  files-deserialization
+  injection
+  llm-agents
+  logging-monitoring
+  mobile
+  ssrf-xxe
+  top10
+
+Usage: secskills kb <class>   (e.g. secskills kb injection)
+[exit 0]
+
+$ secskills kb top10
+---
+class: top10
+title: OWASP Top 10 2021 — index
+license: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
+source_project: OWASP Top 10 (https://owasp.org/www-project-top-ten/) + OWASP Cheat Sheet Series (https://cheatsheetseries.owasp.org/)
+snapshot: authored 2026-09-05 from the upstream index; refresh via tools/ingest.sh
+---
+
+# OWASP Top 10 2021 → secskills class → cheat sheets
+
+Each category maps to a KB class directory and the cheat sheets bundled there.
+Test skills use this matrix to pull the right remediation text per finding.
+
+| # | Category | KB class | Primary cheat sheets |
+|---|----------|----------|----------------------|
+| A01 | Broken Access Control | `kb/access-control/` | Authorization, IDOR Prevention, CSRF Prevention, Access Control |
+| A02 | Cryptographic Failures | `kb/crypto-secrets/` | Cryptographic Storage, TLS, Password Storage, Secrets Management, Key Management |
+| A03 | Injection | `kb/injection/` | XSS Prevention, DOM XSS, SQL Injection Prevention, Query Parameterization, OS Command Injection, LDAP Injection |
+| A04 | Insecure Design | `kb/access-control/` + `kb/auth-session/` | Threat Modeling, Abuse Case, Forgot Password |
+| A05 | Security Misconfiguration | `kb/config-exposure/` | Security Headers, CSP, CORS, Clickjacking Defense, Error Handling |
+| A06 | Vulnerable & Outdated Components | `kb/components-supply-chain/` | Vulnerable Dependency Mgmt, NPM Security, Third-Party JS, SRI |
+| A07 | Identification & Authentication Failures | `kb/auth-session/` | Authentication, Password Storage, Session Management, JWT, MFA, Credential Stuffing |
+| A08 | Software & Data Integrity Failures | `kb/config-exposure/` + `kb/files-deserialization/` | SRI, Deserialization, Supply Chain |
+| A09 | Security Logging & Monitoring Failures | `kb/logging-monitoring/` | Logging, Application Logging Vocabulary |
+| A10 | Server-Side Request Forgery (SSRF) | `kb/ssrf-xxe/` | SSRF Prevention, XXE Prevention |
+
+## Companion frameworks (beyond Web)
+
+secskills maps findings across three OWASP Top 10 families — pick by target type:
+
+| Framework | Target | KB class |
+|-----------|--------|----------|
+| OWASP Top 10 2021 (Web) | web apps / APIs | `kb/*` (the table above) |
+| OWASP Mobile Top 10 2024 (+ MASVS/MASTG) | Android/iOS apps + backends | `kb/mobile/` |
+| OWASP Top 10 for LLM Apps 2025 (+ Agentic) | LLM/RAG/agent systems | `kb/llm-agents/` |
+
+Mobile backends and LLM tool-endpoints are also web APIs — cross-apply the Web
+Top 10 (`kb/access-control`, `kb/auth-session`, `kb/injection`, `kb/ssrf-xxe`).
+
+## Coverage matrix template (for reports)
+
+| Control | ID | Finding | Status | Severity |
+|---------|-----|---------|--------|---------|
+| Broken Access Control | A01 | FINDING-NN / — | Fail/Pass/Partial/Not Tested | — |
+| Cryptographic Failures | A02 | | | |
+| Injection | A03 | | | |
+| Insecure Design | A04 | | | |
+| Security Misconfiguration | A05 | | | |
+| Vulnerable & Outdated Components | A06 | | | |
+| Identification & Auth Failures | A07 | | | |
+| Software & Data Integrity | A08 | | | |
+| Logging & Monitoring Failures | A09 | | | |
+| SSRF | A10 | | | |
+
+Source: OWASP Top 10 2021 — https://owasp.org/Top10/
+[exit 0]
+
+$ secskills kb injection
+---
+class: injection
+owasp_top10: A03:2021 — Injection
+license: CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
+source_project: OWASP Cheat Sheet Series (https://cheatsheetseries.owasp.org/)
+snapshot: authored 2026-09-05 from the upstream index; refresh via tools/ingest.sh
+bundled_cheatsheets:
+  - {name: Injection Prevention, url: https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html}
+  - {name: SQL Injection Prevention, url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html}
+  - {name: Query Parameterization, url: https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html}
+  - {name: Cross Site Scripting Prevention, url: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html}
+  - {name: DOM based XSS Prevention, url: https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html}
+  - {name: OS Command Injection Defense, url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html}
+  - {name: LDAP Injection Prevention, url: https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html}
+---
+
+# Injection (A03)
+
+Untrusted input reaching an interpreter (SQL/NoSQL, OS shell, LDAP, template,
+DOM). The defense is the same shape everywhere: keep code and data separate.
+
+## Detection (what to test)
+- Parameters reflected into responses (XSS) — crawl with katana, fuzz with dalfox.
+- Error verbosity: `?q='` and `?q=<script>x</script>` — DB errors or unescaped reflection.
+- String-built queries/commands in source (ast-grep `*-injection-*`, `*-xss-*`, `*-sql-*`).
+
+## SQL injection — remediation (priority order)
+1. **Parameterized queries / prepared statements.** Never concatenate input into SQL.
+2. **Stored procedures** (when they do not build dynamic SQL internally).
+3. **Allow-list input validation** for identifiers that cannot be parameterized (table/column names).
+4. **Escaping** only as a last resort, DB-specific.
+5. Least-privilege DB account; disable multi-statements.
+
+Example — safe (parameterized):
+```sql
+-- BAD:  "SELECT * FROM users WHERE id = " + id
+-- GOOD:
+SELECT * FROM users WHERE id = ?      -- bind id as a parameter
+```
+
+## XSS — remediation
+- **Context-aware output encoding** at the sink: HTML body, HTML attribute, JS,
+  CSS, and URL contexts each need their own encoding.
+- Prefer a framework's auto-escaping template; avoid `innerHTML`,
+  `dangerouslySetInnerHTML`, `document.write`, `v-html`.
+- **DOM XSS:** use safe sinks (`textContent`, `setAttribute`); treat
+  `location`, `document.referrer`, `window.name`, `postMessage` data as untrusted.
+- Defense-in-depth: a strong **Content-Security-Policy** (see `kb/config-exposure/`),
+  `HttpOnly` session cookies, and a trusted-types policy where supported.
+- Sanitize rich HTML with a vetted library (DOMPurify) — never a hand-rolled regex.
+
+## OS command injection — remediation
+- Avoid shelling out; use language-native APIs.
+- If unavoidable: pass arguments as an **array** (no shell string), never
+  interpolate input; allow-list the command and its arguments.
+- ast-grep smells: `py-injection-subprocess-shell-true`, `*-injection-exec`,
+  `*-injection-system`, `rb-injection-backtick`.
+
+## LDAP / template / NoSQL
+- LDAP: escape per RFC 4515 with the framework's LDAP-encoding routine; allow-list DN components.
+- Template (SSTI): never render user input as a template; pass it as data. Smells: `py-injection-ssti-flask`, `py-injection-jinja2-from-string`.
+- NoSQL: reject operator objects (`$where`, `$gt`) in user JSON; use typed queries.
+
+## Verify the fix
+Re-run the reproducing request; the payload should be returned inert (encoded)
+or rejected, and no interpreter error should surface.
+[exit 0]
+
+$ secskills kb no-such-class
+[stderr]
+error: unknown class "no-such-class"; run `secskills kb` to list
+[exit 1]
+
+$ secskills recipes
+Per-stack recipes (Node.js / Python / Go):
+  access-control
+  auth-session
+  config-exposure
+  crypto-secrets
+  injection
+  ssrf-xxe
+
+Usage: secskills recipes <name>   (e.g. secskills recipes injection)
+[exit 0]
+
+$ secskills recipes injection
+# Recipes — Injection (A03), per stack
+
+Secure vs vulnerable snippets for the injection class. Pair with `kb/injection/`.
+Stacks: Node.js, Python, Go.
+
+## SQL — parameterize, never concatenate
+
+**Node (pg / mysql2)**
+```js
+// VULN: `SELECT * FROM users WHERE id = ${req.query.id}`
+const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [req.query.id]);
+```
+**Python (psycopg / sqlite3)**
+```python
+# VULN: cur.execute(f"SELECT * FROM users WHERE id = {uid}")
+cur.execute("SELECT * FROM users WHERE id = %s", (uid,))
+```
+**Go (database/sql)**
+```go
+// VULN: db.Query("SELECT * FROM users WHERE id = " + id)
+rows, err := db.Query("SELECT * FROM users WHERE id = $1", id)
+```
+
+## OS command — no shell, pass args as array
+
+**Node**
+```js
+// VULN: exec(`ping -c1 ${host}`)
+const { execFile } = require('node:child_process');
+execFile('ping', ['-c1', host], cb);        // host never hits a shell
+```
+**Python**
+```python
+# VULN: os.system("ping -c1 " + host); subprocess.run(cmd, shell=True)
+subprocess.run(["ping", "-c1", host], shell=False, check=True)
+```
+**Go**
+```go
+// VULN: exec.Command("sh", "-c", "ping -c1 "+host)
+exec.Command("ping", "-c1", host)           // args passed directly
+```
+
+## XSS — context-aware output encoding
+
+**Node (Express + a template engine)**
+```js
+// VULN: res.send(`<div>${req.query.q}</div>`)
+res.render('page', { q: req.query.q });      // auto-escaping template (EJS <%= %>, Handlebars {{ }})
+```
+**Python (Flask/Jinja2)**
+```python
+# VULN: return "<div>" + q + "</div>"
+return render_template("page.html", q=q)     # Jinja2 autoescape on by default
+```
+**Go (html/template — auto context-escapes)**
+```go
+// VULN: fmt.Fprintf(w, "<div>%s</div>", q)   // or text/template
+tmpl := template.Must(template.New("p").Parse(`<div>{{.}}</div>`)) // html/template
+tmpl.Execute(w, q)
+```
+
+## Template / deserialization
+- Never render user input as a template (SSTI): pass it as *data*, not template text.
+- Python: `yaml.safe_load`, never `yaml.load`/`pickle.loads` on untrusted input.
+- Node: avoid `eval`, `Function()`, `vm` on user input.
+
+Verify: re-send the payload → returned inert/encoded or rejected, no interpreter error.
+[exit 0]
+
+$ secskills fp list
+56 signatures, 8 favicon hashes (embedded seed + overlay <SANDBOX>/home/.secskills-fingerprints.json)
+
+adc              Citrix NetScaler
+api              GraphQL
+api-docs         Swagger UI
+api-gateway      Kong
+app-server       gunicorn, uvicorn
+cdn              Amazon CloudFront, Fastly, Netlify, Vercel
+cdn-waf          Akamai, Azure Front Door, Cloudflare
+ci-cd            Argo CD, GitLab, Jenkins
+cms              WordPress
+code-quality     SonarQube
+dashboard        Apache Superset, Grafana, Kibana, Kubernetes Dashboard, Portainer
+db-admin         Adminer, phpMyAdmin
+framework        ASP.NET, Django, Express, Laravel, Next.js, Ruby on Rails, Spring
+identity         Keycloak
+language         PHP
+monitoring       Prometheus
+notebook         Jupyter
+object-storage   Amazon S3, MinIO
+orchestration    Apache Airflow
+proxy            Envoy, Traefik
+queue            RabbitMQ Management
+registry         Harbor, Sonatype Nexus
+search-db        Elasticsearch
+secrets          HashiCorp Vault
+service-mesh     HashiCorp Consul
+waf              AWS WAF, F5 BIG-IP, Imperva Incapsula, Sucuri
+web-server       Apache, Caddy, LiteSpeed, Microsoft IIS, nginx
+[exit 0]
+

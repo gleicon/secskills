@@ -60,7 +60,7 @@ func IPv4OptionsReachable(addr string, timeout time.Duration) (bool, error) {
 		Control: func(_, _ string, c syscall.RawConn) error {
 			var serr error
 			if err := c.Control(func(fd uintptr) {
-				serr = syscall.SetsockoptString(int(fd), syscall.IPPROTO_IP, syscall.IP_OPTIONS, string(recordRouteOption))
+				serr = setIPOptions(fd, recordRouteOption)
 			}); err != nil {
 				return err
 			}
