@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.31.1] - 2026-11-13
+
+### Fixed
+
+- `TestMPTCPCapableAgainstPlainListener` failed on Linux. Since Go 1.24, `net.Listen`
+  opens MPTCP listeners by default there, so the test's "plain" listener was MPTCP and
+  the probe was right to say so. The test now opts out of MPTCP explicitly. The probe
+  itself is unchanged. This failure blocked the v0.31.0 release build, so v0.31.0 has a
+  tag but no binaries; use 0.31.1.
+
+### Install
+
+```sh
+go install github.com/gleicon/secskills/cmd/secskills@v0.31.1
+```
+
+Everything else is as listed under 0.31.0.
+
 ## [0.31.0] - 2026-11-13
 
 ### Install

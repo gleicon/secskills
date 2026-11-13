@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"context"
 	"errors"
 	"net"
 	"runtime"
@@ -11,7 +12,11 @@ import (
 func TestMPTCPCapableAgainstPlainListener(t *testing.T) {
 	// A plain TCP listener does not negotiate MPTCP; the probe must return false
 	// (or a dial error), never panic, and must not report a plain socket as MPTCP.
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	// Go >= 1.24 opens MPTCP listeners by default on Linux, so opt out
+	// explicitly to get a genuinely plain one.
+	var lc net.ListenConfig
+	lc.SetMultipathTCP(false)
+	ln, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
