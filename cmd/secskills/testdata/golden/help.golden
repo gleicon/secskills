@@ -1,6 +1,6 @@
 $ secskills 
 [stderr]
-secskills 0.31.0 — security assessment orchestrator
+secskills 0.31.1 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -44,7 +44,7 @@ opencode, and any MCP client.
 
 $ secskills help
 [stderr]
-secskills 0.31.0 — security assessment orchestrator
+secskills 0.31.1 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -87,14 +87,14 @@ opencode, and any MCP client.
 [exit 0]
 
 $ secskills version
-secskills 0.31.0
+secskills 0.31.1
 [exit 0]
 
 $ secskills no-such-command
 [stderr]
 unknown command: no-such-command
 
-secskills 0.31.0 — security assessment orchestrator
+secskills 0.31.1 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
