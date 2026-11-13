@@ -1,0 +1,157 @@
+$ secskills discover example.com
+[stderr]
+AUTHORIZATION REQUIRED — discover mode, target: example.com
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills discover example.com --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills discover --cidr 203.0.113.0/24
+== discover block: 203.0.113.0/24 (workdir <SANDBOX>/tmp/secskills-203.0.113.0_24) ==
+[stderr]
+AUTHORIZATION REQUIRED — discover mode, target: 203.0.113.0
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills discover 203.0.113.0 --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills discover --asn AS64500
+== discover block: AS64500 (workdir <SANDBOX>/tmp/secskills-AS64500) ==
+[asn] AS64500: 1 prefixes (cache, fetched <TIME>)
+[stderr]
+AUTHORIZATION REQUIRED — discover mode, target: 203.0.113.0
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills discover 203.0.113.0 --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills discover --cidr 203.0.0.0/16 --confirm
+== discover block: 203.0.0.0/16 (workdir <SANDBOX>/tmp/secskills-203.0.0.0_16) ==
+[store] 0 observations -> <SANDBOX>/tmp/secskills-203.0.0.0_16/observations.jsonl ; 0 HTTP services -> live_hosts.json
+
+Next: secskills test <ip> --confirm  (per in-scope host)
+[stderr]
+[scan] skip 203.0.0.0/16: 203.0.0.0/16 has 65536 addresses (> /20 cap of 4096) — pass --allow-large to override
+[exit 0]
+
+$ secskills test example.com
+[stderr]
+AUTHORIZATION REQUIRED — test mode, target: example.com
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills test example.com --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills sandbox .
+[stderr]
+error: sandbox mode requires Docker (not installed) — refusing, never fakes isolation. Install: secskills doctor --tools docker
+[exit 1]
+
+$ secskills integrity snapshot https://example.com
+[stderr]
+AUTHORIZATION REQUIRED — integrity snapshot mode, target: https://example.com
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills integrity snapshot https://example.com --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills integrity verify https://example.com
+[stderr]
+AUTHORIZATION REQUIRED — integrity verify mode, target: https://example.com
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills integrity verify https://example.com --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills leakcheck --workdir <SANDBOX>/wd
+[stderr]
+AUTHORIZATION REQUIRED — leakcheck mode, target: 6 services in <SANDBOX>/wd
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills leakcheck 6 services in <SANDBOX>/wd --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills enrich --workdir <SANDBOX>/wd
+[stderr]
+AUTHORIZATION REQUIRED — enrich mode, target: 6 services in <SANDBOX>/wd
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills enrich 6 services in <SANDBOX>/wd --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills dbcheck --workdir <SANDBOX>/wd
+[stderr]
+error: dbcheck makes authentication attempts against hosts; it requires BOTH --confirm and --intrusive-confirm
+[exit 1]
+
+$ secskills dbcheck --workdir <SANDBOX>/wd --confirm
+[stderr]
+error: dbcheck makes authentication attempts against hosts; it requires BOTH --confirm and --intrusive-confirm
+[exit 1]
+
+$ secskills kprobe --ip 203.0.113.10 --port 22
+[stderr]
+AUTHORIZATION REQUIRED — kprobe mode, target: 203.0.113.10:22
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills kprobe 203.0.113.10:22 --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+
+$ secskills watch example.com
+[stderr]
+AUTHORIZATION REQUIRED — watch mode, target: example.com
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills watch example.com --confirm
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed
+[exit 1]
+

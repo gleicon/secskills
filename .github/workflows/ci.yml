@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l $(git ls-files '*.go'))" || { gofmt -l $(git ls-files '*.go'); exit 1; }
+      - name: vet
+        run: go vet ./...
+      - name: test (unit + golden CLI suite, race)
+        run: go test -race -count=1 ./...
+      - name: staticcheck
+        if: matrix.os == 'ubuntu-latest'
+        run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+      - name: go install works from a clean module
+        run: |
+          go install ./cmd/secskills
+          "$(go env GOPATH)/bin/secskills" version
+      - name: cross-compile (no CGO)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          for t in linux/amd64 linux/arm64 darwin/arm64 windows/amd64; do
+            CGO_ENABLED=0 GOOS=${t%/*} GOARCH=${t#*/} go build -o /dev/null ./cmd/secskills
+          done

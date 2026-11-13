@@ -3,9 +3,12 @@
 ## Install
 
 ```bash
-git clone <repo> secskills && cd secskills
-make install            # go build → $GOPATH/bin/secskills
+go install github.com/gleicon/secskills/cmd/secskills@latest
 secskills version
+
+# or from a checkout
+git clone https://github.com/gleicon/secskills && cd secskills
+make install            # go install ./cmd/secskills
 ```
 
 Requires **Go 1.26+**. Runtime security tools are optional — secskills degrades

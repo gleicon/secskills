@@ -8,7 +8,7 @@ and any MCP client (`secskills mcp`).
 ## Build & install
 
 ```bash
-make install          # go build + copy to $GOPATH/bin
+go install github.com/gleicon/secskills/cmd/secskills@latest   # or: make install
 secskills doctor      # verify tools; prints install commands for what's missing
 ```
 

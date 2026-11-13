@@ -1,0 +1,402 @@
+$ secskills cvematch --workdir <SANDBOX>/wd
+cvematch: 7 version-inferred CVE candidates (3 KEV-urgent) -> <SANDBOX>/wd/candidates.jsonl
+KEV 198.51.100.6     CVE-2023-44487   epss=0.940 score=0.559  CVE-2023-44487
+KEV 203.0.113.10     CVE-2023-44487   epss=0.940 score=0.559  CVE-2023-44487
+KEV 203.0.113.20     CVE-2023-44487   epss=0.940 score=0.559  CVE-2023-44487
+    203.0.113.10     CVE-2024-6387    epss=0.995 score=0.276  CVE-2024-6387
+    203.0.113.10     CVE-2023-38408   epss=0.500 score=0.208  CVE-2023-38408
+    198.51.100.6     CVE-2021-23017   epss=0.120 score=0.114  CVE-2021-23017
+    203.0.113.10     CVE-2021-23017   epss=0.120 score=0.114  CVE-2021-23017
+[exit 0]
+
+# file <SANDBOX>/wd/candidates.jsonl
+{"asset_ip":"198.51.100.6","cve":"CVE-2023-44487","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":true,"score":0.5592,"score_terms":{"confidence":0.6,"cvss":7.5,"epss":0.94,"kev":1}}
+{"asset_ip":"203.0.113.10","cve":"CVE-2023-44487","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":true,"score":0.5592,"score_terms":{"confidence":0.6,"cvss":7.5,"epss":0.94,"kev":1}}
+{"asset_ip":"203.0.113.20","cve":"CVE-2023-44487","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.24.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":true,"score":0.5592,"score_terms":{"confidence":0.6,"cvss":7.5,"epss":0.94,"kev":1}}
+{"asset_ip":"203.0.113.10","cve":"CVE-2024-6387","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"OpenSSH 8.9p1 is within the affected range of CVE-2024-6387 (\u003e= 8.5p1, \u003c 9.8p1) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.2763,"score_terms":{"confidence":0.6,"cvss":8.1,"epss":0.995,"kev":0}}
+{"asset_ip":"203.0.113.10","cve":"CVE-2023-38408","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"OpenSSH 8.9p1 is within the affected range of CVE-2023-38408 (\u003c 9.3p2) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.20759999999999998,"score_terms":{"confidence":0.6,"cvss":9.8,"epss":0.5,"kev":0}}
+{"asset_ip":"198.51.100.6","cve":"CVE-2021-23017","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2021-23017 (\u003e= 0.6.18, \u003c 1.20.1) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.11399999999999999,"score_terms":{"confidence":0.6,"cvss":7.7,"epss":0.12,"kev":0}}
+{"asset_ip":"203.0.113.10","cve":"CVE-2021-23017","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2021-23017 (\u003e= 0.6.18, \u003c 1.20.1) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.11399999999999999,"score_terms":{"confidence":0.6,"cvss":7.7,"epss":0.12,"kev":0}}
+
+# end
+
+$ secskills lifecycle reconcile --workdir <SANDBOX>/wd
+lifecycle reconcile: 7 findings tracked -> <SANDBOX>/wd/findings.jsonl
+  states: map[open:7]
+  OPEN      198.51.100.6|CVE-2021-23017
+  OPEN      198.51.100.6|CVE-2023-44487
+  OPEN      203.0.113.10|CVE-2021-23017
+  OPEN      203.0.113.10|CVE-2023-38408
+  OPEN      203.0.113.10|CVE-2023-44487
+  OPEN      203.0.113.10|CVE-2024-6387
+  OPEN      203.0.113.20|CVE-2023-44487
+[exit 0]
+
+$ secskills lifecycle set --workdir <SANDBOX>/wd --ip 203.0.113.20 --cve CVE-2023-44487 --state false_positive --note backport
+203.0.113.20|CVE-2023-44487: false_positive
+[exit 0]
+
+$ secskills lifecycle set --workdir <SANDBOX>/wd --ip 203.0.113.20 --cve CVE-2023-44487 --state open
+203.0.113.20|CVE-2023-44487: open
+[exit 0]
+
+$ secskills lifecycle reconcile --workdir <SANDBOX>/wd
+lifecycle reconcile: 7 findings tracked -> <SANDBOX>/wd/findings.jsonl
+  states: map[open:7]
+[exit 0]
+
+# file <SANDBOX>/wd/findings.jsonl
+{"ip":"198.51.100.6","cve":"CVE-2021-23017","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
+{"ip":"198.51.100.6","cve":"CVE-2023-44487","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
+{"ip":"203.0.113.10","cve":"CVE-2021-23017","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
+{"ip":"203.0.113.10","cve":"CVE-2023-38408","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
+{"ip":"203.0.113.10","cve":"CVE-2023-44487","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
+{"ip":"203.0.113.10","cve":"CVE-2024-6387","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
+{"ip":"203.0.113.20","cve":"CVE-2023-44487","state":"open","first_seen":"<TIME>","last_seen":"<TIME>","note":"backport"}
+
+# end
+
+$ secskills prefix-report --workdir <SANDBOX>/wd --label AS64500 203.0.113.0/24
+exposure report -> <SANDBOX>/wd/exposure-report.md (4200 bytes)
+[exit 0]
+
+# file <SANDBOX>/wd/exposure-report.md
+# External Exposure Report — AS64500 203.0.113.0/24
+
+**Generated:** <TIME>  
+**Method:** non-destructive, read-only (TCP connect + HTTP GET), plus an owner-authorized datastore authentication check (`dbcheck`): a single liveness command and documented *default* credentials only — no brute force, no data read, no writes.  
+**Sensitivity:** contains host addresses and exposure locations — share only with the asset owner's administrators. Credential *values* are deliberately omitted.
+
+## Summary
+
+- Live hosts: **5**
+- Reachable services: **6**
+- Critical exposures (data/credential leaks): **3**
+- Internet-reachable datastores/RDP: **1**
+
+Services by type: http 2, ssh 2, https 1, redis 1
+
+## 1. Critical — data & credential exposure (fix today)
+
+| Host | Issue | Detail (redacted) | Action |
+|---|---|---|---|
+| `203.0.113.10:80` | **exposed-dotenv** | keys: DB_PASSWORD, APP_KEY (values redacted) | remove file; **rotate all secrets** |
+| `203.0.113.10:80` | **exposed-vcs** | ref: refs/heads/main | remove `.git` from web root; audit history for secrets |
+| `203.0.113.30:6379` | **redis-unauth** | PING -> PONG without AUTH | set `requirepass`; bind to private interface |
+
+> A served `.env` means every secret in it must be treated as compromised. Rotate **all** listed keys (DB passwords, APP_KEY, MAIL_DSN, API keys) and remove the file from the web root. An adjacent exposed `.git` often lets an attacker reconstruct full source and history — audit for leaked secrets in commits.
+
+## 2. Internet-reachable datastores / remote access
+
+These ports should sit behind a security group / firewall, not on the public internet.
+
+Authentication posture verified read-only (`dbcheck`): **OPEN-NOAUTH** and **DEFAULT-CRED** are critical.
+
+| Endpoint | Service | Auth posture | Action |
+|---|---|---|---|
+| `203.0.113.30:6379` | redis | **OPEN — NO AUTH** | **isolate now**; enable authentication; assume data read/altered |
+
+## 3. Software inventory and CVE status
+
+Versions fingerprinted on **5** services (SSH/HTTP/SMTP banners, MySQL handshake).
+
+| Product / version | Count |
+|---|---|
+| nginx 1.18.0 | 2 |
+| OpenSSH 8.9p1 | 1 |
+| OpenSSH 9.8p1 | 1 |
+| nginx 1.24.0 | 1 |
+
+No observed product name matches the KEV catalog.
+
+### Version-inferred CVE candidates
+
+Matched by CPE version range against NVD. **Version-inferred** — a distro backport may have patched the CVE behind an unchanged version string, so each is a lead to confirm, not a finding.
+
+- Total candidates: **7**
+- **KEV-listed (urgent — exploited in the wild): 3**
+
+| Host | CVE (KEV) | Finding |
+|---|---|---|
+| `198.51.100.6` | CVE-2023-44487 | nginx 1.18.0 is within the affected range of CVE-2023-44487 (>= 1.9.5, < 1.25.3) — version-inferred, confirm against distro backports |
+| `203.0.113.10` | CVE-2023-44487 | nginx 1.18.0 is within the affected range of CVE-2023-44487 (>= 1.9.5, < 1.25.3) — version-inferred, confirm against distro backports |
+| `203.0.113.20` | CVE-2023-44487 | nginx 1.24.0 is within the affected range of CVE-2023-44487 (>= 1.9.5, < 1.25.3) — version-inferred, confirm against distro backports |
+
+Non-KEV remainder (3 distinct CVEs across the block), top by EPSS exploit probability:
+
+| CVE | EPSS | Hosts |
+|---|---|---|
+| CVE-2024-6387 | 0.995 | 1 |
+| CVE-2023-38408 | 0.500 | 1 |
+| CVE-2021-23017 | 0.120 | 2 |
+
+> Triage order: KEV first, then EPSS (above). Confirm each against the host's distro backport before action.
+
+## 4. Host inventory
+
+| Host | Open services |
+|---|---|
+| `198.51.100.5` | 22/ssh |
+| `198.51.100.6` | 80/http |
+| `203.0.113.10` | 22/ssh, 80/http |
+| `203.0.113.20` | 443/https |
+| `203.0.113.30` | 6379/redis |
+
+## 5. Remediation checklist
+
+1. Remove `.env`, `.git/`, and any backup/config files from web-served directories; block dotfiles at the proxy.
+2. Rotate every credential that appeared in an exposed `.env` or git history — assume compromise.
+3. Move datastore and RDP ports behind a firewall / security group; never expose them publicly.
+4. Require authentication on every datastore (Redis `requirepass`, Mongo auth, ES security).
+5. Re-scan to confirm closure; this report is reproducible with `secskills prefix-report`.
+
+# end
+
+$ secskills precision --workdir <SANDBOX>/wd --labels <REPO>/testdata/exposure/labels.jsonl
+precision gate (AC-4) — <SANDBOX>/wd/candidates.jsonl
+  labels: 4 over 3 distinct hosts
+  TP   FP   FN   TN
+  3    1    0    0   
+  precision 75.0%   recall 100.0%
+  false positives (1):
+    203.0.113.20 CVE-2023-44487
+VERDICT: FAIL — only 3 hosts labelled, AC-4 needs >= 100; precision 75.0% < 90% gate. Not launch-ready; the gap is the next spec item.
+[exit 1]
+
+$ secskills precision --workdir <SANDBOX>/wd --labels <REPO>/testdata/exposure/labels.jsonl --min-hosts 1 --min 0.5
+precision gate (AC-4) — <SANDBOX>/wd/candidates.jsonl
+  labels: 4 over 3 distinct hosts
+  TP   FP   FN   TN
+  3    1    0    0   
+  precision 75.0%   recall 100.0%
+  false positives (1):
+    203.0.113.20 CVE-2023-44487
+VERDICT: PASS — precision 75.0% over 3 hosts >= gate.
+[exit 0]
+
+$ secskills deliver --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --tenant acme
+delivered: 5 findings (2 KEV-urgent) -> <SANDBOX>/wd/feed-acme.json
+
+Exposure brief — tenant acme (AS64500)  <TIME>
+5 candidates, 2 KEV-urgent. Version-inferred (L1): confirm before action.
+
+KEV 203.0.113.10     CVE-2023-44487   epss=0.940 score=0.559
+KEV 203.0.113.20     CVE-2023-44487   epss=0.940 score=0.559
+    203.0.113.10     CVE-2024-6387    epss=0.995 score=0.276
+    203.0.113.10     CVE-2023-38408   epss=0.500 score=0.208
+    203.0.113.10     CVE-2021-23017   epss=0.120 score=0.114
+[exit 0]
+
+# file <SANDBOX>/wd/feed-acme.json
+{
+  "tenant": "acme",
+  "asn": 64500,
+  "generated_at": "<TIME>",
+  "count": 5,
+  "urgent_count": 2,
+  "findings": [
+    {
+      "asset_ip": "203.0.113.10",
+      "cve": "CVE-2023-44487",
+      "tier": "L1",
+      "confidence": "medium",
+      "patch_state": "unknown",
+      "claim": "nginx 1.18.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports",
+      "remediation": "",
+      "urgent_feed": true,
+      "score": 0.5592,
+      "score_terms": {
+        "confidence": 0.6,
+        "cvss": 7.5,
+        "epss": 0.94,
+        "kev": 1
+      }
+    },
+    {
+      "asset_ip": "203.0.113.20",
+      "cve": "CVE-2023-44487",
+      "tier": "L1",
+      "confidence": "medium",
+      "patch_state": "unknown",
+      "claim": "nginx 1.24.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports",
+      "remediation": "",
+      "urgent_feed": true,
+      "score": 0.5592,
+      "score_terms": {
+        "confidence": 0.6,
+        "cvss": 7.5,
+        "epss": 0.94,
+        "kev": 1
+      }
+    },
+    {
+      "asset_ip": "203.0.113.10",
+      "cve": "CVE-2024-6387",
+      "tier": "L1",
+      "confidence": "medium",
+      "patch_state": "unknown",
+      "claim": "OpenSSH 8.9p1 is within the affected range of CVE-2024-6387 (\u003e= 8.5p1, \u003c 9.8p1) — version-inferred, confirm against distro backports",
+      "remediation": "",
+      "urgent_feed": false,
+      "score": 0.2763,
+      "score_terms": {
+        "confidence": 0.6,
+        "cvss": 8.1,
+        "epss": 0.995,
+        "kev": 0
+      }
+    },
+    {
+      "asset_ip": "203.0.113.10",
+      "cve": "CVE-2023-38408",
+      "tier": "L1",
+      "confidence": "medium",
+      "patch_state": "unknown",
+      "claim": "OpenSSH 8.9p1 is within the affected range of CVE-2023-38408 (\u003c 9.3p2) — version-inferred, confirm against distro backports",
+      "remediation": "",
+      "urgent_feed": false,
+      "score": 0.20759999999999998,
+      "score_terms": {
+        "confidence": 0.6,
+        "cvss": 9.8,
+        "epss": 0.5,
+        "kev": 0
+      }
+    },
+    {
+      "asset_ip": "203.0.113.10",
+      "cve": "CVE-2021-23017",
+      "tier": "L1",
+      "confidence": "medium",
+      "patch_state": "unknown",
+      "claim": "nginx 1.18.0 is within the affected range of CVE-2021-23017 (\u003e= 0.6.18, \u003c 1.20.1) — version-inferred, confirm against distro backports",
+      "remediation": "",
+      "urgent_feed": false,
+      "score": 0.11399999999999999,
+      "score_terms": {
+        "confidence": 0.6,
+        "cvss": 7.7,
+        "epss": 0.12,
+        "kev": 0
+      }
+    }
+  ]
+}
+# end
+
+$ secskills deliver --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --tenant nobody
+[stderr]
+error: no tenant "nobody" in <REPO>/testdata/exposure/tenants.json
+[exit 1]
+
+$ secskills deliver --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --tenant acme --webhook http://hooks.example/x
+delivered: 5 findings (2 KEV-urgent) -> <SANDBOX>/wd/feed-acme.json
+
+Exposure brief — tenant acme (AS64500)  <TIME>
+5 candidates, 2 KEV-urgent. Version-inferred (L1): confirm before action.
+
+KEV 203.0.113.10     CVE-2023-44487   epss=0.940 score=0.559
+KEV 203.0.113.20     CVE-2023-44487   epss=0.940 score=0.559
+    203.0.113.10     CVE-2024-6387    epss=0.995 score=0.276
+    203.0.113.10     CVE-2023-38408   epss=0.500 score=0.208
+    203.0.113.10     CVE-2021-23017   epss=0.120 score=0.114
+[stderr]
+error: webhook must be https (got "http") — the feed is sensitive
+[exit 1]
+
+$ secskills notify --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --kev-event CVE-2024-6387 --event-at <TIME>
+NOTIFY acme       CVE-2024-6387    1 asset(s)  latency <DUR>
+1 notification(s) -> <SANDBOX>/wd/notifications.jsonl
+VERDICT: PASS — worst latency <N>s within 1h0m0s, no scan on the path (NFR-1/AC-2).
+[exit 0]
+
+# file <SANDBOX>/wd/notifications.jsonl
+{"tenant":"acme","cve":"CVE-2024-6387","assets":["203.0.113.10"],"event_at":"<TIME>","detected_at":"<TIME>","latency_sec":<N>}
+
+# end
+
+$ secskills fleet --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --k 1
+fleet intelligence — 2 tenants, k=1 (anonymised: counts only)
+
+top CVEs across the fleet:
+  tenants  hosts  KEV  CVE
+  2        3      KEV  CVE-2023-44487
+  2        2           CVE-2021-23017
+  1        1           CVE-2023-38408
+  1        1           CVE-2024-6387
+
+top stacks across the fleet:
+  tenants  hosts  product
+  2        3      nginx
+  2        2      OpenSSH
+[exit 0]
+
+$ secskills fleet --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json
+fleet intelligence — 2 tenants, k=2 (anonymised: counts only)
+
+top CVEs across the fleet:
+  tenants  hosts  KEV  CVE
+  2        3      KEV  CVE-2023-44487
+  2        2           CVE-2021-23017
+
+top stacks across the fleet:
+  tenants  hosts  product
+  2        3      nginx
+  2        2      OpenSSH
+[exit 0]
+
+$ secskills cvematch
+[stderr]
+error: usage: secskills cvematch --workdir <dir>
+[exit 1]
+
+$ secskills cvematch --workdir <SANDBOX>/empty
+[stderr]
+error: no enriched observations — run `secskills enrich` first: stat <SANDBOX>/empty/enriched-observations.jsonl: no such file or directory
+[exit 1]
+
+$ secskills plan --asn AS64500 --shards 2 --out <SANDBOX>/plan
+[asn] AS64500: 4 prefixes (cache, fetched <TIME>)
+plan: AS64500 (ripe-stat) — 3 IPv4 prefixes, ~640 addresses, 2 shards -> <SANDBOX>/plan
+  shard-0.txt    2 prefixes  ~384 addrs
+  shard-1.txt    1 prefixes  ~256 addrs
+
+per VM (one shared feed cache, no per-VM feed download):
+  SECSKILLS_FEED=/mnt/feed PREFIXES=<SANDBOX>/plan/shard-<i>.txt CONFIRM=yes ./capture.sh
+[exit 0]
+
+# file <SANDBOX>/plan/plan.json
+{
+  "approx_ips": 640,
+  "asn": "AS64500",
+  "prefixes": 3,
+  "shard_detail": [
+    {
+      "approx_ips": 384,
+      "file": "shard-0.txt",
+      "prefixes": 2,
+      "vm": 0
+    },
+    {
+      "approx_ips": 256,
+      "file": "shard-1.txt",
+      "prefixes": 1,
+      "vm": 1
+    }
+  ],
+  "shards": 2,
+  "source": "ripe-stat"
+}
+# end
+
+# file <SANDBOX>/plan/shard-0.txt
+192.0.2.0/25
+203.0.113.0/24
+
+# end
+
+# file <SANDBOX>/plan/shard-1.txt
+198.51.100.0/24
+
+# end
+

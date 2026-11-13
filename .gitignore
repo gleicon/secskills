@@ -16,3 +16,10 @@ GRILL.md
 
 # OS
 .DS_Store
+
+# local working notes — personal, never commit
+/.project/
+/ds-handoff.md
+
+# measure scorecard output
+measure-report.json

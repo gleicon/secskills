@@ -1,12 +1,14 @@
 BINARY=secskills
-INSTALL_DIR?=$(shell go env GOPATH)/bin
+PKG=./cmd/secskills
+VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+LDFLAGS=-s -w -X github.com/gleicon/secskills.Version=$(VERSION)
 
-.PHONY: all build test vet install clean doctor mcp-check
+.PHONY: all build test vet install clean doctor selftest mcp-check dist bundle help
 
 all: build
 
 build:            ## Build the single binary (embeds KB + rules)
-	go build -o $(BINARY) .
+	go build -o $(BINARY) $(PKG)
 
 test:             ## Run unit tests
 	go test ./...
@@ -14,9 +16,8 @@ test:             ## Run unit tests
 vet:              ## go vet
 	go vet ./...
 
-install: build    ## Install to $(INSTALL_DIR)
-	install -m 0755 $(BINARY) $(INSTALL_DIR)/$(BINARY)
-	@echo "installed $(BINARY) -> $(INSTALL_DIR)"
+install:          ## go install into $(go env GOBIN) or $(go env GOPATH)/bin
+	go install $(PKG)
 
 doctor: build     ## Build then run the tool doctor
 	./$(BINARY) doctor
@@ -29,9 +30,9 @@ mcp-check: build  ## Smoke-test the MCP server (initialize + tools/list)
 
 dist:             ## Cross-compile static binaries (no CGO, no LLM) into dist/
 	@mkdir -p dist
-	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o dist/$(BINARY)-linux-amd64  .
-	CGO_ENABLED=0 GOOS=linux  GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/$(BINARY)-linux-arm64  .
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o dist/$(BINARY)-darwin-arm64 .
+	CGO_ENABLED=0 GOOS=linux  GOARCH=amd64 go build -trimpath -ldflags "$(LDFLAGS)" -o dist/$(BINARY)-linux-amd64  $(PKG)
+	CGO_ENABLED=0 GOOS=linux  GOARCH=arm64 go build -trimpath -ldflags "$(LDFLAGS)" -o dist/$(BINARY)-linux-arm64  $(PKG)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags "$(LDFLAGS)" -o dist/$(BINARY)-darwin-arm64 $(PKG)
 	@echo "built -> dist/"; ls -la dist/
 
 bundle: dist      ## Package a VM capture kit (binary + scripts + feed cache) into dist/secskills-kit.tar.gz

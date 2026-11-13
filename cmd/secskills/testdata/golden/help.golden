@@ -1,0 +1,534 @@
+$ secskills 
+[stderr]
+secskills 0.30.0 — security assessment orchestrator
+
+USAGE:
+  secskills <command> [args]
+
+COMMANDS:
+  doctor      Check tools present/missing per mode+category, print install commands
+  fetch       Throttled GET of a free data source (per-source backoff + Retry-After)
+  post        Throttled POST (e.g. OSV batch query)
+  kb          Serve the embedded OWASP knowledge base (list | <class> | top10)
+  recipes     Serve per-stack secure/vulnerable recipes (Node/Python/Go)
+  source      Static source review — run embedded ast-grep rules over a path
+  discover    Live attack-surface discovery (authorization-gated)
+  graph       Cross-domain exploration graph (OSINT pivots; discovered domains NOT tested)
+  test        OWASP Top 10 active tests against a surface (authorization-gated; --profile passive|safe-active|adversarial-readonly|authorized-exploit)
+  sandbox     Build/run an artifact isolated in Docker, then test it
+  report      Assemble report (--render|--html|--pdf|--audit) / --retest a prior run
+  tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
+  export      Export findings as SARIF 2.1.0 or CycloneDX 1.5 + VEX (interop)
+  compress    Shrink text via tldt (token hygiene)
+  scrub       Redact PII/secrets via tldt (for reports)
+  scan        Detect prompt-injection + PII in untrusted output
+  findings    Manage the findings store (add | write-run | list | show)
+  profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
+  scope       Write/validate the engagement scope file (.secskills-scope.yml)
+  override    Record an auditable severity adjudication (reviewed vs automated)
+  attest      Sign (--sign) / verify (--verify) a run's attestation (ed25519)
+  conformance Detector quality scorecard from the offline regression corpus
+  measure     Engine self-measurement against a local vulnerable+safe corpus (precision/recall)
+  oast-server Run a self-hostable OAST collaborator (HTTP callback listener + /poll) for blind-SSRF validation
+  integrity   Snapshot/verify sha256 response baselines (AC-1 intermediary-rewrite detection)
+  fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
+  shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
+  mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
+  watch       Continuous mode: re-assess on an interval, report posture drift (NEW/FIXED/REGRESSED)
+  selftest    End-to-end pipeline test against a local disposable server
+  version     Print version
+
+Run "secskills <command> -h" for command flags. Portable across Claude Code,
+opencode, and any MCP client.
+[exit 2]
+
+$ secskills help
+[stderr]
+secskills 0.30.0 — security assessment orchestrator
+
+USAGE:
+  secskills <command> [args]
+
+COMMANDS:
+  doctor      Check tools present/missing per mode+category, print install commands
+  fetch       Throttled GET of a free data source (per-source backoff + Retry-After)
+  post        Throttled POST (e.g. OSV batch query)
+  kb          Serve the embedded OWASP knowledge base (list | <class> | top10)
+  recipes     Serve per-stack secure/vulnerable recipes (Node/Python/Go)
+  source      Static source review — run embedded ast-grep rules over a path
+  discover    Live attack-surface discovery (authorization-gated)
+  graph       Cross-domain exploration graph (OSINT pivots; discovered domains NOT tested)
+  test        OWASP Top 10 active tests against a surface (authorization-gated; --profile passive|safe-active|adversarial-readonly|authorized-exploit)
+  sandbox     Build/run an artifact isolated in Docker, then test it
+  report      Assemble report (--render|--html|--pdf|--audit) / --retest a prior run
+  tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
+  export      Export findings as SARIF 2.1.0 or CycloneDX 1.5 + VEX (interop)
+  compress    Shrink text via tldt (token hygiene)
+  scrub       Redact PII/secrets via tldt (for reports)
+  scan        Detect prompt-injection + PII in untrusted output
+  findings    Manage the findings store (add | write-run | list | show)
+  profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
+  scope       Write/validate the engagement scope file (.secskills-scope.yml)
+  override    Record an auditable severity adjudication (reviewed vs automated)
+  attest      Sign (--sign) / verify (--verify) a run's attestation (ed25519)
+  conformance Detector quality scorecard from the offline regression corpus
+  measure     Engine self-measurement against a local vulnerable+safe corpus (precision/recall)
+  oast-server Run a self-hostable OAST collaborator (HTTP callback listener + /poll) for blind-SSRF validation
+  integrity   Snapshot/verify sha256 response baselines (AC-1 intermediary-rewrite detection)
+  fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
+  shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
+  mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
+  watch       Continuous mode: re-assess on an interval, report posture drift (NEW/FIXED/REGRESSED)
+  selftest    End-to-end pipeline test against a local disposable server
+  version     Print version
+
+Run "secskills <command> -h" for command flags. Portable across Claude Code,
+opencode, and any MCP client.
+[exit 0]
+
+$ secskills version
+secskills 0.30.0
+[exit 0]
+
+$ secskills no-such-command
+[stderr]
+unknown command: no-such-command
+
+secskills 0.30.0 — security assessment orchestrator
+
+USAGE:
+  secskills <command> [args]
+
+COMMANDS:
+  doctor      Check tools present/missing per mode+category, print install commands
+  fetch       Throttled GET of a free data source (per-source backoff + Retry-After)
+  post        Throttled POST (e.g. OSV batch query)
+  kb          Serve the embedded OWASP knowledge base (list | <class> | top10)
+  recipes     Serve per-stack secure/vulnerable recipes (Node/Python/Go)
+  source      Static source review — run embedded ast-grep rules over a path
+  discover    Live attack-surface discovery (authorization-gated)
+  graph       Cross-domain exploration graph (OSINT pivots; discovered domains NOT tested)
+  test        OWASP Top 10 active tests against a surface (authorization-gated; --profile passive|safe-active|adversarial-readonly|authorized-exploit)
+  sandbox     Build/run an artifact isolated in Docker, then test it
+  report      Assemble report (--render|--html|--pdf|--audit) / --retest a prior run
+  tickets     Export findings as ticket rows (CSV/JSON) — fields = ticket fields
+  export      Export findings as SARIF 2.1.0 or CycloneDX 1.5 + VEX (interop)
+  compress    Shrink text via tldt (token hygiene)
+  scrub       Redact PII/secrets via tldt (for reports)
+  scan        Detect prompt-injection + PII in untrusted output
+  findings    Manage the findings store (add | write-run | list | show)
+  profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
+  scope       Write/validate the engagement scope file (.secskills-scope.yml)
+  override    Record an auditable severity adjudication (reviewed vs automated)
+  attest      Sign (--sign) / verify (--verify) a run's attestation (ed25519)
+  conformance Detector quality scorecard from the offline regression corpus
+  measure     Engine self-measurement against a local vulnerable+safe corpus (precision/recall)
+  oast-server Run a self-hostable OAST collaborator (HTTP callback listener + /poll) for blind-SSRF validation
+  integrity   Snapshot/verify sha256 response baselines (AC-1 intermediary-rewrite detection)
+  fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
+  shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
+  mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
+  watch       Continuous mode: re-assess on an interval, report posture drift (NEW/FIXED/REGRESSED)
+  selftest    End-to-end pipeline test against a local disposable server
+  version     Print version
+
+Run "secskills <command> -h" for command flags. Portable across Claude Code,
+opencode, and any MCP client.
+[exit 2]
+
+$ secskills fetch -h
+[stderr]
+Usage of fetch:
+  -retries int
+    	max retries on 429/503/timeout (default 4)
+error: flag: help requested
+[exit 1]
+
+$ secskills post -h
+[stderr]
+Usage of post:
+  -retries int
+    	max retries on 429/503/timeout (default 4)
+error: flag: help requested
+[exit 1]
+
+$ secskills kb -h
+[stderr]
+Usage of kb:
+  -list
+    	list classes and exit
+error: flag: help requested
+[exit 1]
+
+$ secskills recipes -h
+[stderr]
+error: no recipe "-h"; run `secskills recipes` to list
+[exit 1]
+
+$ secskills source -h
+[stderr]
+Usage of source:
+  -json
+    	pass --json through ast-grep
+error: flag: help requested
+[exit 1]
+
+$ secskills discover -h
+[stderr]
+Usage of discover:
+  -allow-large
+    	permit a block wider than /20 (deliberate, logged)
+  -asn string
+    	discover by ASN (e.g. AS64500): announced prefixes -> IP inventory
+  -cidr string
+    	discover by CIDR (e.g. 203.0.113.0/24): IP inventory
+  -confirm
+    	authorization confirmed
+  -workers int
+    	resolver/probe concurrency (default 20)
+error: flag: help requested
+[exit 1]
+
+$ secskills match -h
+[stderr]
+Usage of match:
+  -fixture string
+    	directory with advisory.json, distro-state.json, assets.json (default "testdata/cve-2026-98432")
+  -json
+    	emit candidates as JSON instead of the brief
+error: flag: help requested
+[exit 1]
+
+$ secskills leakcheck -h
+[stderr]
+Usage of leakcheck:
+  -confirm
+    	authorization confirmed
+  -workdir string
+    	workdir containing observations.jsonl (required)
+error: flag: help requested
+[exit 1]
+
+$ secskills prefix-report -h
+[stderr]
+Usage of prefix-report:
+  -label string
+    	scope label for the heading (e.g. AS64500 203.0.113.0/24)
+  -output string
+    	write the report here (default <workdir>/exposure-report.md)
+  -workdir string
+    	workdir with observations.jsonl (and optional leaks.jsonl)
+error: flag: help requested
+[exit 1]
+
+$ secskills feed -h
+[stderr]
+error: unknown feed source "-h" (want kev|epss|nvd)
+[exit 1]
+
+$ secskills dbcheck -h
+[stderr]
+Usage of dbcheck:
+  -confirm
+    	authorization confirmed
+  -intrusive-confirm
+    	second confirmation: permit default-credential attempts
+  -workdir string
+    	workdir containing observations.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills enrich -h
+[stderr]
+Usage of enrich:
+  -confirm
+    	authorization confirmed
+  -workdir string
+    	workdir containing observations.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills cvematch -h
+[stderr]
+Usage of cvematch:
+  -workdir string
+    	workdir with enriched-observations.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills token -h
+[stderr]
+error: --file is required
+[exit 1]
+
+$ secskills lifecycle -h
+[stderr]
+error: --workdir is required
+[exit 1]
+
+$ secskills kprobe -h
+[stderr]
+Usage of kprobe:
+  -confirm
+    	authorization confirmed
+  -ip string
+    	target IP
+  -port int
+    	target TCP port
+error: flag: help requested
+[exit 1]
+
+$ secskills plan -h
+[stderr]
+Usage of plan:
+  -asn string
+    	ASN to resolve (e.g. AS64500)
+  -out string
+    	output directory for plan.json + shard-<i>.txt (default "./plan")
+  -shards int
+    	number of VMs / workers to split across (default 1)
+error: flag: help requested
+[exit 1]
+
+$ secskills precision -h
+[stderr]
+Usage of precision:
+  -candidates string
+    	candidates file (default: <workdir>/candidates.jsonl)
+  -labels string
+    	ground-truth label set (JSONL: {ip,cve,label})
+  -min float
+    	minimum precision to PASS (AC-4 = 0.90) (default 0.9)
+  -min-hosts int
+    	minimum distinct labelled hosts (AC-4 = 100) (default 100)
+  -workdir string
+    	workdir with candidates.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills deliver -h
+[stderr]
+Usage of deliver:
+  -out string
+    	feed output path (default: <workdir>/feed-<tenant>.json)
+  -tenant string
+    	tenant id to deliver
+  -tenants string
+    	tenants file (JSON array of {tenant,asn,prefixes})
+  -webhook string
+    	optional: POST the JSON feed to this URL (SSRF-guarded)
+  -workdir string
+    	workdir with candidates.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills notify -h
+[stderr]
+Usage of notify:
+  -budget duration
+    	max event->notify latency to PASS (NFR-1 = 1h) (default 1h0m0s)
+  -event-at string
+    	synthetic: RFC3339 time the event fired (default: now)
+  -kev-event string
+    	synthetic: a single CVE id that just entered KEV (AC-2)
+  -tenants string
+    	tenants file (JSON array)
+  -workdir string
+    	workdir with candidates.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills fleet -h
+[stderr]
+Usage of fleet:
+  -k int
+    	k-anonymity: suppress buckets seen in fewer than k tenants (default 2)
+  -tenants string
+    	tenants file (JSON array)
+  -workdir string
+    	workdir with candidates.jsonl + enriched-observations.jsonl
+error: flag: help requested
+[exit 1]
+
+$ secskills graph -h
+[stderr]
+Usage of graph:
+  -output string
+    	directory for graph.json + graph.md (default ".")
+error: flag: help requested
+[exit 1]
+
+$ secskills test -h
+[stderr]
+Usage of test:
+  -auth-header string
+    	raw 'Name: value' header for authenticated testing (optional)
+  -auth-token string
+    	Bearer token for authenticated testing (optional)
+  -auth-token-b string
+    	second identity Bearer token for BOLA/authz differential (optional)
+  -confirm
+    	authorization confirmed
+  -cookie string
+    	Cookie header for authenticated testing (optional)
+  -cookie-b string
+    	second identity Cookie header for BOLA/authz differential (optional)
+  -deep
+    	deep phase: nuclei + sslscan + content-discovery + screenshots (slow)
+  -insecure-auth
+    	skip TLS verification for credentialed requests (self-signed targets only; exposes credentials to a MITM)
+  -intrusive
+    	enable write/credential tests
+  -intrusive-confirm
+    	second confirmation for intrusive tests
+  -profile string
+    	aggression profile: passive | safe-active | adversarial-readonly | authorized-exploit (default "safe-active")
+  -save
+    	persist a run file after testing (default true)
+error: flag: help requested
+[exit 1]
+
+$ secskills sandbox -h
+[stderr]
+Usage of sandbox:
+  -confirm
+    	authorization confirmed
+  -port int
+    	port the containerized app listens on (default 8080)
+error: flag: help requested
+[exit 1]
+
+$ secskills report -h
+[stderr]
+Usage of report:
+  -audit string
+    	target: render a concise auditor evidence report (control objectives + ledger + attestation)
+  -html string
+    	target: render a professional HTML report
+  -lint string
+    	target: run the report-generation linter (invariants) and report violations
+  -output string
+    	write rendered report to this path (default stdout/auto)
+  -pdf string
+    	target: render a professional PDF report (needs headless Chrome)
+  -render string
+    	target: render a markdown report from its findings
+  -retest string
+    	target to re-probe against its latest run
+error: flag: help requested
+[exit 1]
+
+$ secskills tickets -h
+[stderr]
+Usage of tickets:
+  -format string
+    	csv | json (default "csv")
+  -output string
+    	write to path (default stdout)
+error: flag: help requested
+[exit 1]
+
+$ secskills findings -h
+[stderr]
+error: unknown findings subcommand "-h"
+[exit 1]
+
+$ secskills shodan -h
+[stderr]
+Usage of shodan:
+error: flag: help requested
+[exit 1]
+
+$ secskills profile -h
+[stderr]
+Usage of profile:
+  -output string
+    	write the brief to this path (default stdout)
+error: flag: help requested
+[exit 1]
+
+$ secskills scope -h
+[stderr]
+Usage of scope:
+  -init
+    	write a template .secskills-scope.yml
+  -validate
+    	validate the scope file and show what it authorizes
+error: flag: help requested
+[exit 1]
+
+$ secskills override -h
+[stderr]
+Usage of override:
+  -evidence string
+    	evidence ref supporting the change (optional)
+  -key string
+    	stable finding_key to adjudicate
+  -reason string
+    	justification for the adjudication
+  -reviewer string
+    	reviewer identity (default "tester")
+  -severity string
+    	reviewed severity (CRITICAL|HIGH|MEDIUM|LOW|INFORMATIONAL)
+  -target string
+    	assessment target
+error: flag: help requested
+[exit 1]
+
+$ secskills attest -h
+[stderr]
+Usage of attest:
+  -sign string
+    	target: sign its latest run attestation
+  -verify string
+    	target: verify its run attestation signature
+error: flag: help requested
+[exit 1]
+
+$ secskills conformance -h
+[stderr]
+Usage of conformance:
+  -json
+    	emit machine-readable scorecard
+error: flag: help requested
+[exit 1]
+
+$ secskills fp -h
+[stderr]
+error: unknown fp subcommand "-h"
+[exit 1]
+
+$ secskills integrity -h
+[stderr]
+Usage of integrity:
+  -confirm
+    	authorization confirmed
+  -store string
+    	append-only baseline ledger (default "./integrity-baselines.jsonl")
+error: flag: help requested
+[exit 1]
+
+$ secskills export -h
+[stderr]
+Usage of export:
+  -format string
+    	sarif | cyclonedx (default "sarif")
+  -output string
+    	write to path (default stdout)
+error: flag: help requested
+[exit 1]
+
+$ secskills watch -h
+[stderr]
+Usage of watch:
+  -confirm
+    	authorization confirmed
+  -deep
+    	deep phase each cycle
+  -interval duration
+    	re-assess every N (e.g. 6h); 0 = run once and exit
+  -profile string
+    	aggression profile (default "safe-active")
+error: flag: help requested
+[exit 1]
+

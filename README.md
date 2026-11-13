@@ -10,7 +10,7 @@ LLM/Agentic Top 10 2025, plus the Cheat Sheet Series). Portable across **Claude
 Code**, **opencode**, and any **MCP** client. Supersedes `redteam-pentest`.
 
 ```bash
-make install                          # build + install the `secskills` binary
+go install github.com/gleicon/secskills/cmd/secskills@latest
 secskills doctor                      # preflight: which of ~63 tools are present
 secskills profile example.com         # passive OSINT brief (no target traffic)
 secskills discover example.com --confirm
@@ -143,9 +143,13 @@ One binary, thin adapters (see `ADAPTERS.md`):
 ## Install
 
 ```bash
-make install    # go build → $GOPATH/bin/secskills
+go install github.com/gleicon/secskills/cmd/secskills@latest
 secskills doctor        # see what tools you have; --category report checks the PDF browser
 ```
+
+From a checkout: `make install` (same as `go install ./cmd/secskills`), or
+`make build` for a local `./secskills`. `make dist` cross-compiles static
+binaries (no CGO) into `dist/`.
 
 Requires Go 1.26+. Runtime tools are optional (graceful degradation) — see
 [`INSTALL.md`](INSTALL.md). Headless Chrome/Chromium is needed only for PDF and
@@ -171,7 +175,7 @@ screenshots.
 
 ## License
 
-- Code (`skills/`, `lib/`, `tools/`, `*.go`, `rules/`): **MIT** — see [`LICENSE`](LICENSE).
+- Code (`cmd/`, `internal/`, `skills/`, `lib/`, `tools/`, `*.go`, `rules/`): **MIT** — see [`LICENSE`](LICENSE).
 - Knowledge base (`kb/`): OWASP Cheat Sheet Series / Top 10, **CC BY-SA 4.0** —
   see [`LICENSE-OWASP.md`](LICENSE-OWASP.md).
 

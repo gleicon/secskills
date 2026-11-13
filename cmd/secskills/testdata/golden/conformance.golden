@@ -1,0 +1,99 @@
+$ secskills conformance
+Detector quality scorecard (offline regression corpus)
+| Detector family | TP | FP | FN | Precision | Recall |
+|-----------------|---:|---:|---:|----------:|-------:|
+| component.banner-osv-correlation@1 | 1 | 0 | 0 | 100% | 100% |
+| http.cors@1 | 2 | 0 | 0 | 100% | 100% |
+| http.exposure-path@1 | 1 | 0 | 0 | 100% | 100% |
+| http.header.csp-missing@1 | 1 | 0 | 0 | 100% | 100% |
+| http.header.hsts-missing@1 | 1 | 0 | 0 | 100% | 100% |
+| http.header.nosniff-missing@1 | 1 | 0 | 0 | 100% | 100% |
+| http.prometheus.public-metrics@1 | 4 | 0 | 0 | 100% | 100% |
+| llm.canary-reflection@1 | 1 | 0 | 0 | 100% | 100% |
+| llm.response-drift@1 | 1 | 0 | 0 | 100% | 100% |
+| llm.system-prompt-leak@1 | 1 | 0 | 0 | 100% | 100% |
+| tls.deprecated-protocol@1 | 2 | 0 | 0 | 100% | 100% |
+[exit 0]
+
+$ secskills conformance --json
+{
+  "component.banner-osv-correlation@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "http.cors@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 2
+  },
+  "http.exposure-path@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "http.header.csp-missing@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "http.header.hsts-missing@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "http.header.nosniff-missing@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "http.prometheus.public-metrics@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 4
+  },
+  "llm.canary-reflection@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "llm.response-drift@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "llm.system-prompt-leak@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 1
+  },
+  "tls.deprecated-protocol@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tp": 2
+  }
+}
+[exit 0]
+

@@ -1,0 +1,79 @@
+$ secskills measure
+Engine self-measurement (local corpus of vulnerable + safe servers)
+| Detector | TP | FP | FN | TN | Precision | Recall |
+|----------|---:|---:|---:|---:|----------:|-------:|
+| api.schema-exposure@1 | 1 | 0 | 0 | 0 | 100% | 100% |
+| http.exposure-path@1 | 1 | 0 | 0 | 1 | 100% | 100% |
+| http.open-redirect@1 | 1 | 0 | 0 | 1 | 100% | 100% |
+| http.prometheus.public-metrics@1 | 1 | 0 | 0 | 1 | 100% | 100% |
+| identity.oidc-surface@1 | 1 | 0 | 0 | 0 | 100% | 100% |
+| ssti.arithmetic@1 | 1 | 0 | 0 | 1 | 100% | 100% |
+| storage.public-bucket@1 | 1 | 0 | 0 | 2 | 100% | 100% |
+
+Aggregate: precision 100% recall 100% across 7 detector families; 13 corpus checks (TP=7 FP=0 FN=0 TN=6).
+Negative-control cases (deceptive 200, WAF challenge, private 403, decoy secret) enforced.
+
+Scorecard -> measure-report.json. Result: PASS (no false positives or missed detections on the corpus)
+[exit 0]
+
+# file <SANDBOX>/cwd/measure-report.json
+{
+  "api.schema-exposure@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 0,
+    "tp": 1
+  },
+  "http.exposure-path@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 1,
+    "tp": 1
+  },
+  "http.open-redirect@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 1,
+    "tp": 1
+  },
+  "http.prometheus.public-metrics@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 1,
+    "tp": 1
+  },
+  "identity.oidc-surface@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 0,
+    "tp": 1
+  },
+  "ssti.arithmetic@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 1,
+    "tp": 1
+  },
+  "storage.public-bucket@1": {
+    "fn": 0,
+    "fp": 0,
+    "precision": 1,
+    "recall": 1,
+    "tn": 2,
+    "tp": 1
+  }
+}
+# end
+

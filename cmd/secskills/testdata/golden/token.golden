@@ -1,0 +1,74 @@
+$ secskills token sign --file <REPO>/testdata/exposure/token.json
+{
+  "tenant": "acme",
+  "asn": 64500,
+  "prefixes": [
+    "203.0.113.0/24"
+  ],
+  "not_before": "<TIME>",
+  "not_after": "<TIME>",
+  "max_pps": 40,
+  "allowed_classes": [
+    "cve",
+    "tls"
+  ],
+  "intrusive": false,
+  "issued_by": "test",
+  "sig": "hmac-sha256:<SHA256>"
+}
+[exit 0]
+
+$ secskills token sign --file <REPO>/testdata/exposure/token.json
+{
+  "tenant": "acme",
+  "asn": 64500,
+  "prefixes": [
+    "203.0.113.0/24"
+  ],
+  "not_before": "<TIME>",
+  "not_after": "<TIME>",
+  "max_pps": 40,
+  "allowed_classes": [
+    "cve",
+    "tls"
+  ],
+  "intrusive": false,
+  "issued_by": "test",
+  "sig": "hmac-sha256:<SHA256>"
+}
+[exit 0]
+
+$ secskills token verify --file <SANDBOX>/signed.json
+signature OK — tenant acme, AS64500, 1 prefixes, window <TIME>..<TIME>, classes [cve tls], intrusive=false
+[exit 0]
+
+$ secskills token verify --file <SANDBOX>/signed.json --ip 203.0.113.17 --class cve
+signature OK — tenant acme, AS64500, 1 prefixes, window <TIME>..<TIME>, classes [cve tls], intrusive=false
+authorizes 203.0.113.17 (cve): true — authorized by token for acme
+[exit 0]
+
+$ secskills token verify --file <SANDBOX>/signed.json --ip 198.51.100.1 --class cve
+signature OK — tenant acme, AS64500, 1 prefixes, window <TIME>..<TIME>, classes [cve tls], intrusive=false
+authorizes 198.51.100.1 (cve): false — target outside the token's prefixes
+[exit 0]
+
+$ secskills token verify --file <SANDBOX>/signed.json --ip 203.0.113.17 --class exploit
+signature OK — tenant acme, AS64500, 1 prefixes, window <TIME>..<TIME>, classes [cve tls], intrusive=false
+authorizes 203.0.113.17 (exploit): false — check class exploit not in allowed_classes
+[exit 0]
+
+$ secskills token verify --file <SANDBOX>/signed.json
+[stderr]
+error: REJECT: signature invalid
+[exit 1]
+
+$ secskills token verify --file <REPO>/testdata/exposure/token.json
+[stderr]
+error: REJECT: signature invalid
+[exit 1]
+
+$ secskills token sign --file <REPO>/testdata/exposure/token.json
+[stderr]
+error: set SECSKILLS_TOKEN_KEY to the shared HMAC key
+[exit 1]
+

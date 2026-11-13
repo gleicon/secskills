@@ -38,7 +38,7 @@ elif command -v secskills >/dev/null 2>&1; then
   cp "$(command -v secskills)" "$BIN"
 elif command -v go >/dev/null 2>&1 && [ -f go.mod ]; then
   echo "building from source (CGO off, static)…"
-  CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "$BIN" .
+  CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "$BIN" ./cmd/secskills
 else
   echo "error: no binary found and no go toolchain to build one." >&2
   echo "       provide BIN_SRC=/path/to/secskills, or run from a checkout with 'go'." >&2
