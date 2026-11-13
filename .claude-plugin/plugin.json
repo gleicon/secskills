@@ -1,8 +1,8 @@
 {
   "name": "secskills",
-  "version": "0.3.0",
+  "version": "0.31.2",
   "description": "Security devskill package: discover a target's attack surface and conduct authorized OWASP-grounded testing across three modes — source code, sandboxed artifact, and live app/domain. Grounded in an on-disk OWASP knowledge base. Supersedes redteam-pentest.",
-  "author": "gleicon",
+  "author": { "name": "gleicon" },
   "license": "MIT (skills) + CC BY-SA 4.0 (bundled OWASP knowledge base, see LICENSE-OWASP)",
   "keywords": ["security", "pentest", "red-team", "owasp", "appsec", "sast", "vulnerability"]
 }

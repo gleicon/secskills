@@ -1,0 +1,14 @@
+{
+  "name": "secskills",
+  "owner": {
+    "name": "gleicon"
+  },
+  "description": "secskills: authorized security assessment skills for Claude Code, backed by one binary.",
+  "plugins": [
+    {
+      "name": "secskills",
+      "source": "./",
+      "description": "Authorized security assessment: attack-surface discovery and OWASP-grounded testing of source, sandboxed artifacts, and live targets. Needs the secskills binary on PATH."
+    }
+  ]
+}

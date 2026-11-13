@@ -1,5 +1,10 @@
 # secskills
 
+[![ci](https://github.com/gleicon/secskills/actions/workflows/ci.yml/badge.svg)](https://github.com/gleicon/secskills/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/gleicon/secskills)](https://github.com/gleicon/secskills/releases/latest)
+
+**Website: <https://gleicon.github.io/secskills/>** (install, usage, common cases, safety model)
+
 **Your security team, as a single binary.** secskills scopes an engagement,
 discovers a target's attack surface, runs authorized OWASP-mapped testing, and
 produces a professional pentest report — from a source repo, a sandboxed
@@ -178,6 +183,9 @@ screenshots.
 - Code (`cmd/`, `internal/`, `skills/`, `lib/`, `tools/`, `*.go`, `rules/`): **MIT** — see [`LICENSE`](LICENSE).
 - Knowledge base (`kb/`): OWASP Cheat Sheet Series / Top 10, **CC BY-SA 4.0** —
   see [`LICENSE-OWASP.md`](LICENSE-OWASP.md).
+
+The repository is dual-licensed by path, which is why GitHub shows the license
+as "other".
 
 ## Legal
 

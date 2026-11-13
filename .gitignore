@@ -23,3 +23,6 @@ GRILL.md
 
 # measure scorecard output
 measure-report.json
+
+# website build output
+/site/_out/

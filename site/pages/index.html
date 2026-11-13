@@ -1,0 +1,72 @@
+<h1>Security testing that waits for your authorization.</h1>
+<p class="lede">secskills is one binary that maps a target's attack surface, runs OWASP-mapped
+tests, and writes the report, for a source repository, a sandboxed build, or a live domain.
+It will not send a packet to a target until you confirm you are allowed to test it.</p>
+
+<div class="install">
+<pre><code>go install github.com/gleicon/secskills/cmd/secskills@latest</code></pre>
+<p class="muted">Or <a href="https://github.com/gleicon/secskills/releases/latest">download a static binary</a> for Linux, macOS, or Windows. <a href="install.html">Install options</a></p>
+</div>
+
+<figure class="permit">
+<pre><code><span class="cmd">$ secskills discover example.com</span>
+<span class="head">AUTHORIZATION REQUIRED — discover mode, target: example.com</span>
+
+This sends traffic to / executes against the target. You must have written
+authorization from the target owner. Re-run once authorized:
+
+  secskills discover example.com <mark>--confirm</mark>
+
+Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
+error: authorization not confirmed</code></pre>
+<figcaption>This is the actual output. Commands that touch a target stop like this until
+you pass <code>--confirm</code> or keep an authorized, unexpired scope file. Destructive or
+credential tests need a second, separate confirmation.</figcaption>
+</figure>
+
+<h2 id="modes">Three ways in</h2>
+<div class="scroll">
+<table>
+<thead><tr><th>You have</th><th>Command</th><th>Touches a target?</th></tr></thead>
+<tbody>
+<tr><td>A source repository</td><td><code>secskills source ./repo</code></td><td>No. Static review with embedded ast-grep rules.</td></tr>
+<tr><td>A buildable artifact</td><td><code>secskills sandbox ./ctx --confirm</code></td><td>Only its own Docker container.</td></tr>
+<tr><td>A live app or domain</td><td><code>secskills discover</code> then <code>test</code></td><td>Yes, behind the authorization gate.</td></tr>
+<tr><td>A network block you own</td><td><code>secskills discover --cidr …</code></td><td>Yes, per IP, gated and rate-limited.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="engagement">An engagement, start to finish</h2>
+<ol class="steps">
+<li><h3>Research without touching the target</h3>
+<pre><code>secskills profile example.com --output ENGAGEMENT-profile.md</code></pre>
+<p>Passive OSINT: subdomains, edge and CDN, ASN. No traffic to the target.</p></li>
+<li><h3>Write down what you are allowed to test</h3>
+<pre><code>secskills scope --init        <span class="c"># then edit .secskills-scope.yml</span>
+secskills scope --validate</code></pre>
+<p>Targets, exclusions, expiry, and who confirmed it. The gate honors this file.</p></li>
+<li><h3>Map the attack surface</h3>
+<pre><code>secskills discover example.com</code></pre></li>
+<li><h3>Test it</h3>
+<pre><code>secskills test example.com --deep</code></pre>
+<p>Headers, TLS, exposures, component CVEs, and technology-specific checks. Non-destructive by default.</p></li>
+<li><h3>Report</h3>
+<pre><code>secskills report --pdf example.com --output example.pdf</code></pre>
+<p>Markdown, HTML, or PDF, mapped to OWASP, CWE, SOC 2, ISO 27001, and PCI-DSS.</p></li>
+</ol>
+
+<h2 id="what-you-get">What you get</h2>
+<ul>
+<li><strong>Findings you can defend.</strong> Each one carries its evidence, a reproduction command, a validation state, and an OWASP/CWE mapping. Severity follows a written rubric, not just CVSS.</li>
+<li><strong>Retests that answer “is it fixed?”</strong> <code>report --retest</code> re-probes every finding and marks it fixed, still present, or regressed.</li>
+<li><strong>Output your tools already read.</strong> SARIF 2.1.0, CycloneDX 1.5 with VEX, and CSV/JSON ticket rows.</li>
+<li><strong>Signed runs.</strong> Run metadata and the evidence chain are signed with ed25519 and verifiable later.</li>
+<li><strong>Offline knowledge.</strong> The OWASP cheat sheets and per-stack fix recipes ship inside the binary.</li>
+<li><strong>Graceful degradation.</strong> Around 60 external tools widen coverage when present. <code>secskills doctor</code> tells you what is missing and how to install it; nothing is required.</li>
+</ul>
+
+<h2 id="agents">Works with your agent</h2>
+<p>The same binary backs a Claude Code plugin, an opencode command, and a read-only MCP
+server. Agents can read the knowledge base and run static scans; live testing stays behind
+the CLI's authorization gate. <a href="install.html#agents">Connect an agent</a></p>

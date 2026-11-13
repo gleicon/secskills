@@ -24,6 +24,8 @@ jobs:
         run: test -z "$(gofmt -l $(git ls-files '*.go'))" || { gofmt -l $(git ls-files '*.go'); exit 1; }
       - name: vet
         run: go vet ./...
+      - name: website builds
+        run: python3 site/build.py
       - name: test (unit + golden CLI suite, race)
         run: go test -race -count=1 ./...
       - name: staticcheck

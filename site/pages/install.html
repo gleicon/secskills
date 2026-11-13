@@ -1,0 +1,99 @@
+<h1>Install</h1>
+<p class="lede">secskills is a single static binary with its knowledge base and rules built in.
+Pick one way to get it, then let <code>secskills doctor</code> tell you which optional tools
+would widen coverage.</p>
+
+<h2 id="go">With Go</h2>
+<p>Needs Go 1.26 or newer.</p>
+<pre><code>go install github.com/gleicon/secskills/cmd/secskills@latest
+secskills version</code></pre>
+<p class="muted">The binary lands in <code>$(go env GOBIN)</code>, or <code>$(go env GOPATH)/bin</code> when GOBIN is unset. Make sure that directory is on your PATH. Pin a release with <code>@v{{VERSION}}</code>.</p>
+
+<h2 id="binary">From a release binary</h2>
+<p>Each <a href="https://github.com/gleicon/secskills/releases/latest">release</a> has binaries
+for linux and darwin (amd64, arm64) and windows (amd64), built without CGO, plus a
+<code>SHA256SUMS</code> file. Check the download against it before running it.</p>
+
+<h3>Linux</h3>
+<pre><code>base=https://github.com/gleicon/secskills/releases/latest/download
+curl -fLO $base/secskills-linux-amd64
+curl -fLO $base/SHA256SUMS
+grep ' secskills-linux-amd64$' SHA256SUMS | sha256sum -c -
+install -m 0755 secskills-linux-amd64 ~/.local/bin/secskills</code></pre>
+
+<h3>macOS</h3>
+<pre><code>base=https://github.com/gleicon/secskills/releases/latest/download
+curl -fLO $base/secskills-darwin-arm64        <span class="c"># Intel: secskills-darwin-amd64</span>
+curl -fLO $base/SHA256SUMS
+grep ' secskills-darwin-arm64$' SHA256SUMS | shasum -a 256 -c -
+install -m 0755 secskills-darwin-arm64 /usr/local/bin/secskills</code></pre>
+
+<h3>Windows (PowerShell)</h3>
+<pre><code>$base = "https://github.com/gleicon/secskills/releases/latest/download"
+Invoke-WebRequest "$base/secskills-windows-amd64.exe" -OutFile secskills.exe
+Invoke-WebRequest "$base/SHA256SUMS" -OutFile SHA256SUMS
+(Get-FileHash secskills.exe -Algorithm SHA256).Hash.ToLower()
+Select-String "secskills-windows-amd64.exe" SHA256SUMS   <span class="c"># the two hashes must match</span></code></pre>
+<p class="note">The kernel reachability probe (<code>kprobe</code>) is Linux-only, and the
+headless capture kit scripts need a POSIX shell.</p>
+
+<h2 id="source">From source</h2>
+<pre><code>git clone https://github.com/gleicon/secskills
+cd secskills
+make install        <span class="c"># go install ./cmd/secskills</span>
+make test           <span class="c"># unit tests plus the golden CLI suite</span></code></pre>
+<p><code>make dist</code> cross-compiles every release target into <code>dist/</code> with checksums.</p>
+
+<h2 id="tools">Optional tools</h2>
+<p>secskills drives external tools when they are present and skips them when they are not.
+Nothing below is required to start.</p>
+<pre><code>secskills doctor                    <span class="c"># what is present or missing, with install commands</span>
+secskills doctor --mode discover    <span class="c"># only what one mode uses</span>
+secskills doctor --category report  <span class="c"># is a headless browser available for PDF?</span></code></pre>
+<div class="scroll">
+<table>
+<thead><tr><th>For</th><th>Tools</th></tr></thead>
+<tbody>
+<tr><td>Source review</td><td><code>ast-grep</code> (the engine for <code>source</code>), <code>osv-scanner</code></td></tr>
+<tr><td>Discovery</td><td><code>subfinder</code>, <code>dnsx</code>, <code>httpx</code> (projectdiscovery), <code>dig</code></td></tr>
+<tr><td>Deeper tests</td><td><code>nuclei</code>, <code>sslscan</code>, <code>katana</code>, <code>dalfox</code></td></tr>
+<tr><td>Sandbox mode</td><td>Docker</td></tr>
+<tr><td>PDF reports</td><td>Chrome or Chromium</td></tr>
+<tr><td>Token hygiene</td><td><code>tldt</code></td></tr>
+<tr><td>OSINT enrichment</td><td>a Shodan key (<code>SHODAN_API_KEY</code>), Censys (<code>CENSYS_API_ID</code>, <code>CENSYS_API_SECRET</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<p class="muted">The doctor warns when a different program with the same name shadows a tool,
+for example Python's <code>httpx</code> in place of projectdiscovery's.</p>
+
+<h2 id="agents">Connect an agent</h2>
+<p>Install the binary first. The adapters below call it; they hold no logic of their own.</p>
+
+<h3>Claude Code plugin</h3>
+<pre><code>claude plugin marketplace add gleicon/secskills
+claude plugin install secskills@secskills</code></pre>
+<p>Adds the skills, including <code>/secskills-intake</code>, a guided interview that settles
+authorization, scope, and rules of engagement and writes the scope file for you.</p>
+
+<h3>MCP, in Claude Code or any client</h3>
+<pre><code>claude mcp add secskills -- secskills mcp</code></pre>
+<p>Or in a client's JSON config:</p>
+<pre><code>{ "mcpServers": { "secskills": { "command": "secskills", "args": ["mcp"] } } }</code></pre>
+<p>The MCP server exposes read-only tools: <code>doctor</code>, <code>kb_list</code>,
+<code>kb_get</code>, <code>recipes_get</code>, <code>source_scan</code>, and a throttled,
+SSRF-guarded <code>fetch</code>. None of them can start a scan of a live target.</p>
+
+<h3>opencode</h3>
+<p>opencode reads <code>AGENTS.md</code> and the <code>/secskills</code> command from the repository. For MCP, add to <code>opencode.json</code>:</p>
+<pre><code>{
+  "mcp": {
+    "secskills": { "type": "local", "command": ["secskills", "mcp"], "enabled": true }
+  }
+}</code></pre>
+
+<h2 id="update">Update or remove</h2>
+<pre><code>go install github.com/gleicon/secskills/cmd/secskills@latest   <span class="c"># update</span>
+rm "$(command -v secskills)"                                    <span class="c"># remove the binary</span></code></pre>
+<p>Engagement data lives in <code>~/.secskills-findings/</code> and per-target workdirs. Removing
+the binary leaves it in place; delete it deliberately, it may hold sensitive evidence.</p>

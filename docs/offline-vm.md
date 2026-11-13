@@ -55,7 +55,7 @@ restarted on a flaky VM without losing or corrupting data.
 ## Build and package
 
 ```sh
-make dist      # dist/secskills-{linux-amd64,linux-arm64,darwin-arm64}
+make dist      # dist/secskills-{linux,darwin}-{amd64,arm64}, windows-amd64.exe, SHA256SUMS
 make bundle    # dist/secskills-kit.tar.gz = binary + scripts + feed cache
 ```
 

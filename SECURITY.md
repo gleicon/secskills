@@ -54,4 +54,10 @@ model. Defense in depth:
 
 ## Reporting an issue
 
-Open a private report to the maintainer. Do not file target findings publicly.
+Keep it private. Do not describe a vulnerability, or include any target data,
+in a public issue, discussion, pull request, or commit. Contact the maintainer
+directly via the GitHub profile of the repository owner; a person reads and
+triages every report by hand. There is no automated intake.
+
+Never include engagement data (findings, evidence, workdirs, scope files,
+credentials) in a report about secskills itself.

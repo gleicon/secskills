@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.31.2] - 2026-11-13
+
+### Added
+
+- Website at <https://gleicon.github.io/secskills/> covering install (go install, checksummed
+  binaries, agents), usage, common cases, and the safety model. Built from `site/` with
+  `python3 site/build.py`, no dependencies, and deployed by the pages workflow.
+- Claude Code marketplace manifest. Install with
+  `claude plugin marketplace add gleicon/secskills` and then
+  `claude plugin install secskills@secskills`.
+- `secskills help` now lists the 15 exposure-mode commands. They worked before but were not
+  listed.
+
+### Fixed
+
+- `.claude-plugin/plugin.json` failed plugin validation because `author` must be an object.
+- Plugin manifest versions were stuck at 0.3.0. The release workflow now fails if they don't
+  match the tag.
+
+### Security
+
+- Per-target workdirs are now created `0700`. They were `0755` under `$TMPDIR`, so other
+  local users could read evidence.
+- `SECURITY.md`: reports stay private and a person handles each one. There is no automated
+  intake.
+
+### Maintenance
+
+- Dependabot for Go modules and GitHub Actions.
+- CI checks that the website builds.
+
 ## [0.31.1] - 2026-11-13
 
 ### Fixed

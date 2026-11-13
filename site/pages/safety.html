@@ -1,0 +1,94 @@
+<h1>Safety model</h1>
+<p class="lede">secskills tests systems, so its controls live in the binary rather than in
+convention. This page says what each control does and where it stops. None of it replaces
+written permission from the system's owner.</p>
+
+<h2 id="gate">The authorization gate</h2>
+<p>Commands that send traffic to a target (<code>discover</code>, <code>test</code>,
+<code>sandbox</code>, <code>watch</code>, <code>integrity</code>, <code>enrich</code>,
+<code>leakcheck</code>, <code>dbcheck</code>, <code>kprobe</code>) refuse to run until one of
+these holds:</p>
+<ul>
+<li>you pass <code>--confirm</code>, stating you hold written authorization, or</li>
+<li>a scope file authorizes the target.</li>
+</ul>
+<p>A scope file counts only when all of the following are true. Otherwise it is ignored and
+the gate asks again.</p>
+<ul>
+<li><code>authorized: true</code> is set.</li>
+<li>The <code>expires</code> date has not passed.</li>
+<li>The target is listed under <code>targets</code> and not under <code>out_of_scope</code>. A listed domain covers its subdomains; a listed CIDR covers its addresses.</li>
+<li>The file is owned by you and not writable by group or others.</li>
+</ul>
+<pre><code><span class="c"># .secskills-scope.yml</span>
+engagement: acme-q4
+authorized: true           <span class="c"># only with written authorization</span>
+engagement_type: black-box
+confirmed_by: you@example.org
+expires: 2026-12-31
+intrusive: false
+targets:
+  - app.example.com
+out_of_scope:
+  - payments.example.com</code></pre>
+<p>For network blocks, authorization is checked for every IP, and <code>out_of_scope</code>
+entries are skipped even under <code>--confirm</code>. A block wider than /20 needs
+<code>--allow-large</code> in addition.</p>
+
+<h2 id="non-destructive">Non-destructive by default</h2>
+<ul>
+<li>Default tests only read. They do not create accounts, upload files, or write to the target.</li>
+<li>Write and credential tests need <code>--intrusive</code> and a second, separate
+<code>--intrusive-confirm</code>. <code>dbcheck</code> always needs both, and it tries only a
+short fixed list of vendor default credentials, never a wordlist.</li>
+<li>No denial-of-service, no race triggers, no fault injection, at any profile. Kernel
+probes send one packet and report reachability, never patch state.</li>
+<li>Requests are rate-limited in the engine (<code>SECSKILLS_RATE</code>, default 5 per second),
+and free data sources are throttled with backoff.</li>
+</ul>
+
+<h2 id="network">Network guards</h2>
+<ul>
+<li>Outbound fetches refuse non-HTTP schemes and any host that resolves to a private,
+loopback, link-local, metadata, or reserved address. The sweep's probe client checks again at
+connect time, so DNS rebinding cannot slip past it.</li>
+<li>Redirects are not followed, so a target cannot bounce a probe somewhere unauthorized.</li>
+<li>Requests that carry your credentials verify TLS. <code>--insecure-auth</code> turns that
+off for self-signed targets, at your explicit request.</li>
+<li>Webhook delivery requires HTTPS, verifies the certificate, and logs only the scheme and host.</li>
+</ul>
+
+<h2 id="untrusted">Target output is untrusted</h2>
+<p>Banners, titles, and page content come from the target and may be written to manipulate
+whoever reads them, including an AI agent. Before any of it reaches a finding, report, or
+your terminal:</p>
+<ul>
+<li>control characters and invisible or direction-changing Unicode are stripped;</li>
+<li>known prompt-injection phrases are replaced with a visible marker;</li>
+<li>newlines are collapsed so a value cannot fake a new conversation turn;</li>
+<li>credential-like values in evidence samples are masked.</li>
+</ul>
+<p>Shell commands stored for reproduction quote every target-derived value. Over MCP, an agent
+gets read-only tools; it cannot start a live scan.</p>
+
+<h2 id="data">Engagement data stays with you</h2>
+<p>Findings, evidence, workdirs, and scope files describe someone else's systems. secskills
+keeps them local and never sends them anywhere you did not ask for.</p>
+<ul>
+<li>The findings store (<code>~/.secskills-findings/</code>) and workdirs are created readable
+by you only. Treat them like a credentials store, and do not commit them; the repository's
+<code>.gitignore</code> already excludes scope files and generated reports.</li>
+<li>Reports include the fact of an exposure and the names of exposed keys, never credential values.</li>
+<li>API keys for Shodan and Censys are read from the environment or tool config and never
+written into reports.</li>
+<li>Runs can be signed (<code>secskills attest --sign</code>) so a recipient can verify a
+report was not changed after the fact.</li>
+</ul>
+
+<h2 id="report">Reporting a problem in secskills</h2>
+<p>Keep it private. Do not describe a vulnerability, or include any target data, in a public
+issue, discussion, pull request, or commit. Contact the maintainer directly through the
+<a href="https://github.com/gleicon">repository owner's GitHub profile</a>. A person reads
+and handles every report; there is no automated intake.</p>
+<p>Never include engagement data (findings, evidence, workdirs, scope files, credentials) in a
+report about secskills itself.</p>
