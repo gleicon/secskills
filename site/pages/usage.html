@@ -47,7 +47,7 @@ tickets, exports, and retests read from it. Treat it like a credentials store.</
 <tr><td><code>scope --init</code> / <code>--validate</code></td><td>Write the scope template, or show what the current file authorizes.</td></tr>
 <tr><td><code>discover &lt;domain&gt;</code></td><td>Subdomains, resolution, live hosts. Writes <code>live_hosts.json</code> to the workdir.</td></tr>
 <tr><td><code>test &lt;target&gt;</code></td><td>OWASP Top 10 checks against the surface. <code>--deep</code> adds nuclei, sslscan, content discovery, and screenshots.</td></tr>
-<tr><td><code>source &lt;path&gt;</code></td><td>Static review with the embedded ast-grep rules. No network, no gate.</td></tr>
+<tr><td><code>source [--json] &lt;path&gt;</code></td><td>Static review with the embedded ast-grep rules. No network, no gate.</td></tr>
 <tr><td><code>sandbox &lt;ctx&gt;</code></td><td>Build and run an artifact in Docker, then test only that container.</td></tr>
 <tr><td><code>graph &lt;seed…&gt;</code></td><td>Related domains from certificates, CNAMEs, and shared infrastructure. They are listed with their authorization status and never tested.</td></tr>
 <tr><td><code>watch &lt;target&gt; --interval 6h</code></td><td>Re-assess on a schedule and report new, fixed, and regressed findings.</td></tr>
@@ -69,6 +69,10 @@ tickets, exports, and retests read from it. Treat it like a credentials store.</
 </tbody>
 </table>
 </div>
+<p class="muted">Flags may come before or after the target for <code>discover</code>, <code>test</code>,
+<code>sandbox</code>, <code>profile</code>, <code>graph</code>, <code>watch</code>, <code>integrity</code>,
+<code>tickets</code>, and <code>export</code>. Other commands take flags first, for example
+<code>secskills source --json ./repo</code>.</p>
 
 <h2 id="findings">Findings and reports</h2>
 <div class="scroll">

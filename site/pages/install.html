@@ -46,7 +46,9 @@ make test           <span class="c"># unit tests plus the golden CLI suite</span
 
 <h2 id="tools">Optional tools</h2>
 <p>secskills drives external tools when they are present and skips them when they are not.
-Nothing below is required to start.</p>
+The binary needs none of them. The agent skills and <code>lib/</code> shell helpers use a small
+baseline (<code>curl</code>, <code>dig</code>, <code>jq</code>, <code>python3</code>, <code>git</code>);
+<code>doctor</code> exits non-zero until those are present.</p>
 <pre><code>secskills doctor                    <span class="c"># what is present or missing, with install commands</span>
 secskills doctor --mode discover    <span class="c"># only what one mode uses</span>
 secskills doctor --category report  <span class="c"># is a headless browser available for PDF?</span></code></pre>

@@ -7,9 +7,14 @@ secskills works on three agent surfaces off the **same binary**. Logic lives in
 
 Two ways, both included:
 
-- **Skills / plugin:** the `skills/*/SKILL.md` + `.claude-plugin/plugin.json` in
-  this repo. Skill bodies call the binary (`secskills <cmd>`) and read
-  `lib/*.md` for methodology. Install the binary first: `go install github.com/gleicon/secskills/cmd/secskills@latest`.
+- **Skills / plugin:** the `skills/*/SKILL.md` + `.claude-plugin/` in this repo,
+  published as a marketplace. Install the binary first
+  (`go install github.com/gleicon/secskills/cmd/secskills@latest`), then:
+  ```bash
+  claude plugin marketplace add gleicon/secskills
+  claude plugin install secskills@secskills
+  ```
+  Skill bodies call the binary (`secskills <cmd>`) and read `lib/*.md` for methodology.
 - **MCP server:** register the stdio server so tools appear natively:
   ```bash
   claude mcp add secskills -- secskills mcp

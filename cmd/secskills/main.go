@@ -52,7 +52,7 @@ COMMANDS:
   integrity   Snapshot/verify sha256 response baselines (AC-1 intermediary-rewrite detection)
   fp          Technology fingerprint registry (list | add | import) — grows like Wappalyzer/Shodan
   shodan      Shodan lookup for a domain/IP (software, ports, ASN) when key present
-  mcp         Run as an MCP stdio server (tools: doctor, kb, fetch, source)
+  mcp         Read-only MCP stdio server (doctor, kb_list, kb_get, recipes_get, source_scan, fetch)
   watch       Continuous mode: re-assess on an interval, report posture drift (NEW/FIXED/REGRESSED)
   selftest    End-to-end pipeline test against a local disposable server
   version     Print version
@@ -77,6 +77,9 @@ EXPOSURE (ASN/CIDR blocks — see docs/exposure.md):
 
 Run "secskills <command> -h" for command flags. Portable across Claude Code,
 opencode, and any MCP client.
+
+Docs: https://gleicon.github.io/secskills/
+Workdir: $SECSKILLS_WORKDIR, else <user cache dir>/secskills/<target> (owner-only).
 `)
 }
 

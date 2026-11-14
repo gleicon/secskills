@@ -11,11 +11,16 @@ git clone https://github.com/gleicon/secskills && cd secskills
 make install            # go install ./cmd/secskills
 ```
 
-Requires **Go 1.26+**. Runtime security tools are optional — secskills degrades
+Requires **Go 1.26+**. Without Go, download a static binary from the
+[latest release](https://github.com/gleicon/secskills/releases/latest) and check it
+against `SHA256SUMS` (commands per OS on the
+[install page](https://gleicon.github.io/secskills/install.html)).
+
+Runtime security tools are optional — secskills degrades
 gracefully and tells you what's missing:
 
 ```bash
-secskills doctor                 # ~63 tools, present/missing, per category
+secskills doctor                 # 64 tools, present/missing, per category
 secskills doctor --mode discover # only what discover uses
 secskills doctor --category report   # is a headless browser present (PDF)?
 ```
@@ -49,6 +54,10 @@ secskills report --pdf example.com --output example_report.pdf
 With an authorized `.secskills-scope.yml`, steps 3–4 need no `--confirm`. Without
 it, add `--confirm` (and confirm you hold written authorization).
 
+Discovery output and evidence go to a private per-target workdir,
+`<user cache dir>/secskills/<target>` (override with `SECSKILLS_WORKDIR`; keep it
+off shared paths like `/tmp`). Saved runs go to `~/.secskills-findings/<target>/`.
+
 ## Guided intake (recommended)
 
 In Claude Code / opencode, run the intake skill instead of steps 1–2 — it
@@ -58,11 +67,14 @@ interviews you until nothing is loose and writes the scope file for you:
 /secskills-intake example.com
 ```
 
+Install the skills with `claude plugin marketplace add gleicon/secskills` and
+`claude plugin install secskills@secskills`.
+
 ## Source & sandbox modes
 
 ```bash
 secskills source ./my-repo          # static ast-grep review, no network, no gate
-secskills sandbox ./build-context   # build+run isolated in Docker, then test
+secskills sandbox ./build-context --confirm   # build+run isolated in Docker, then test
 ```
 
 ## Authenticated testing
@@ -73,4 +85,15 @@ Supply credentials to test the authenticated surface; omit them and it's marked
 ```bash
 secskills test example.com --auth-token "$TOKEN"
 secskills test example.com --cookie "session=..."
+secskills test example.com --auth-token "$A" --auth-token-b "$B"   # BOLA/IDOR differential
 ```
+
+Credentialed requests verify TLS. Against a self-signed target they fail unless you
+add `--insecure-auth`, which exposes those credentials to anyone on the network path.
+
+## Next
+
+- [Usage & commands](usage.md) — every command, profiles, files, environment.
+- [Exposure mode](exposure.md) — ASN/CIDR sweeps and offline CVE joins.
+- [Reporting & compliance](reporting.md).
+- Website: <https://gleicon.github.io/secskills/>

@@ -10,14 +10,14 @@ installs anything itself.
 ## Run it
 
 ```bash
-tools/doctor.sh                     # full report — ~60 tools, 17 categories
-tools/doctor.sh --mode source       # only tools that mode uses
-tools/doctor.sh --mode live         # discover + test tools
-tools/doctor.sh --category osint     # one category (osint/dns/http/port/vuln/cve/...)
-tools/doctor.sh --tools nuclei,httpx # only named tools
-tools/doctor.sh --quiet             # only what is missing
-tools/doctor.sh --json              # machine-readable
-tools/doctor.sh --list-categories
+secskills doctor                     # full report — 64 tools, 19 categories
+secskills doctor --mode source       # only tools that mode uses
+secskills doctor --mode live         # discover + test tools
+secskills doctor --category osint     # one category (osint/dns/http/port/vuln/cve/...)
+secskills doctor --tools nuclei,httpx # only named tools
+secskills doctor --quiet             # only what is missing
+secskills doctor --json              # machine-readable
+secskills doctor --list-categories
 ```
 
 Exit code `0` = all baseline tools present (secskills can run). Exit `1` = a
@@ -51,4 +51,4 @@ tools), see `INSTALL.md`. After installing Go/cargo tools on Linux, ensure
 
 - First install of secskills.
 - Before a live or sandbox engagement (confirm scanners present).
-- After a `command not found` mid-run — `tools/doctor.sh --quiet` names the gap.
+- After a `command not found` mid-run — `secskills doctor --quiet` names the gap.

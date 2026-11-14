@@ -1,13 +1,22 @@
 # Installing secskills tools
 
-secskills follows graceful degradation (D-1): **baseline** tools are required;
-**power** tools are optional and each widens coverage for one mode. Run the
-doctor first — it prints the exact command per missing tool for your platform:
+Install the binary first (`go install github.com/gleicon/secskills/cmd/secskills@latest`,
+or a release binary — see the [install page](https://gleicon.github.io/secskills/install.html)).
+This file covers the **external tools** it can drive.
+
+secskills follows graceful degradation (D-1): **power** tools are optional and
+each widens coverage for one mode. **Baseline** tools are used by the agent
+skills and the `lib/` shell helpers; the binary itself runs without them, but
+`secskills doctor` reports them and exits `1` while one is missing. Run the
+doctor first — it prints the exact install command per missing tool for your
+platform:
 
 ```bash
-tools/doctor.sh              # what is present/missing, per mode
-tools/doctor.sh --quiet      # only the gaps
+secskills doctor             # what is present/missing, per mode
+secskills doctor --quiet     # only the gaps
 ```
+
+`tools/doctor.sh` is the equivalent shell reference with the same flags.
 
 ## Baseline (required)
 
@@ -34,15 +43,16 @@ assessment — install it.
 
 ## Full arsenal
 
-The doctor is the source of truth for **all ~60 tools** across 17 categories
-(osint, dns, http, port, vuln, cve, secrets, content, params, tls, cloud,
-exploit, oob, source, optimizer). List and install-command per platform:
+The doctor is the source of truth for **all 64 tools** across 19 categories
+(core, osint, dns, http, port, vuln, cve, secrets, content, params, tls, cloud,
+exploit, oob, source, sandbox, report, mobile, optimizer). List and
+install-command per platform:
 
 ```bash
-tools/doctor.sh                       # everything, present/missing + install cmd
-tools/doctor.sh --category osint      # one category
-tools/doctor.sh --mode discover       # one mode's tools
-tools/doctor.sh --list-categories
+secskills doctor                      # everything, present/missing + install cmd
+secskills doctor --category osint     # one category
+secskills doctor --mode discover      # one mode's tools
+secskills doctor --list-categories
 ```
 
 The tables below are the common highlights; run the doctor for the rest.
@@ -128,7 +138,7 @@ httpx --version | grep -i projectdiscovery \
 
 ## After installing
 
-Re-run `tools/doctor.sh` to confirm. On Linux, if a freshly-installed Go/cargo
+Re-run `secskills doctor` to confirm. On Linux, if a freshly-installed Go/cargo
 tool is "missing", `$(go env GOPATH)/bin` or `~/.cargo/bin` is not on `PATH`.
 
 ## Report rendering (PDF)

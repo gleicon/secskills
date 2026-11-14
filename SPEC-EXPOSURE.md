@@ -452,7 +452,8 @@ not scale to an ASN, and the orchestrator needs `(target, class, budget) → obs
   library use in < 40 lines.
 
 **Files:** new `internal/probe/{probe.go,httpdo.go,severity.go,evidence.go,observe.go}`;
-`main` keeps thin wrappers; `aliases.go` at root.
+`main` keeps thin wrappers. (As built: the CLI lives in `cmd/secskills`, logic in
+`internal/*`, and the probe type aliases in `internal/exposure/aliases.go`.)
 
 ### N-3 · One-week spike (external-only, no control plane)
 

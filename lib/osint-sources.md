@@ -59,7 +59,7 @@ SHODAN_API_KEY=$KEY shodan host <ip>
 curl -s "https://api.shodan.io/shodan/host/$IP?key=$SHODAN_API_KEY" | jq .
 ```
 
-`tools/doctor.sh --tools shodan,fofax` reports whether the CLIs are installed;
+`secskills doctor --tools shodan,fofax` reports whether the CLIs are installed;
 key presence is checked at run time by the resolution order above.
 
 ## Throttling — do not get blocked (`lib/throttle.sh`)

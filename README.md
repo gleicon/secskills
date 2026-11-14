@@ -16,7 +16,7 @@ Code**, **opencode**, and any **MCP** client. Supersedes `redteam-pentest`.
 
 ```bash
 go install github.com/gleicon/secskills/cmd/secskills@latest
-secskills doctor                      # preflight: which of ~63 tools are present
+secskills doctor                      # which of the 60+ optional tools are present
 secskills profile example.com         # passive OSINT brief (no target traffic)
 secskills discover example.com --confirm
 secskills test example.com --confirm --deep
@@ -41,6 +41,7 @@ gate and rate limiting built into the core.
 | **source** | repo / path | `secskills source <path>` | none (no traffic) |
 | **sandbox** | buildable artifact | `secskills sandbox <ctx> --confirm` | authz + Docker isolation |
 | **live** | URL / domain | `secskills discover` → `secskills test` | authz gate |
+| **exposure** | ASN / CIDR you own | `secskills discover --cidr` → `enrich` → `cvematch` | authz gate, per IP |
 
 ## Workflow
 
@@ -61,7 +62,7 @@ gate and rate limiting built into the core.
 - **Authorization gate** in the core — live/sandbox refuse without `--confirm` or
   an authorized scope file. Non-destructive by default; intrusive needs a second
   confirmation. No DoS, no unauthorized targets.
-- **~63 tools, graceful degradation** — `secskills doctor` verifies each (per
+- **60+ tools, graceful degradation** — `secskills doctor` verifies each (per
   mode/category), prints the install command, and detects build collisions
   (e.g. Python `httpx` shadowing projectdiscovery). Absent tools are skipped,
   never fatal.
@@ -104,7 +105,7 @@ observation is the system of record; the report is a view over it.
 - **Three deliverables** — full technical report, concise `report --audit` for
   external auditors, and a machine-readable `attestation.json`.
 
-### Adversarial engine (v0.28)
+### Adversarial engine
 
 - **Runtime capability planner** — discoveries trigger follow-up probes at runtime
   (a disclosed internal hostname is resolved externally; a fingerprinted version
@@ -133,7 +134,26 @@ observation is the system of record; the report is a view over it.
 - **Credentialed depth** — JWT inspection, session-cookie flags, BOLA/IDOR
   differential (`--auth-token-b`).
 
-Build progress and roadmap: see [PROGRESS.md](PROGRESS.md).
+## Exposure mode (network blocks)
+
+For an ASN or CIDR you are authorized to assess: a cheap, rate-limited sweep
+stores service observations, then offline joins turn them into ranked findings.
+
+```bash
+secskills discover --cidr 203.0.113.0/24 --confirm     # per-IP gate; > /20 needs --allow-large
+secskills enrich    --workdir <wd> --confirm          # product / version / CPE
+secskills leakcheck --workdir <wd> --confirm          # exposed .git/.env, open datastores
+secskills feed kev && secskills feed epss && secskills feed nvd --product openssh
+secskills cvematch  --workdir <wd>                    # KEV first, then EPSS-ranked
+secskills lifecycle reconcile --workdir <wd>          # fixed / regressed / triaged
+secskills prefix-report --workdir <wd>                # Markdown report for the block owner
+```
+
+Capture on a VM and analyze offline with `make bundle` and `deploy/`
+([docs/offline-vm.md](docs/offline-vm.md)). Recipes: [docs/exposure.md](docs/exposure.md).
+Spec: [SPEC-EXPOSURE.md](SPEC-EXPOSURE.md).
+
+Release history: [CHANGELOG.md](CHANGELOG.md). Build log and roadmap: [PROGRESS.md](PROGRESS.md).
 
 Evidence handling, retention and governance: see [EVIDENCE-POLICY.md](EVIDENCE-POLICY.md).
 
@@ -141,32 +161,47 @@ Evidence handling, retention and governance: see [EVIDENCE-POLICY.md](EVIDENCE-P
 
 One binary, thin adapters (see `ADAPTERS.md`):
 
-- **Claude Code** — `skills/*/SKILL.md` + `.claude-plugin/`, or `claude mcp add secskills -- secskills mcp`.
+- **Claude Code plugin** — `claude plugin marketplace add gleicon/secskills`, then
+  `claude plugin install secskills@secskills` (skills incl. `/secskills-intake`).
+- **Claude Code MCP** — `claude mcp add secskills -- secskills mcp`.
 - **opencode** — `AGENTS.md` + `.opencode/command/secskills.md`, or `opencode.json` MCP.
-- **Any MCP client** — `secskills mcp` (JSON-RPC 2.0 stdio; tools: doctor, kb, recipes, source_scan, fetch).
+- **Any MCP client** — `secskills mcp` (JSON-RPC 2.0 stdio). Read-only tools:
+  `doctor`, `kb_list`, `kb_get`, `recipes_get`, `source_scan`, `fetch`. Live
+  `discover`/`test` are never exposed over MCP.
 
 ## Install
 
 ```bash
-go install github.com/gleicon/secskills/cmd/secskills@latest
-secskills doctor        # see what tools you have; --category report checks the PDF browser
+go install github.com/gleicon/secskills/cmd/secskills@latest   # Go 1.26+
+secskills doctor        # what optional tools you have; --category report checks the PDF browser
 ```
 
-From a checkout: `make install` (same as `go install ./cmd/secskills`), or
-`make build` for a local `./secskills`. `make dist` cross-compiles static
-binaries (no CGO) into `dist/`.
+Or download a static binary (linux/darwin amd64+arm64, windows amd64) from the
+[latest release](https://github.com/gleicon/secskills/releases/latest) and check
+it against `SHA256SUMS`:
 
-Requires Go 1.26+. Runtime tools are optional (graceful degradation) — see
-[`INSTALL.md`](INSTALL.md). Headless Chrome/Chromium is needed only for PDF and
-screenshots.
+```bash
+grep ' secskills-linux-amd64$' SHA256SUMS | sha256sum -c -
+```
+
+From a checkout: `make install` (same as `go install ./cmd/secskills`), `make build`
+for a local `./secskills`, `make test` for unit + golden CLI tests, `make dist`
+for every release binary plus checksums.
+
+Runtime tools are optional (graceful degradation) — see [`INSTALL.md`](INSTALL.md)
+or the [install page](https://gleicon.github.io/secskills/install.html).
+Headless Chrome/Chromium is needed only for PDF and screenshots.
 
 ## Documentation
 
+- Website: <https://gleicon.github.io/secskills/> — [install](https://gleicon.github.io/secskills/install.html), [usage](https://gleicon.github.io/secskills/usage.html), [common cases](https://gleicon.github.io/secskills/cases.html), [safety](https://gleicon.github.io/secskills/safety.html)
 - [Getting started](docs/getting-started.md)
 - [Usage & commands](docs/usage.md)
 - [Architecture](docs/architecture.md)
 - [Reporting & compliance](docs/reporting.md)
 - [Coverage matrix (skills × tools × OWASP × output)](docs/coverage-matrix.md)
+- [Exposure mode recipes](docs/exposure.md) · [Headless capture on a VM](docs/offline-vm.md)
+- [Changelog](CHANGELOG.md)
 - [Security model](SECURITY.md)
 - Full command list: `secskills help`
 
@@ -175,8 +210,12 @@ screenshots.
 - Authorization gate before any target-touching action.
 - Non-destructive, rate-limited, scope-confined by default.
 - Target output is untrusted data — scanned for prompt injection, never followed.
-- The findings store (`~/.secskills-findings/`) is sensitive — treat like a
-  credentials store; never commit engagement data.
+- Credentialed requests verify TLS; `--insecure-auth` is an explicit opt-out.
+- Engagement data stays local and private: the findings store
+  (`~/.secskills-findings/`) and per-target workdirs (`<user cache dir>/secskills/<target>`)
+  are owner-only; a symlinked or foreign-owned workdir is refused. Treat them like
+  a credentials store; never commit engagement data.
+- Report problems in secskills privately to the maintainer (see [SECURITY.md](SECURITY.md)).
 
 ## License
 

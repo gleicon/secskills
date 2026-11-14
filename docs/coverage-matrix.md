@@ -21,13 +21,18 @@ produces, and where it lands in the report.
 | Sandbox | `sandbox` | docker + test engine | findings on isolated instance | per check | Detailed findings |
 | Report | `report --render/--html/--pdf` | native + chrome (PDF) | md / html / pdf | all | (the whole document) |
 | Re-test | `report --retest` | native structured probes | run delta | — | Remediation tracker |
+| Interop | `export --format sarif\|cyclonedx`, `tickets` | native | SARIF 2.1.0, CycloneDX 1.5 + VEX, CSV/JSON rows | all | — (CI / tracker) |
+| Exposure — sweep | `discover --cidr/--asn` | native rate-gated TCP connect scan | `observations.jsonl` | — | Exposure report: inventory |
+| Exposure — enrich & leaks | `enrich`, `leakcheck`, `dbcheck`, `kprobe` | native banners, HTTP, RESP/OP_MSG, mysql client | `enriched-observations.jsonl`, `leaks.jsonl`, `dbcheck.jsonl` | config-exposure, components-supply-chain | Exposure report §1–2 |
+| Exposure — CVE join | `feed kev/epss/nvd`, `cvematch`, `lifecycle` | CISA KEV, FIRST EPSS, NVD 2.0 | `candidates.jsonl`, `findings.jsonl` | components-supply-chain | Exposure report §3 |
+| Exposure — report | `prefix-report`, `deliver` | native | `exposure-report.md`, `feed-<tenant>.json` | all | (the block report) |
 
 ## B. The 8-field finding (playbook §03) → secskills source
 
 | Finding field | secskills source | Status |
 |---------------|------------------|--------|
 | Title (specific noun phrase) | `Finding.Title` from the check | ✔ |
-| Severity + CVSS | `Finding.Severity` + `cvssBand` (indicative band) | partial — band, not full vector |
+| Severity + CVSS | `Finding.Severity` (written rubric) + CVSS 3.1 vector and base score (`CVSSVector`) | ✔ |
 | Affected asset (exact) | `Finding.Host` (URL/host or file:line) | ✔ |
 | Description (fact) | `impactFor(kbClass)` | generic per class |
 | Business impact (non-engineer) | **business-risk one-liner** (added) | ✔ (added) |

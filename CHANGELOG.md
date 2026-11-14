@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- `secskills help` lists the real MCP tool set and points to the website, and notes
+  where the workdir lives.
+- Docs: README (install from binaries, plugin marketplace, exposure-mode section,
+  safety), `INSTALL.md` and the doctor skill use `secskills doctor` (64 tools, 19
+  categories; baseline tools are only needed by the skills and `lib/` helpers),
+  `docs/usage.md` matches the CLI (profiles, exposure commands, flag positions,
+  files and environment), `docs/getting-started.md` (binaries, workdir, TLS for
+  credentials, `sandbox --confirm`), coverage matrix (exposure stages, interop, CVSS
+  vectors), `AGENTS.md` and `ADAPTERS.md` (marketplace install, workdir and data
+  containment rules).
+- Website: the install page explains baseline tools, and usage notes where flags may go.
+
 ## [0.31.2] - 2026-11-13
 
 ### Added
