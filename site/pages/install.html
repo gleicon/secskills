@@ -4,7 +4,7 @@ Pick one way to get it, then let <code>secskills doctor</code> tell you which op
 would widen coverage.</p>
 
 <h2 id="go">With Go</h2>
-<p>Needs Go 1.26 or newer.</p>
+<p>Needs Go 1.27.4 or newer. With an older Go, the <code>go</code> command downloads 1.27.4 automatically (unless <code>GOTOOLCHAIN=local</code>).</p>
 <pre><code>go install github.com/gleicon/secskills/cmd/secskills@latest
 secskills version</code></pre>
 <p class="muted">The binary lands in <code>$(go env GOBIN)</code>, or <code>$(go env GOPATH)/bin</code> when GOBIN is unset. Make sure that directory is on your PATH. Pin a release with <code>@v{{VERSION}}</code>.</p>

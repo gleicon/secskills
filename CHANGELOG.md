@@ -10,6 +10,9 @@
   `example.*` names and documentation IP ranges. The source behind those four tags
   changed in the rewrite, so Go tooling skips them; use v0.32.1 or later. Code
   behaviour is the same as v0.32.0.
+- **Go 1.27.4 minimum** (`go 1.27.4` in `go.mod`), for current security
+  fixes. CI and release binaries build with it, and older Go toolchains switch
+  to it automatically.
 - Dependencies: `golang.org/x/net` 0.62.0; GitHub Actions `checkout` v7,
   `setup-go` v7, `configure-pages` v6, `deploy-pages` v5, `upload-pages-artifact` v5.
 

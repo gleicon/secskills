@@ -11,7 +11,7 @@ git clone https://github.com/gleicon/secskills && cd secskills
 make install            # go install ./cmd/secskills
 ```
 
-Requires **Go 1.26+**. Without Go, download a static binary from the
+Requires **Go 1.27.4+** (older Go downloads it automatically). Without Go, download a static binary from the
 [latest release](https://github.com/gleicon/secskills/releases/latest) and check it
 against `SHA256SUMS` (commands per OS on the
 [install page](https://gleicon.github.io/secskills/install.html)).

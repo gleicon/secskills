@@ -172,7 +172,7 @@ One binary, thin adapters (see `ADAPTERS.md`):
 ## Install
 
 ```bash
-go install github.com/gleicon/secskills/cmd/secskills@latest   # Go 1.26+
+go install github.com/gleicon/secskills/cmd/secskills@latest   # Go 1.27+
 secskills doctor        # what optional tools you have; --category report checks the PDF browser
 ```
 
