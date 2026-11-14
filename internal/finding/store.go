@@ -164,6 +164,55 @@ func FindingsAdd(args []string) error {
 	})
 }
 
+// settableStatus are the states a person may set by hand. "mitigated" is set
+// by retest and re-runs, which have evidence for it.
+var settableStatus = map[string]bool{"open": true, "accepted": true, "manual": true}
+
+// SetStatus changes one finding's status in the workdir and records who
+// changed it and why in its history. Re-runs keep "accepted" and "manual".
+func SetStatus(wd, id, status, note string) error {
+	if !settableStatus[status] {
+		return fmt.Errorf("status %q not settable by hand (use open, accepted, or manual)", status)
+	}
+	for _, f := range LoadWorkFindings(wd) {
+		if f.ID != id {
+			continue
+		}
+		prev := f.Status
+		f.Status = status
+		f.RetestHistory = append(f.RetestHistory, map[string]string{
+			"date": NowRFC(), "disposition": "SET", "change": prev + " -> " + status,
+			"retest_evidence": textutil.SafeField(note), "prev_status": prev, "by": OSUser(),
+		})
+		return AddFinding(wd, f)
+	}
+	return fmt.Errorf("no finding %q in %s", id, wd)
+}
+
+// FindingsSet implements `findings set`.
+func FindingsSet(args []string) error {
+	fs := flag.NewFlagSet("findings set", flag.ContinueOnError)
+	target := fs.String("target", "", "assessment target")
+	id := fs.String("id", "", "finding id (see `findings show`)")
+	status := fs.String("status", "", "open | accepted | manual")
+	note := fs.String("note", "", "why (recorded in the finding's history)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *target == "" || *id == "" || *status == "" {
+		return fmt.Errorf("required: --target --id --status")
+	}
+	wd, err := workspace.Workdir(*target)
+	if err != nil {
+		return err
+	}
+	if err := SetStatus(wd, *id, *status, *note); err != nil {
+		return err
+	}
+	fmt.Printf("%s: status %s\n", *id, *status)
+	return nil
+}
+
 // FindingsWriteRun implements `findings write-run`.
 func FindingsWriteRun(args []string) error {
 	fs := flag.NewFlagSet("findings write-run", flag.ContinueOnError)

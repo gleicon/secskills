@@ -2,10 +2,13 @@ package engine
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -166,6 +169,7 @@ func RunEdgeRecon(wd, target string, prof finding.Profile) (EdgeInfo, []finding.
 	base := "https://" + host
 	var edge EdgeInfo
 	baseTitle := ""
+	reachable := false
 	// fingerprint the edge from the apex, falling back to www (bare apex often
 	// 301s without exposing the CDN headers a real page carries).
 	for _, u := range []string{base, "https://www." + host} {
@@ -173,6 +177,7 @@ func RunEdgeRecon(wd, target string, prof finding.Profile) (EdgeInfo, []finding.
 		if !ok {
 			continue
 		}
+		reachable = true
 		e := fingerprintEdge(hdr)
 		if e.CDN != "" || e.WAF != "" {
 			edge = e
@@ -185,6 +190,11 @@ func RunEdgeRecon(wd, target string, prof finding.Profile) (EdgeInfo, []finding.
 			baseTitle = title(body)
 		}
 	}
+	rec := edgeRecord{Reachable: reachable, CDN: edge.CDN, WAF: edge.WAF, Via: edge.Via}
+	if reachable {
+		rec.Favicon, rec.HasFavicon = faviconHash(base)
+	}
+	writeEdgeRecord(wd, rec)
 	var out []finding.Finding
 	if !prof.Adversarial() {
 		return edge, out
@@ -224,35 +234,43 @@ func RunEdgeRecon(wd, target string, prof finding.Profile) (EdgeInfo, []finding.
 	return edge, out
 }
 
-// RenderEdgeMap renders the Edge & Defense Map report section.
-func RenderEdgeMap(wd, target string) string {
-	host := netsec.HostOf(target)
-	base := "https://" + host
-	var edge EdgeInfo
-	got := false
-	for _, u := range []string{base, "https://www." + host} {
-		_, hdr, _, ok := fetch.GetWithBody(u, 8*1024)
-		if !ok {
-			continue
-		}
-		got = true
-		e := fingerprintEdge(hdr)
-		if e.CDN != "" || e.WAF != "" {
-			edge = e
-			break
-		}
-		edge = e
+// edgeRecord is what RunEdgeRecon observed during the (gated) test run. The
+// report renders from it so that generating a report never contacts the target.
+type edgeRecord struct {
+	Reachable  bool   `json:"reachable"`
+	CDN        string `json:"cdn,omitempty"`
+	WAF        string `json:"waf,omitempty"`
+	Via        string `json:"via,omitempty"`
+	Favicon    int32  `json:"favicon_mmh3,omitempty"`
+	HasFavicon bool   `json:"has_favicon,omitempty"`
+}
+
+func edgeRecordPath(wd string) string { return filepath.Join(wd, "edge.json") }
+
+func writeEdgeRecord(wd string, r edgeRecord) {
+	if b, err := json.Marshal(r); err == nil {
+		os.WriteFile(edgeRecordPath(wd), b, 0o600)
 	}
-	if !got {
-		return "_Edge could not be fingerprinted (primary host unreachable)._"
+}
+
+// RenderEdgeMap renders the Edge & Defense Map report section from the edge
+// record of the last test run. It makes no network request.
+func RenderEdgeMap(wd, target string) string {
+	raw, err := os.ReadFile(edgeRecordPath(wd))
+	if err != nil {
+		return "_Edge not fingerprinted: no `secskills test` run recorded it for this target._"
+	}
+	var rec edgeRecord
+	if json.Unmarshal(raw, &rec) != nil || !rec.Reachable {
+		return "_Edge could not be fingerprinted (primary host unreachable during the test run)._"
 	}
 	var b strings.Builder
 	b.WriteString("| Property | Value |\n|---|---|\n")
-	b.WriteString(fmt.Sprintf("| CDN | %s |\n", textutil.OrDash(edge.CDN)))
-	b.WriteString(fmt.Sprintf("| WAF | %s |\n", textutil.OrDash(edge.WAF)))
-	b.WriteString(fmt.Sprintf("| Via | %s |\n", textutil.OrDash(edge.Via)))
-	if h, ok := faviconHash(base); ok {
-		b.WriteString(fmt.Sprintf("| favicon mmh3 (Shodan pivot) | `%d` |\n", h))
+	b.WriteString(fmt.Sprintf("| CDN | %s |\n", textutil.OrDash(rec.CDN)))
+	b.WriteString(fmt.Sprintf("| WAF | %s |\n", textutil.OrDash(rec.WAF)))
+	b.WriteString(fmt.Sprintf("| Via | %s |\n", textutil.OrDash(rec.Via)))
+	if rec.HasFavicon {
+		b.WriteString(fmt.Sprintf("| favicon mmh3 (Shodan pivot) | `%d` |\n", rec.Favicon))
 	}
 	b.WriteString("\n_The favicon hash and certificate CN can be searched on Shodan/Censys (`http.favicon.hash:<h>`, `ssl.cert.subject.CN:<host>`) to enumerate every IP presenting this identity — the looking glass for origin IPs that answer directly and bypass the edge. Origin-bypass findings, if any, are listed among the findings above._")
 	return b.String()

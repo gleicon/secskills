@@ -25,3 +25,27 @@ func TestCVSSVector(t *testing.T) {
 		t.Errorf("informational score=%.1f want 0.0", s)
 	}
 }
+
+func TestSetStatus(t *testing.T) {
+	wd := t.TempDir()
+	if err := AddFinding(wd, Finding{ID: "F-1", Title: "TLS 1.0 enabled", Host: "a.example:443", Severity: "MEDIUM", CVEs: []string{"CVE-1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetStatus(wd, "F-1", "accepted", "compensating control"); err != nil {
+		t.Fatal(err)
+	}
+	f := LoadWorkFindings(wd)[0]
+	if f.Status != "accepted" || len(f.CVEs) != 1 || f.Title != "TLS 1.0 enabled" {
+		t.Fatalf("status change must keep the rest of the finding: %+v", f)
+	}
+	h := f.RetestHistory[len(f.RetestHistory)-1]
+	if h["change"] != "open -> accepted" || h["retest_evidence"] != "compensating control" {
+		t.Errorf("history entry %v", h)
+	}
+	if SetStatus(wd, "F-1", "mitigated", "") == nil {
+		t.Error("mitigated must not be settable by hand")
+	}
+	if SetStatus(wd, "F-404", "accepted", "") == nil {
+		t.Error("unknown id must fail")
+	}
+}

@@ -1,5 +1,65 @@
 # Changelog
 
+## [0.33.0] - 2026-11-14
+
+Network mode — scanning an ASN or CIDR you own — is now part of the main
+assessment pipeline instead of a separate product.
+
+### Changed
+
+- **Network results are ordinary findings.** `leakcheck`, `dbcheck`, and
+  `cvematch` write findings with stable IDs (`NET-LEAK-…`, `NET-DB-…`,
+  `NET-CVE-…`) into the block's workdir and save a run. `report`, `report
+  --retest`, `tickets`, `export`, `override`, `attest`, and `watch` now work on a
+  block. Severity follows the main rubric:
+  - exposed paths are MEDIUM, or potential HIGH when an `.env` exposes credential-like keys;
+  - unauthenticated or default-credential datastores are HIGH;
+  - CVE leads are LOW, or MEDIUM when a listed CVE is in CISA KEV.
+- **One CVE lead per service.** `cvematch` produces one finding per service,
+  listing its CVEs (KEV first, then EPSS score), instead of one row per host and CVE.
+- **Re-runs replace `lifecycle`.** A re-run updates findings in place, closes a
+  finding it no longer produces as mitigated, and reopens a returning one as
+  regressed. `accepted` and `manual` decisions are kept.
+- **The block is the target.** Network commands take the block as a positional
+  argument (`secskills cvematch 203.0.113.0/24`), like app commands; `--workdir`
+  still reads a carried capture.
+- **The main report covers blocks.** It adds a network inventory section (hosts,
+  services, reachable datastores), and its executive summary describes the sweep
+  for a block.
+- **Renamed** "exposure mode" to "network mode": `docs/network.md`, `SPEC-NETWORK.md`.
+- `deploy/process.sh` runs `findings import`, `cvematch`, and the report; set
+  `BLOCK` to name the block.
+
+### Added
+
+- `secskills findings set --target T --id ID --status open|accepted|manual --note …`
+  changes one finding's status and records the change in its history.
+- `secskills findings import <block>` turns captured `leaks.jsonl` and
+  `dbcheck.jsonl` into findings, for workdirs merged from several capture machines.
+
+### Removed
+
+These were built for a multi-tenant hosted service that secskills does not have.
+
+- `deliver`, `notify`, `fleet`, `precision`, and `token`: per-tenant feeds,
+  alert latency checks, cross-tenant aggregates, the labelled-precision gate, and
+  signed scope tokens for unattended workers.
+- `match`, `kprobe`, and the distro-state matcher: replay of one CVE fixture and
+  two kernel-path probes specific to it.
+- `lifecycle` (replaced by re-runs and `findings set`) and `prefix-report`
+  (replaced by the main report).
+
+### Fixed
+
+- **Report rendering contacted the target.** The edge map section fetched the
+  target's home page and favicon on every `report --render/--html/--pdf`, with no
+  authorization gate. `test` now records the edge fingerprint in the workdir, and
+  the report reads it. A unit test forbids every outbound connection while
+  rendering.
+- Findings stores for targets containing `/` (CIDR blocks) were created as nested
+  directories.
+
+
 ## [0.32.1] - 2026-11-13
 
 ### Changed

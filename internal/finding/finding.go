@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -94,7 +95,9 @@ func NowRFC() string { return time.Now().UTC().Format(time.RFC3339) }
 // StoreDir is the findings store for target (~/.secskills-findings/<target>).
 func StoreDir(target string) string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".secskills-findings", target)
+	// a block target (203.0.113.0/24) must stay one directory
+	name := strings.NewReplacer("/", "_", "\\", "_").Replace(target)
+	return filepath.Join(home, ".secskills-findings", name)
 }
 
 // RunID returns a new run id: UTC minute plus a short hash.

@@ -1,6 +1,6 @@
 $ secskills 
 [stderr]
-secskills 0.32.1 — security assessment orchestrator
+secskills 0.33.0 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -22,7 +22,7 @@ COMMANDS:
   compress    Shrink text via tldt (token hygiene)
   scrub       Redact PII/secrets via tldt (for reports)
   scan        Detect prompt-injection + PII in untrusted output
-  findings    Manage the findings store (add | write-run | list | show)
+  findings    Manage the findings store (add | set | write-run | list | show)
   profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
   scope       Write/validate the engagement scope file (.secskills-scope.yml)
   override    Record an auditable severity adjudication (reviewed vs automated)
@@ -38,23 +38,14 @@ COMMANDS:
   selftest    End-to-end pipeline test against a local disposable server
   version     Print version
 
-EXPOSURE (ASN/CIDR blocks — see docs/exposure.md):
+NETWORK BLOCKS (ASN/CIDR you own — results are ordinary findings for report/tickets/export):
   discover    --asn AS… | --cidr …  sweep a block into observations (authorization-gated)
-  enrich      Banner/version/CPE enrichment of stored observations (authorization-gated)
-  leakcheck   Read-only check for exposed .git/.env, listings, open datastores (authorization-gated)
-  dbcheck     Datastore open/default-credential posture (needs --confirm and --intrusive-confirm)
-  kprobe      Single-packet kernel-path reachability probe: MPTCP, IPv4 options (authorization-gated)
+  enrich      Banner/version/CPE enrichment of a block's observations (authorization-gated)
+  leakcheck   Exposed .git/.env/server-status, open Redis/Elasticsearch -> findings (authorization-gated)
+  dbcheck     Datastore open/default-credential posture -> findings (needs --confirm and --intrusive-confirm)
   feed        Fetch and cache KEV, EPSS and NVD intelligence (no target traffic)
-  cvematch    Join enriched observations with cached NVD ranges into ranked CVE candidates (offline)
-  lifecycle   Reconcile or set finding states: open, confirmed, accepted_risk, fixed, false_positive
-  prefix-report Markdown exposure report for a block (offline)
-  precision   Measure candidate precision against a labelled set (release gate)
-  deliver     Write one tenant's feed, optionally POSTed to an HTTPS webhook
-  notify      Check event-to-notification latency against stored candidates (offline)
-  fleet       Anonymised cross-tenant ranking of CVEs and stacks (k-anonymity)
+  cvematch    Join observations with NVD ranges -> CVE lead findings, KEV first (offline)
   plan        Split an ASN's prefixes across N capture workers (OSINT only)
-  token       Sign or verify an HMAC scope token for unattended workers
-  match       Replay the deterministic matcher on a fixture (advisory x distro state x assets)
 
 Run "secskills <command> -h" for command flags. Portable across Claude Code,
 opencode, and any MCP client.
@@ -65,7 +56,7 @@ Workdir: $SECSKILLS_WORKDIR, else <user cache dir>/secskills/<target> (owner-onl
 
 $ secskills help
 [stderr]
-secskills 0.32.1 — security assessment orchestrator
+secskills 0.33.0 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -87,7 +78,7 @@ COMMANDS:
   compress    Shrink text via tldt (token hygiene)
   scrub       Redact PII/secrets via tldt (for reports)
   scan        Detect prompt-injection + PII in untrusted output
-  findings    Manage the findings store (add | write-run | list | show)
+  findings    Manage the findings store (add | set | write-run | list | show)
   profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
   scope       Write/validate the engagement scope file (.secskills-scope.yml)
   override    Record an auditable severity adjudication (reviewed vs automated)
@@ -103,23 +94,14 @@ COMMANDS:
   selftest    End-to-end pipeline test against a local disposable server
   version     Print version
 
-EXPOSURE (ASN/CIDR blocks — see docs/exposure.md):
+NETWORK BLOCKS (ASN/CIDR you own — results are ordinary findings for report/tickets/export):
   discover    --asn AS… | --cidr …  sweep a block into observations (authorization-gated)
-  enrich      Banner/version/CPE enrichment of stored observations (authorization-gated)
-  leakcheck   Read-only check for exposed .git/.env, listings, open datastores (authorization-gated)
-  dbcheck     Datastore open/default-credential posture (needs --confirm and --intrusive-confirm)
-  kprobe      Single-packet kernel-path reachability probe: MPTCP, IPv4 options (authorization-gated)
+  enrich      Banner/version/CPE enrichment of a block's observations (authorization-gated)
+  leakcheck   Exposed .git/.env/server-status, open Redis/Elasticsearch -> findings (authorization-gated)
+  dbcheck     Datastore open/default-credential posture -> findings (needs --confirm and --intrusive-confirm)
   feed        Fetch and cache KEV, EPSS and NVD intelligence (no target traffic)
-  cvematch    Join enriched observations with cached NVD ranges into ranked CVE candidates (offline)
-  lifecycle   Reconcile or set finding states: open, confirmed, accepted_risk, fixed, false_positive
-  prefix-report Markdown exposure report for a block (offline)
-  precision   Measure candidate precision against a labelled set (release gate)
-  deliver     Write one tenant's feed, optionally POSTed to an HTTPS webhook
-  notify      Check event-to-notification latency against stored candidates (offline)
-  fleet       Anonymised cross-tenant ranking of CVEs and stacks (k-anonymity)
+  cvematch    Join observations with NVD ranges -> CVE lead findings, KEV first (offline)
   plan        Split an ASN's prefixes across N capture workers (OSINT only)
-  token       Sign or verify an HMAC scope token for unattended workers
-  match       Replay the deterministic matcher on a fixture (advisory x distro state x assets)
 
 Run "secskills <command> -h" for command flags. Portable across Claude Code,
 opencode, and any MCP client.
@@ -129,14 +111,14 @@ Workdir: $SECSKILLS_WORKDIR, else <user cache dir>/secskills/<target> (owner-onl
 [exit 0]
 
 $ secskills version
-secskills 0.32.1
+secskills 0.33.0
 [exit 0]
 
 $ secskills no-such-command
 [stderr]
 unknown command: no-such-command
 
-secskills 0.32.1 — security assessment orchestrator
+secskills 0.33.0 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -158,7 +140,7 @@ COMMANDS:
   compress    Shrink text via tldt (token hygiene)
   scrub       Redact PII/secrets via tldt (for reports)
   scan        Detect prompt-injection + PII in untrusted output
-  findings    Manage the findings store (add | write-run | list | show)
+  findings    Manage the findings store (add | set | write-run | list | show)
   profile     Passive pre-engagement OSINT brief (no target traffic) — feeds the intake
   scope       Write/validate the engagement scope file (.secskills-scope.yml)
   override    Record an auditable severity adjudication (reviewed vs automated)
@@ -174,23 +156,14 @@ COMMANDS:
   selftest    End-to-end pipeline test against a local disposable server
   version     Print version
 
-EXPOSURE (ASN/CIDR blocks — see docs/exposure.md):
+NETWORK BLOCKS (ASN/CIDR you own — results are ordinary findings for report/tickets/export):
   discover    --asn AS… | --cidr …  sweep a block into observations (authorization-gated)
-  enrich      Banner/version/CPE enrichment of stored observations (authorization-gated)
-  leakcheck   Read-only check for exposed .git/.env, listings, open datastores (authorization-gated)
-  dbcheck     Datastore open/default-credential posture (needs --confirm and --intrusive-confirm)
-  kprobe      Single-packet kernel-path reachability probe: MPTCP, IPv4 options (authorization-gated)
+  enrich      Banner/version/CPE enrichment of a block's observations (authorization-gated)
+  leakcheck   Exposed .git/.env/server-status, open Redis/Elasticsearch -> findings (authorization-gated)
+  dbcheck     Datastore open/default-credential posture -> findings (needs --confirm and --intrusive-confirm)
   feed        Fetch and cache KEV, EPSS and NVD intelligence (no target traffic)
-  cvematch    Join enriched observations with cached NVD ranges into ranked CVE candidates (offline)
-  lifecycle   Reconcile or set finding states: open, confirmed, accepted_risk, fixed, false_positive
-  prefix-report Markdown exposure report for a block (offline)
-  precision   Measure candidate precision against a labelled set (release gate)
-  deliver     Write one tenant's feed, optionally POSTed to an HTTPS webhook
-  notify      Check event-to-notification latency against stored candidates (offline)
-  fleet       Anonymised cross-tenant ranking of CVEs and stacks (k-anonymity)
+  cvematch    Join observations with NVD ranges -> CVE lead findings, KEV first (offline)
   plan        Split an ASN's prefixes across N capture workers (OSINT only)
-  token       Sign or verify an HMAC scope token for unattended workers
-  match       Replay the deterministic matcher on a fixture (advisory x distro state x assets)
 
 Run "secskills <command> -h" for command flags. Portable across Claude Code,
 opencode, and any MCP client.
@@ -252,35 +225,15 @@ Usage of discover:
 error: flag: help requested
 [exit 1]
 
-$ secskills match -h
-[stderr]
-Usage of match:
-  -fixture string
-    	directory with advisory.json, distro-state.json, assets.json (default "testdata/cve-2026-98432")
-  -json
-    	emit candidates as JSON instead of the brief
-error: flag: help requested
-[exit 1]
-
 $ secskills leakcheck -h
 [stderr]
 Usage of leakcheck:
   -confirm
     	authorization confirmed
+  -save
+    	save a run for report/retest (default true)
   -workdir string
-    	workdir containing observations.jsonl (required)
-error: flag: help requested
-[exit 1]
-
-$ secskills prefix-report -h
-[stderr]
-Usage of prefix-report:
-  -label string
-    	scope label for the heading (e.g. AS64500 203.0.113.0/24)
-  -output string
-    	write the report here (default <workdir>/exposure-report.md)
-  -workdir string
-    	workdir with observations.jsonl (and optional leaks.jsonl)
+    	workdir containing observations.jsonl (default: the target's workdir)
 error: flag: help requested
 [exit 1]
 
@@ -296,8 +249,10 @@ Usage of dbcheck:
     	authorization confirmed
   -intrusive-confirm
     	second confirmation: permit default-credential attempts
+  -save
+    	save a run for report/retest (default true)
   -workdir string
-    	workdir containing observations.jsonl
+    	workdir containing observations.jsonl (default: the target's workdir)
 error: flag: help requested
 [exit 1]
 
@@ -307,37 +262,17 @@ Usage of enrich:
   -confirm
     	authorization confirmed
   -workdir string
-    	workdir containing observations.jsonl
+    	workdir containing observations.jsonl (default: the target's workdir)
 error: flag: help requested
 [exit 1]
 
 $ secskills cvematch -h
 [stderr]
 Usage of cvematch:
+  -save
+    	save a run for report/retest (default true)
   -workdir string
-    	workdir with enriched-observations.jsonl
-error: flag: help requested
-[exit 1]
-
-$ secskills token -h
-[stderr]
-error: --file is required
-[exit 1]
-
-$ secskills lifecycle -h
-[stderr]
-error: --workdir is required
-[exit 1]
-
-$ secskills kprobe -h
-[stderr]
-Usage of kprobe:
-  -confirm
-    	authorization confirmed
-  -ip string
-    	target IP
-  -port int
-    	target TCP port
+    	workdir with enriched-observations.jsonl (default: the target's workdir)
 error: flag: help requested
 [exit 1]
 
@@ -350,66 +285,6 @@ Usage of plan:
     	output directory for plan.json + shard-<i>.txt (default "./plan")
   -shards int
     	number of VMs / workers to split across (default 1)
-error: flag: help requested
-[exit 1]
-
-$ secskills precision -h
-[stderr]
-Usage of precision:
-  -candidates string
-    	candidates file (default: <workdir>/candidates.jsonl)
-  -labels string
-    	ground-truth label set (JSONL: {ip,cve,label})
-  -min float
-    	minimum precision to PASS (AC-4 = 0.90) (default 0.9)
-  -min-hosts int
-    	minimum distinct labelled hosts (AC-4 = 100) (default 100)
-  -workdir string
-    	workdir with candidates.jsonl
-error: flag: help requested
-[exit 1]
-
-$ secskills deliver -h
-[stderr]
-Usage of deliver:
-  -out string
-    	feed output path (default: <workdir>/feed-<tenant>.json)
-  -tenant string
-    	tenant id to deliver
-  -tenants string
-    	tenants file (JSON array of {tenant,asn,prefixes})
-  -webhook string
-    	optional: POST the JSON feed to this URL (SSRF-guarded)
-  -workdir string
-    	workdir with candidates.jsonl
-error: flag: help requested
-[exit 1]
-
-$ secskills notify -h
-[stderr]
-Usage of notify:
-  -budget duration
-    	max event->notify latency to PASS (NFR-1 = 1h) (default 1h0m0s)
-  -event-at string
-    	synthetic: RFC3339 time the event fired (default: now)
-  -kev-event string
-    	synthetic: a single CVE id that just entered KEV (AC-2)
-  -tenants string
-    	tenants file (JSON array)
-  -workdir string
-    	workdir with candidates.jsonl
-error: flag: help requested
-[exit 1]
-
-$ secskills fleet -h
-[stderr]
-Usage of fleet:
-  -k int
-    	k-anonymity: suppress buckets seen in fewer than k tenants (default 2)
-  -tenants string
-    	tenants file (JSON array)
-  -workdir string
-    	workdir with candidates.jsonl + enriched-observations.jsonl
 error: flag: help requested
 [exit 1]
 

@@ -6,7 +6,7 @@ written permission from the system's owner.</p>
 <h2 id="gate">The authorization gate</h2>
 <p>Commands that send traffic to a target (<code>discover</code>, <code>test</code>,
 <code>sandbox</code>, <code>watch</code>, <code>integrity</code>, <code>enrich</code>,
-<code>leakcheck</code>, <code>dbcheck</code>, <code>kprobe</code>) refuse to run until one of
+<code>leakcheck</code>, <code>dbcheck</code>) refuse to run until one of
 these holds:</p>
 <ul>
 <li>you pass <code>--confirm</code>, stating you hold written authorization, or</li>
@@ -41,8 +41,7 @@ entries are skipped even under <code>--confirm</code>. A block wider than /20 ne
 <li>Write and credential tests need <code>--intrusive</code> and a second, separate
 <code>--intrusive-confirm</code>. <code>dbcheck</code> always needs both, and it tries only a
 short fixed list of vendor default credentials, never a wordlist.</li>
-<li>No denial-of-service, no race triggers, no fault injection, at any profile. Kernel
-probes send one packet and report reachability, never patch state.</li>
+<li>No denial-of-service, no race triggers, no fault injection, at any profile.</li>
 <li>Requests are rate-limited in the engine (<code>SECSKILLS_RATE</code>, default 5 per second),
 and free data sources are throttled with backoff.</li>
 </ul>
@@ -55,7 +54,8 @@ connect time, so DNS rebinding cannot slip past it.</li>
 <li>Redirects are not followed, so a target cannot bounce a probe somewhere unauthorized.</li>
 <li>Requests that carry your credentials verify TLS. <code>--insecure-auth</code> turns that
 off for self-signed targets, at your explicit request.</li>
-<li>Webhook delivery requires HTTPS, verifies the certificate, and logs only the scheme and host.</li>
+<li>Generating a report never contacts the target; it renders from stored findings and
+evidence. A test forbids every outbound connection while rendering.</li>
 </ul>
 
 <h2 id="untrusted">Target output is untrusted</h2>

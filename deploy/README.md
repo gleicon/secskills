@@ -41,8 +41,9 @@ and EPSS feeds on the VM so the workdir needs nothing later.
 
 ```sh
 tar -xzf capture-203_0_113_0_24.tar.gz
-OUT=./capture-203_0_113_0_24 ./process.sh      # uses the shipped feed/ cache
-# → candidates.jsonl, findings.jsonl, prefix report (Markdown)
+OUT=./capture-203_0_113_0_24 BLOCK=203.0.113.0/24 ./process.sh   # uses the shipped feed/ cache
+# → findings (leaks, datastores, CVE leads), a saved run, report.md
+secskills tickets 203.0.113.0/24      # with SECSKILLS_WORKDIR=./capture-203_0_113_0_24
 ```
 
 The report contains no credential values (key names only). It is sensitive

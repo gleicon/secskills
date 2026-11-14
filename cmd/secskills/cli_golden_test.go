@@ -170,6 +170,7 @@ func (s *sandbox) cat(path string) {
 }
 
 func (s *sandbox) rel(p string) string {
+	p = strings.Replace(p, s.cacheDir(), "<CACHE>", 1)
 	return strings.Replace(strings.Replace(p, s.root, "<SANDBOX>", 1), s.raw, "<SANDBOX>", 1)
 }
 
@@ -308,10 +309,9 @@ func repoRoot(t *testing.T) string {
 // commands is every top-level command main dispatches. A command added or
 // dropped without updating this list (and the goldens) fails TestGoldenHelp.
 var commands = []string{
-	"doctor", "fetch", "post", "kb", "recipes", "source", "discover", "match",
-	"leakcheck", "prefix-report", "feed", "dbcheck", "enrich", "cvematch",
-	"token", "lifecycle", "kprobe", "plan", "precision", "deliver", "notify",
-	"fleet", "graph", "test", "sandbox", "report", "tickets", "findings",
+	"doctor", "fetch", "post", "kb", "recipes", "source", "discover",
+	"leakcheck", "feed", "dbcheck", "enrich", "cvematch", "plan",
+	"graph", "test", "sandbox", "report", "tickets", "findings",
 	"selftest", "compress", "scrub", "scan", "shodan", "profile", "scope",
 	"override", "attest", "conformance", "fp", "measure", "oast-server",
 	"integrity", "export", "watch", "mcp",
@@ -356,7 +356,8 @@ func TestGoldenKB(t *testing.T) {
 // control; they must never silently change.
 func TestGoldenGates(t *testing.T) {
 	s := newSandbox(t)
-	wd := filepath.Join(s.root, "wd")
+	block := "203.0.113.0/24"
+	wd := filepath.Join(s.cacheDir(), "secskills", "203.0.113.0_24")
 	s.copyTree(filepath.Join(repoRoot(t), "testdata", "exposure", "workdir"), wd)
 	s.run("discover", "example.com")
 	s.run("discover", "--cidr", "203.0.113.0/24")
@@ -368,21 +369,14 @@ func TestGoldenGates(t *testing.T) {
 	s.run("sandbox", ".")
 	s.run("integrity", "snapshot", "https://example.com")
 	s.run("integrity", "verify", "https://example.com")
+	s.run("leakcheck", block)
+	s.run("enrich", block)
+	s.run("dbcheck", block)
+	s.run("dbcheck", block, "--confirm")
 	s.run("leakcheck", "--workdir", wd)
-	s.run("enrich", "--workdir", wd)
-	s.run("dbcheck", "--workdir", wd)
-	s.run("dbcheck", "--workdir", wd, "--confirm")
-	s.run("kprobe", "--ip", "203.0.113.10", "--port", "22")
+	s.run("leakcheck")
 	s.run("watch", "example.com")
 	s.check("gates")
-}
-
-func TestGoldenMatch(t *testing.T) {
-	s := newSandbox(t)
-	fx := filepath.Join(repoRoot(t), "testdata", "cve-2026-98432")
-	s.run("match", "--fixture", fx)
-	s.run("match", "--fixture", fx, "--json")
-	s.check("match")
 }
 
 func TestGoldenConformance(t *testing.T) {
@@ -405,11 +399,16 @@ func TestGoldenSelftest(t *testing.T) {
 	s.check("selftest")
 }
 
+// TestGoldenExposure drives a network block through the same findings
+// pipeline as an app target: cvematch writes findings and a run, and report,
+// tickets, export and retest read them. A second cvematch after an upgrade
+// closes the lead that no longer matches.
 func TestGoldenExposure(t *testing.T) {
 	s := newSandbox(t)
 	root := repoRoot(t)
 	fx := filepath.Join(root, "testdata", "exposure")
-	wd := filepath.Join(s.root, "wd")
+	block := "203.0.113.0/24"
+	wd := filepath.Join(s.cacheDir(), "secskills", "203.0.113.0_24")
 	s.copyTree(filepath.Join(fx, "workdir"), wd)
 	s.copyTree(filepath.Join(fx, "feed"), s.feed)
 	epss, err := os.ReadFile(filepath.Join(fx, "feed", "epss.json"))
@@ -417,29 +416,33 @@ func TestGoldenExposure(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.write(filepath.Join(s.feed, "epss-"+time.Now().UTC().Format("2006-01-02")+".json"), string(epss))
-	tenants := filepath.Join(fx, "tenants.json")
 
-	s.run("cvematch", "--workdir", wd)
-	s.cat(filepath.Join(wd, "candidates.jsonl"))
-	s.run("lifecycle", "reconcile", "--workdir", wd)
-	s.run("lifecycle", "set", "--workdir", wd, "--ip", "203.0.113.20", "--cve", "CVE-2023-44487", "--state", "false_positive", "--note", "backport")
-	s.run("lifecycle", "set", "--workdir", wd, "--ip", "203.0.113.20", "--cve", "CVE-2023-44487", "--state", "open")
-	s.run("lifecycle", "reconcile", "--workdir", wd)
-	s.cat(filepath.Join(wd, "findings.jsonl"))
-	s.run("prefix-report", "--workdir", wd, "--label", "AS64500 203.0.113.0/24")
-	s.cat(filepath.Join(wd, "exposure-report.md"))
-	s.run("precision", "--workdir", wd, "--labels", filepath.Join(fx, "labels.jsonl"))
-	s.run("precision", "--workdir", wd, "--labels", filepath.Join(fx, "labels.jsonl"), "--min-hosts", "1", "--min", "0.5")
-	s.run("deliver", "--workdir", wd, "--tenants", tenants, "--tenant", "acme")
-	s.cat(filepath.Join(wd, "feed-acme.json"))
-	s.run("deliver", "--workdir", wd, "--tenants", tenants, "--tenant", "nobody")
-	s.run("deliver", "--workdir", wd, "--tenants", tenants, "--tenant", "acme", "--webhook", "http://hooks.example/x")
-	s.run("notify", "--workdir", wd, "--tenants", tenants, "--kev-event", "CVE-2024-6387", "--event-at", time.Now().UTC().Add(-time.Minute).Format(time.RFC3339))
-	s.cat(filepath.Join(wd, "notifications.jsonl"))
-	s.run("fleet", "--workdir", wd, "--tenants", tenants, "--k", "1")
-	s.run("fleet", "--workdir", wd, "--tenants", tenants)
 	s.run("cvematch")
-	s.run("cvematch", "--workdir", filepath.Join(s.root, "empty"))
+	s.run("cvematch", "198.51.100.0/24")
+	s.run("cvematch", block)
+	s.cat(filepath.Join(wd, "candidates.jsonl"))
+	// retest before importing leak results: CVE leads are manual rechecks, so
+	// this stays offline (leak findings would re-probe their URLs)
+	s.run("report", "--retest", block)
+	s.run("findings", "import", block)
+	s.run("findings", "list", block)
+	s.run("report", "--render", block)
+	s.run("tickets", block)
+	s.run("export", block)
+
+	// the operator accepts one lead; re-runs must keep that decision
+	s.run("findings", "set", "--target", block, "--id", "NET-CVE-203.0.113.20:443", "--status", "accepted", "--note", "backport verified")
+	s.run("findings", "set", "--target", block, "--id", "NET-CVE-203.0.113.20:443", "--status", "mitigated")
+
+	// the operator upgrades OpenSSH on .10; a re-run closes that lead
+	enriched := filepath.Join(wd, "enriched-observations.jsonl")
+	b, err := os.ReadFile(enriched)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.write(enriched, strings.Replace(string(b), `"version":"8.9p1"`, `"version":"9.8p1"`, 1))
+	s.run("cvematch", block)
+	s.run("findings", "show", block)
 
 	// plan resolves from a fresh prefix cache, so no RIPE/IRR call is made.
 	planDir := filepath.Join(s.root, "plan")
@@ -451,29 +454,6 @@ func TestGoldenExposure(t *testing.T) {
 	s.cat(filepath.Join(planDir, "shard-0.txt"))
 	s.cat(filepath.Join(planDir, "shard-1.txt"))
 	s.check("exposure")
-}
-
-func TestGoldenToken(t *testing.T) {
-	s := newSandbox(t)
-	fx := filepath.Join(repoRoot(t), "testdata", "exposure", "token.json")
-	s.run("token", "sign", "--file", fx)
-	// sign again into a file the verifier reads
-	signed := filepath.Join(s.root, "signed.json")
-	out := s.out.Len()
-	s.run("token", "sign", "--file", fx)
-	tr := s.out.String()[out:]
-	body := tr[strings.Index(tr, "\n")+1 : strings.Index(tr, "[exit")]
-	s.write(signed, body)
-	s.run("token", "verify", "--file", signed)
-	s.run("token", "verify", "--file", signed, "--ip", "203.0.113.17", "--class", "cve")
-	s.run("token", "verify", "--file", signed, "--ip", "198.51.100.1", "--class", "cve")
-	s.run("token", "verify", "--file", signed, "--ip", "203.0.113.17", "--class", "exploit")
-	s.write(signed, strings.Replace(body, `"acme"`, `"evil"`, 1))
-	s.run("token", "verify", "--file", signed)
-	s.run("token", "verify", "--file", fx)
-	s.env = append(s.env, "SECSKILLS_TOKEN_KEY=")
-	s.run("token", "sign", "--file", fx)
-	s.check("token")
 }
 
 func TestGoldenScope(t *testing.T) {

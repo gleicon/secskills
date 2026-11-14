@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gleicon/secskills/internal/exposure"
+
 	"github.com/gleicon/secskills"
 	"github.com/gleicon/secskills/internal/engine"
 	"github.com/gleicon/secskills/internal/finding"
@@ -75,6 +77,7 @@ type htmlVM struct {
 	AttackGraph, PlannerGraph          template.HTML
 	GraphMetrics                       template.HTML
 	AdvLedger, HumanQueue, EdgeMap     template.HTML
+	NetInventory                       template.HTML
 	Compliance                         []htmlComp
 	Appendices, Clustering, Scorecard  template.HTML
 	EvidenceIndex, Rubric, Ledger      template.HTML
@@ -99,7 +102,7 @@ func renderHTMLReport(target, wd string, findings []finding.Finding) string {
 
 	vm := htmlVM{
 		Deliverable: deliverableTitle(findings), Target: target, Date: finding.NowRFC()[:10], Version: secskills.Version,
-		ExecNarr: execNarrativeHTML(target, counts, len(subs), len(live)),
+		ExecNarr: execNarrative(target, wd, counts, len(subs), len(live)),
 		Total:    len(findings), Subs: len(subs), Live: len(live),
 		AuthLabel: authLabel(authStatus), SSStatus: ssStatus,
 		SSNotAvailable:    strings.HasPrefix(ssStatus, "not-available"),
@@ -116,6 +119,7 @@ func renderHTMLReport(target, wd string, findings []finding.Finding) string {
 		AdvLedger:         md(engine.RenderAdversarialLedger(findings, live, wd, engine.RegistrableDomain(netsec.HostOf(target)), subs)),
 		HumanQueue:        md(engine.RenderHumanQueue(findings)),
 		EdgeMap:           md(engine.RenderEdgeMap(wd, target)),
+		NetInventory:      md(exposure.Inventory(wd)),
 		Appendices:        md(finding.Appendices(wd, authStatus)),
 		Clustering:        md(engine.ClusterRootIssues(findings, live)),
 		Scorecard:         md(engine.RenderScorecard()),
@@ -298,7 +302,8 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html><htm
   <h3>Attack-graph metrics</h3><div class="rem">{{.GraphMetrics}}</div>
   <h3>Adversarial control ledger</h3><div class="rem">{{.AdvLedger}}</div>
   <h3>Human red-team queue</h3><div class="rem">{{.HumanQueue}}</div></section>
-  <section class="page"><h2>Edge &amp; Defense Map (CDN / WAF / origin looking-glass)</h2><div class="rem">{{.EdgeMap}}</div></section>` +
+  <section class="page"><h2>Edge &amp; Defense Map (CDN / WAF / origin looking-glass)</h2><div class="rem">{{.EdgeMap}}</div></section>
+  {{if .NetInventory}}<section class="page"><h2>Network Inventory</h2><div class="rem">{{.NetInventory}}</div></section>{{end}}` +
 	`<section class="page"><h2>6. Compliance Coverage Matrix</h2>
   <p>Findings grouped by control domain — usable as an evidence index for SOC 2 / ISO 27001 / PCI-DSS audits.</p>
   <table class="grid"><thead><tr><th>Control domain</th><th>Findings</th><th>SOC 2</th><th>Owner</th></tr></thead><tbody>
@@ -391,6 +396,15 @@ func authLabel(status string) string {
 		return "Performed (credentials supplied)"
 	}
 	return "Not available — no credentials supplied"
+}
+
+// execNarrative picks the block or app narrative; the block one carries no
+// Markdown so it renders as plain HTML text.
+func execNarrative(target, wd string, c map[string]int, subs, live int) string {
+	if hosts, svcs := exposure.InventoryCounts(wd); svcs > 0 {
+		return strings.ReplaceAll(blockNarrative(target, c, hosts, svcs), "**", "")
+	}
+	return execNarrativeHTML(target, c, subs, live)
 }
 
 func execNarrativeHTML(target string, c map[string]int, subs, live int) string {

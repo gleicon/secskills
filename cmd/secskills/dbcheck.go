@@ -14,19 +14,18 @@ import (
 
 func cmdDBCheck(args []string) error {
 	fs := flag.NewFlagSet("dbcheck", flag.ContinueOnError)
-	wd := fs.String("workdir", "", "workdir containing observations.jsonl")
+	wdFlag := fs.String("workdir", "", "workdir containing observations.jsonl (default: the target's workdir)")
 	confirm := fs.Bool("confirm", false, "authorization confirmed")
 	intrusive := fs.Bool("intrusive-confirm", false, "second confirmation: permit default-credential attempts")
-	if err := fs.Parse(args); err != nil {
+	save := fs.Bool("save", true, "save a run for report/retest")
+	target, wd, err := blockTarget(fs, args, wdFlag, "secskills dbcheck <block> --confirm --intrusive-confirm [--workdir dir]")
+	if err != nil {
 		return err
-	}
-	if *wd == "" {
-		return fmt.Errorf("usage: secskills dbcheck --workdir <dir> --confirm --intrusive-confirm")
 	}
 	if !*confirm || !*intrusive {
 		return fmt.Errorf("dbcheck makes authentication attempts against hosts; it requires BOTH --confirm and --intrusive-confirm")
 	}
-	obs, err := probe.Load(filepath.Join(*wd, "observations.jsonl"))
+	obs, err := probe.Load(filepath.Join(wd, "observations.jsonl"))
 	if err != nil {
 		return err
 	}
@@ -58,11 +57,11 @@ func cmdDBCheck(args []string) error {
 		results = append(results, r)
 	}
 
-	out := filepath.Join(*wd, "dbcheck.jsonl")
+	out := filepath.Join(wd, "dbcheck.jsonl")
 	os.Remove(out)
 	for _, r := range results {
 		jsonl.AppendJSONL(out, r)
 	}
 	exposure.ReportDBCheck(results, out)
-	return nil
+	return syncAndSave(target, wd, exposure.FamilyDB, exposure.DBFindings(results), *save)
 }

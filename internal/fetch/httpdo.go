@@ -1,8 +1,10 @@
 package fetch
 
 import (
+	"context"
 	"crypto/tls"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -14,11 +16,11 @@ import (
 // through doBounded, so the safety properties are decided once: SSRF guard,
 // bounded read, no redirect following, and one shared non-destructive client.
 
-// NonDestructiveClient is the client used for all target probes. It does not
-// follow redirects (a probe must never land its payload on a host the operator
-// did not authorize) and accepts self-signed certificates because the engine
-// assesses the certificate itself. Whether a request mutates state is the
-// caller's decision — see doBounded.
+// Dial opens every outbound connection made by this package's clients. Tests
+// replace it to observe or forbid network access (e.g. proving that rendering a
+// report never contacts the target).
+var Dial = (&net.Dialer{Timeout: 8 * time.Second}).DialContext
+
 // InsecureAuth lets credentialed requests skip TLS verification. Off by
 // default; set only by `secskills test --insecure-auth` for targets with
 // self-signed certificates the operator has accepted.
@@ -31,24 +33,34 @@ func CredentialedClient() *http.Client {
 	return &http.Client{
 		Timeout: 8 * time.Second,
 		Transport: &http.Transport{
+			DialContext:     dial,
 			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: InsecureAuth},
 		},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}
 }
 
-// NonDestructiveClient is the client for unauthenticated target probes. It
-// skips TLS verification on purpose: certificates are assessed as findings, and
-// a self-signed or expired cert must not hide the rest of the surface. Never
-// send credentials through it; use CredentialedClient.
+// NonDestructiveClient is the client for unauthenticated target probes. It does
+// not follow redirects (a probe must never land on a host the operator did not
+// authorize) and skips TLS verification on purpose: certificates are assessed
+// as findings, and a self-signed or expired cert must not hide the rest of the
+// surface. Never send credentials through it; use CredentialedClient. Whether a
+// request mutates state is the caller's decision — see doBounded.
 func NonDestructiveClient() *http.Client {
 	return &http.Client{
 		Timeout: 8 * time.Second,
 		Transport: &http.Transport{
+			DialContext:     dial,
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // we assess the cert ourselves
 		},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}
+}
+
+// dial defers to Dial at connection time, so a test can swap Dial after a
+// client was built.
+func dial(ctx context.Context, network, addr string) (net.Conn, error) {
+	return Dial(ctx, network, addr)
 }
 
 // JoinBase appends p to base without doubling or dropping the separator. Use it

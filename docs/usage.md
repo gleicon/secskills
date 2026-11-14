@@ -66,6 +66,7 @@ arguments (`secskills source --json ./repo`).
 | Command | Purpose |
 |---------|---------|
 | `secskills findings list\|show <target>` | Inspect the findings store. |
+| `secskills findings set --target T --id ID --status open\|accepted\|manual [--note N]` | Change one finding's status; re-runs keep it. |
 | `secskills report --render <target>` | Full Markdown report. |
 | `secskills report --html <target> --output f.html` | Professional HTML report. |
 | `secskills report --pdf <target> --output f.pdf` | Professional PDF (SOC2/ISO/PCI mapped). Needs headless Chrome. |
@@ -77,29 +78,26 @@ arguments (`secskills source --json ./repo`).
 | `secskills override --target T --key K --severity S --reason R` | Auditable severity adjudication; the automated value is kept. |
 | `secskills attest --sign\|--verify <target>` | ed25519-sign a run, or verify it (key in `~/.secskills-keys/`). |
 
-## Exposure mode (ASN / CIDR)
+## Network mode (ASN / CIDR)
 
-Capture stages touch the network and are gated; the rest are offline joins over the
-workdir. Recipes: [exposure.md](exposure.md). Headless capture: [offline-vm.md](offline-vm.md).
+For a block you own. The block, as written to `discover`, is the target for every
+command, and results are ordinary findings: `report`, `tickets`, `export`,
+`retest`, `override`, and `findings set` work on it. Guide: [network.md](network.md).
+Capture on another machine: [offline-vm.md](offline-vm.md).
 
 | Command | Purpose |
 |---------|---------|
 | `secskills discover --cidr C \| --asn A [--allow-large] --confirm` | Sweep a block into `observations.jsonl`. Per-IP authorization; > /20 needs `--allow-large`. |
-| `secskills enrich --workdir D --confirm` | Banner → product/version/CPE. |
-| `secskills leakcheck --workdir D --confirm` | Exposed .git/.env, listings, server-status, unauthenticated datastores. Values redacted. |
-| `secskills dbcheck --workdir D --confirm --intrusive-confirm` | Open/default-credential datastore posture (fixed vendor set, never brute force). |
-| `secskills kprobe --ip I --port P --confirm` | Single-packet MPTCP / IPv4-options reachability (Linux for IPv4 options). |
+| `secskills enrich <block> --confirm` | Banner → product/version/CPE. |
+| `secskills leakcheck <block> --confirm` | Exposed .git/.env/server-status/listings and unauthenticated Redis/Elasticsearch → findings. Values redacted. |
+| `secskills dbcheck <block> --confirm --intrusive-confirm` | Vendor default credentials on datastores → findings (fixed list, never brute force). |
 | `secskills feed kev\|epss\|nvd --product P` | Cache CISA KEV, FIRST EPSS, NVD ranges (`~/.secskills/feed` or `$SECSKILLS_FEED`). |
-| `secskills cvematch --workdir D` | Version-inferred CVE candidates, KEV first then EPSS. |
-| `secskills lifecycle reconcile\|set --workdir D` | Finding states: open, confirmed, accepted_risk, fixed, false_positive. |
-| `secskills prefix-report --workdir D [--label L]` | Markdown exposure report for the block. |
-| `secskills plan --asn A --shards N --out dir` | Split an ASN's prefixes across N capture workers. |
-| `secskills token sign\|verify --file F` | HMAC scope tokens for unattended workers (`SECSKILLS_TOKEN_KEY`). |
-| `secskills precision --labels L --workdir D` | Precision gate against a labelled set. |
-| `secskills deliver --tenants F --tenant T --workdir D [--webhook https://…]` | One tenant's feed. |
-| `secskills notify --tenants F --workdir D` | Event → notification latency check. |
-| `secskills fleet --tenants F --workdir D [--k N]` | Anonymised cross-tenant ranking. |
-| `secskills match [--fixture dir] [--json]` | Replay the deterministic matcher on a fixture. |
+| `secskills cvematch <block>` | Banner versions × NVD ranges → one CVE lead per service, KEV first. Closes leads that no longer match. |
+| `secskills findings import <block>` | Turn captured `leaks.jsonl` / `dbcheck.jsonl` into findings (after merging captures). |
+| `secskills plan --asn A --shards N --out dir` | Split an ASN's prefixes across N capture machines. |
+
+`leakcheck`, `dbcheck`, `cvematch`, and `findings import` accept `--workdir dir`
+to read a carried capture, and save a run unless `--save=false`.
 
 ## Knowledge & recipes
 
@@ -141,7 +139,6 @@ workdir. Recipes: [exposure.md](exposure.md). Headless capture: [offline-vm.md](
 | `SECSKILLS_SCOPE` | Scope file path instead of `./.secskills-scope.yml`. |
 | `SECSKILLS_FEED` | Feed cache instead of `~/.secskills/feed`. |
 | `SECSKILLS_RATE` | Requests per second for sweeps and probes (default 5). |
-| `SECSKILLS_TOKEN_KEY` | Shared HMAC key for scope tokens. |
 | `SECSKILLS_OAST_DOMAIN`, `SECSKILLS_OAST_POLL_URL` | Your OAST collaborator. |
 | `SHODAN_API_KEY`, `CENSYS_API_ID`, `CENSYS_API_SECRET` | Optional OSINT keys; never written into reports. |
 | `~/.secskills-findings/` | Findings store. |

@@ -41,7 +41,7 @@ gate and rate limiting built into the core.
 | **source** | repo / path | `secskills source <path>` | none (no traffic) |
 | **sandbox** | buildable artifact | `secskills sandbox <ctx> --confirm` | authz + Docker isolation |
 | **live** | URL / domain | `secskills discover` → `secskills test` | authz gate |
-| **exposure** | ASN / CIDR you own | `secskills discover --cidr` → `enrich` → `cvematch` | authz gate, per IP |
+| **network** | ASN / CIDR you own | `secskills discover --cidr` → `enrich` → `leakcheck` → `cvematch` | authz gate, per IP |
 
 ## Workflow
 
@@ -134,24 +134,25 @@ observation is the system of record; the report is a view over it.
 - **Credentialed depth** — JWT inspection, session-cookie flags, BOLA/IDOR
   differential (`--auth-token-b`).
 
-## Exposure mode (network blocks)
+## Network mode (ASN / CIDR blocks)
 
-For an ASN or CIDR you are authorized to assess: a cheap, rate-limited sweep
-stores service observations, then offline joins turn them into ranked findings.
+For a block you are authorized to assess: a rate-limited sweep records every
+reachable service, then checks and an offline CVE join turn them into **ordinary
+findings** — the same report, retest, tickets, and export as an app assessment.
 
 ```bash
 secskills discover --cidr 203.0.113.0/24 --confirm     # per-IP gate; > /20 needs --allow-large
-secskills enrich    --workdir <wd> --confirm          # product / version / CPE
-secskills leakcheck --workdir <wd> --confirm          # exposed .git/.env, open datastores
+secskills enrich    203.0.113.0/24 --confirm           # product / version / CPE
+secskills leakcheck 203.0.113.0/24 --confirm           # exposed .git/.env, open datastores
 secskills feed kev && secskills feed epss && secskills feed nvd --product openssh
-secskills cvematch  --workdir <wd>                    # KEV first, then EPSS-ranked
-secskills lifecycle reconcile --workdir <wd>          # fixed / regressed / triaged
-secskills prefix-report --workdir <wd>                # Markdown report for the block owner
+secskills cvematch  203.0.113.0/24                     # CVE leads per service, KEV first
+secskills report --pdf 203.0.113.0/24 --output block.pdf
 ```
 
-Capture on a VM and analyze offline with `make bundle` and `deploy/`
-([docs/offline-vm.md](docs/offline-vm.md)). Recipes: [docs/exposure.md](docs/exposure.md).
-Spec: [SPEC-EXPOSURE.md](SPEC-EXPOSURE.md).
+Re-run `cvematch` after refreshing feeds to close leads that no longer match.
+Capture on another machine and process offline with `make bundle` and `deploy/`
+([docs/offline-vm.md](docs/offline-vm.md)). Guide: [docs/network.md](docs/network.md).
+Design: [SPEC-NETWORK.md](SPEC-NETWORK.md).
 
 Release history: [CHANGELOG.md](CHANGELOG.md).
 
@@ -200,7 +201,7 @@ Headless Chrome/Chromium is needed only for PDF and screenshots.
 - [Architecture](docs/architecture.md)
 - [Reporting & compliance](docs/reporting.md)
 - [Coverage matrix (skills × tools × OWASP × output)](docs/coverage-matrix.md)
-- [Exposure mode recipes](docs/exposure.md) · [Headless capture on a VM](docs/offline-vm.md)
+- [Network mode](docs/network.md) · [Headless capture on a VM](docs/offline-vm.md)
 - [Changelog](CHANGELOG.md)
 - [Security model](SECURITY.md)
 - Full command list: `secskills help`

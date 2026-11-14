@@ -93,8 +93,8 @@ func parseEPSS(body []byte) ([]EPSSScore, error) {
 	return r.Data, nil
 }
 
-// appendDelta records a vuln.updated event (one JSON line) — the signal that a
-// downstream notifier joins against tenant assets.
+// appendDelta records a vuln.updated event (one JSON line) listing the CVEs a
+// KEV refresh added, so a later cvematch can be compared against the change.
 func appendDelta(source string, added []string) error {
 	if len(added) == 0 {
 		return nil

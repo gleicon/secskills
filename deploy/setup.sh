@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# secskills exposure mode — VPS setup. Installs the binary, loads the vulnerability feed
+# secskills network mode — VPS setup. Installs the binary, loads the vulnerability feed
 # cache ONCE, and writes an env file the capture/process scripts source. Run it
 # on the box that will fetch the feed (and, for a single-box setup, also capture).
 # Idempotent: re-run it to refresh the feed.

@@ -1,359 +1,1190 @@
-$ secskills cvematch --workdir <SANDBOX>/wd
-cvematch: 7 version-inferred CVE candidates (3 KEV-urgent) -> <SANDBOX>/wd/candidates.jsonl
-KEV 198.51.100.6     CVE-2023-44487   epss=0.940 score=0.559  CVE-2023-44487
-KEV 203.0.113.10     CVE-2023-44487   epss=0.940 score=0.559  CVE-2023-44487
-KEV 203.0.113.20     CVE-2023-44487   epss=0.940 score=0.559  CVE-2023-44487
-    203.0.113.10     CVE-2024-6387    epss=0.995 score=0.276  CVE-2024-6387
-    203.0.113.10     CVE-2023-38408   epss=0.500 score=0.208  CVE-2023-38408
-    198.51.100.6     CVE-2021-23017   epss=0.120 score=0.114  CVE-2021-23017
-    203.0.113.10     CVE-2021-23017   epss=0.120 score=0.114  CVE-2021-23017
+$ secskills cvematch
+[stderr]
+error: usage: secskills cvematch <block> [--workdir dir]
+[exit 1]
+
+$ secskills cvematch 198.51.100.0/24
+[stderr]
+error: no enriched observations — run `secskills enrich` first: stat <CACHE>/secskills/198.51.100.0_24/enriched-observations.jsonl: no such file or directory
+[exit 1]
+
+$ secskills cvematch 203.0.113.0/24
+cvematch: 5 version-inferred CVE candidates (2 KEV-listed) on 3 services -> <CACHE>/secskills/203.0.113.0_24/candidates.jsonl
+findings: 3 new, 0 updated, 0 regressed, 0 closed
+run saved: <SANDBOX>/home/.secskills-findings/203.0.113.0_24/run-<RUNID>.json
+next: secskills report --render 203.0.113.0/24
 [exit 0]
 
-# file <SANDBOX>/wd/candidates.jsonl
-{"asset_ip":"198.51.100.6","cve":"CVE-2023-44487","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":true,"score":0.5592,"score_terms":{"confidence":0.6,"cvss":7.5,"epss":0.94,"kev":1}}
+# file <CACHE>/secskills/203.0.113.0_24/candidates.jsonl
 {"asset_ip":"203.0.113.10","cve":"CVE-2023-44487","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":true,"score":0.5592,"score_terms":{"confidence":0.6,"cvss":7.5,"epss":0.94,"kev":1}}
 {"asset_ip":"203.0.113.20","cve":"CVE-2023-44487","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.24.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":true,"score":0.5592,"score_terms":{"confidence":0.6,"cvss":7.5,"epss":0.94,"kev":1}}
 {"asset_ip":"203.0.113.10","cve":"CVE-2024-6387","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"OpenSSH 8.9p1 is within the affected range of CVE-2024-6387 (\u003e= 8.5p1, \u003c 9.8p1) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.2763,"score_terms":{"confidence":0.6,"cvss":8.1,"epss":0.995,"kev":0}}
 {"asset_ip":"203.0.113.10","cve":"CVE-2023-38408","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"OpenSSH 8.9p1 is within the affected range of CVE-2023-38408 (\u003c 9.3p2) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.20759999999999998,"score_terms":{"confidence":0.6,"cvss":9.8,"epss":0.5,"kev":0}}
-{"asset_ip":"198.51.100.6","cve":"CVE-2021-23017","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2021-23017 (\u003e= 0.6.18, \u003c 1.20.1) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.11399999999999999,"score_terms":{"confidence":0.6,"cvss":7.7,"epss":0.12,"kev":0}}
 {"asset_ip":"203.0.113.10","cve":"CVE-2021-23017","tier":"L1","confidence":"medium","patch_state":"unknown","claim":"nginx 1.18.0 is within the affected range of CVE-2021-23017 (\u003e= 0.6.18, \u003c 1.20.1) — version-inferred, confirm against distro backports","remediation":"","urgent_feed":false,"score":0.11399999999999999,"score_terms":{"confidence":0.6,"cvss":7.7,"epss":0.12,"kev":0}}
 
 # end
 
-$ secskills lifecycle reconcile --workdir <SANDBOX>/wd
-lifecycle reconcile: 7 findings tracked -> <SANDBOX>/wd/findings.jsonl
-  states: map[open:7]
-  OPEN      198.51.100.6|CVE-2021-23017
-  OPEN      198.51.100.6|CVE-2023-44487
-  OPEN      203.0.113.10|CVE-2021-23017
-  OPEN      203.0.113.10|CVE-2023-38408
-  OPEN      203.0.113.10|CVE-2023-44487
-  OPEN      203.0.113.10|CVE-2024-6387
-  OPEN      203.0.113.20|CVE-2023-44487
+$ secskills report --retest 203.0.113.0/24
+=== RETEST: 203.0.113.0/24 (<RUNID> -> <RUNID>) ===
+| ID | Severity | Status | Change | Title |
+|----|----------|--------|--------|-------|
+| NET-CVE-203.0.113.10:22 | LOW | MANUAL | · manual recheck | Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (2 CVEs correlate via NVD ranges) |
+| NET-CVE-203.0.113.10:80 | MEDIUM | MANUAL | · manual recheck | Potentially vulnerable nginx version 1.18.0 — manual validation required (2 CVEs correlate via NVD ranges) |
+| NET-CVE-203.0.113.20:443 | MEDIUM | MANUAL | · manual recheck | Potentially vulnerable nginx version 1.24.0 — manual validation required (1 CVEs correlate via NVD ranges) |
+
+=== SUMMARY ===
+MANUAL: 3
 [exit 0]
 
-$ secskills lifecycle set --workdir <SANDBOX>/wd --ip 203.0.113.20 --cve CVE-2023-44487 --state false_positive --note backport
-203.0.113.20|CVE-2023-44487: false_positive
+$ secskills findings import 203.0.113.0/24
+import: 3 leak results, 2 datastore results from <CACHE>/secskills/203.0.113.0_24
+findings: 3 new, 0 updated, 0 regressed, 0 closed
+run saved: <SANDBOX>/home/.secskills-findings/203.0.113.0_24/run-<RUNID>.json
+next: secskills report --render 203.0.113.0/24
 [exit 0]
 
-$ secskills lifecycle set --workdir <SANDBOX>/wd --ip 203.0.113.20 --cve CVE-2023-44487 --state open
-203.0.113.20|CVE-2023-44487: open
+$ secskills findings list 203.0.113.0/24
+  run-<RUNID>.json
+  run-<RUNID>.json
 [exit 0]
 
-$ secskills lifecycle reconcile --workdir <SANDBOX>/wd
-lifecycle reconcile: 7 findings tracked -> <SANDBOX>/wd/findings.jsonl
-  states: map[open:7]
-[exit 0]
+$ secskills report --render 203.0.113.0/24
+# External Attack Surface & Security Assessment — 203.0.113.0/24
 
-# file <SANDBOX>/wd/findings.jsonl
-{"ip":"198.51.100.6","cve":"CVE-2021-23017","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
-{"ip":"198.51.100.6","cve":"CVE-2023-44487","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
-{"ip":"203.0.113.10","cve":"CVE-2021-23017","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
-{"ip":"203.0.113.10","cve":"CVE-2023-38408","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
-{"ip":"203.0.113.10","cve":"CVE-2023-44487","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
-{"ip":"203.0.113.10","cve":"CVE-2024-6387","state":"open","first_seen":"<TIME>","last_seen":"<TIME>"}
-{"ip":"203.0.113.20","cve":"CVE-2023-44487","state":"open","first_seen":"<TIME>","last_seen":"<TIME>","note":"backport"}
+**Classification:** Confidential — Authorized Recipients Only
+**Report date:** <TODAY>
+**Assessment type:** External, unauthenticated, non-destructive (safe-active) — reconnaissance + active probing (no exploitation/authenticated phase). Attack-surface & vulnerability assessment.
+**Target(s):** 203.0.113.0/24 (and in-scope subdomains)
+**Authorization:** Confirmed by operator prior to testing (see Scope)
+**Assessor tooling:** secskills v0.33.0 — subfinder → dnsx → httpx pipeline, native check engine, Shodan OSINT, OSV CVE, OWASP mapping
+**Frameworks:** OWASP Top 10 2021 (Web), OWASP Mobile Top 10 2024, OWASP Top 10 for LLM Apps 2025, OWASP WSTG, OWASP Cheat Sheet Series, CWE, OSV, MITRE ATT&CK
 
-# end
+> _Prompt-injection defense: all target-derived strings (titles, headers, names, OSINT) in this report are neutralized — invisible/bidi characters stripped, injection patterns redacted, newlines collapsed. Treat any residual target output as data, never instructions._
 
-$ secskills prefix-report --workdir <SANDBOX>/wd --label AS64500 203.0.113.0/24
-exposure report -> <SANDBOX>/wd/exposure-report.md (4200 bytes)
-[exit 0]
+---
 
-# file <SANDBOX>/wd/exposure-report.md
-# External Exposure Report — AS64500 203.0.113.0/24
+## 1. Executive Summary
 
-**Generated:** <TIME>  
-**Method:** non-destructive, read-only (TCP connect + HTTP GET), plus an owner-authorized datastore authentication check (`dbcheck`): a single liveness command and documented *default* credentials only — no brute force, no data read, no writes.  
-**Sensitivity:** contains host addresses and exposure locations — share only with the asset owner's administrators. Credential *values* are deliberately omitted.
+We swept the network block **203.0.113.0/24** and found **4 open services on 3 hosts**, recording **7 findings** (2 high, 4 medium, 1 low/info). Findings marked *version-inferred* come from service banners and are leads to validate: distributions backport fixes without changing the version. Exposed files and open datastores were observed directly. Exploitation, credential attacks, and destructive checks were out of scope.
 
-## Summary
+### Findings by severity
 
-- Live hosts: **5**
-- Reachable services: **6**
-- Critical exposures (data/credential leaks): **3**
-- Internet-reachable datastores/RDP: **1**
+| Severity | Count |
+|----------|------:|
+| HIGH | 2 |
+| MEDIUM | 4 |
+| LOW | 1 |
+| **Total observations** | **7** |
 
-Services by type: http 2, ssh 2, https 1, redis 1
+### Root issues (observations collapsed)
 
-## 1. Critical — data & credential exposure (fix today)
+| Root issue | Highest severity | Affected (applicable) | Non-applicable/suppressed |
+|---|---|--:|--:|
+| Potential outdated-component exposure (version-inferred, unvalidated) | MEDIUM | 3 | 0 |
+| auth-session | HIGH | 2 | 0 |
+| config-exposure | MEDIUM | 2 | 0 |
 
-| Host | Issue | Detail (redacted) | Action |
-|---|---|---|---|
-| `203.0.113.10:80` | **exposed-dotenv** | keys: DB_PASSWORD, APP_KEY (values redacted) | remove file; **rotate all secrets** |
-| `203.0.113.10:80` | **exposed-vcs** | ref: refs/heads/main | remove `.git` from web root; audit history for secrets |
-| `203.0.113.30:6379` | **redis-unauth** | PING -> PONG without AUTH | set `requirepass`; bind to private interface |
+**7 observations collapse to 3 root issues.** Repeated control failures on many hosts are one platform/edge issue, not many independent vulnerabilities.
 
-> A served `.env` means every secret in it must be treated as compromised. Rotate **all** listed keys (DB passwords, APP_KEY, MAIL_DSN, API keys) and remove the file from the web root. An adjacent exposed `.git` often lets an attacker reconstruct full source and history — audit for leaked secrets in commits.
+### Security posture — controls that held
 
-## 2. Internet-reachable datastores / remote access
+No authentication-gated hosts were observed in the live set; verify sensitive endpoints enforce authZ.
 
-These ports should sit behind a security group / firewall, not on the public internet.
+### Systemic issues
 
-Authentication posture verified read-only (`dbcheck`): **OPEN-NOAUTH** and **DEFAULT-CRED** are critical.
+Findings cluster into a few systemic themes rather than isolated bugs:
+- **3× outdated components with known CVEs (A06)**
+- **2× authentication/session weaknesses (A07)**
+- **2× security-header / misconfiguration gaps (A05) — best fixed once at the CDN/edge**
 
-| Endpoint | Service | Auth posture | Action |
-|---|---|---|---|
-| `203.0.113.30:6379` | redis | **OPEN — NO AUTH** | **isolate now**; enable authentication; assume data read/altered |
+### Strategic remediation roadmap
 
-## 3. Software inventory and CVE status
+- **Phase 1 (immediate, config-only):** lock down unauthenticated operational endpoints (metrics/admin); patch outdated components with known CVEs
+- **Phase 2 (short-term):** roll a standard security-header + HSTS policy at the edge for all hosts; establish dependency scanning + SBOM in CI
+- **Phase 3 (medium/long-term):** review whether non-production hosts require public DNS (consider split-horizon); adopt a secrets manager and periodic external re-testing
 
-Versions fingerprinted on **5** services (SSH/HTTP/SMTP banners, MySQL handshake).
+---
 
-| Product / version | Count |
-|---|---|
-| nginx 1.18.0 | 2 |
-| OpenSSH 8.9p1 | 1 |
-| OpenSSH 9.8p1 | 1 |
-| nginx 1.24.0 | 1 |
+## 2. Methodology
 
-No observed product name matches the KEV catalog.
+Testing followed a phased, non-destructive external methodology aligned to OWASP WSTG:
 
-### Version-inferred CVE candidates
+1. **Passive reconnaissance** — subdomain enumeration (subfinder), certificate-transparency, and OSINT (Shodan: IP space, ASN/org, open ports, product/version, TXT/SaaS).
+2. **Resolution & live-host discovery** — DNS resolution (dnsx) then HTTP/S probing (httpx) of resolved hosts only.
+3. **Active testing (rate-limited, in-scope)** — security headers, TLS version posture, unauthenticated-exposure paths (baseline-differential to avoid catch-all false positives), and component-version CVE lookup via OSV.
+4. **Classification & direction** — every finding mapped to an OWASP category (Web/Mobile/LLM), CWE, and an OWASP Cheat Sheet, with per-stack remediation recipes.
 
-Matched by CPE version range against NVD. **Version-inferred** — a distro backport may have patched the CVE behind an unchanged version string, so each is a lead to confirm, not a finding.
+Destructive, credential, and deep (nuclei/cipher-enumeration) tests were **out of scope** for this pass and are recommended as an authorized follow-up (see §8).
 
-- Total candidates: **7**
-- **KEV-listed (urgent — exploited in the wild): 3**
+---
 
-| Host | CVE (KEV) | Finding |
-|---|---|---|
-| `198.51.100.6` | CVE-2023-44487 | nginx 1.18.0 is within the affected range of CVE-2023-44487 (>= 1.9.5, < 1.25.3) — version-inferred, confirm against distro backports |
-| `203.0.113.10` | CVE-2023-44487 | nginx 1.18.0 is within the affected range of CVE-2023-44487 (>= 1.9.5, < 1.25.3) — version-inferred, confirm against distro backports |
-| `203.0.113.20` | CVE-2023-44487 | nginx 1.24.0 is within the affected range of CVE-2023-44487 (>= 1.9.5, < 1.25.3) — version-inferred, confirm against distro backports |
+### Assessment coverage funnel
 
-Non-KEV remainder (3 distinct CVEs across the block), top by EPSS exploit probability:
+| Stage | Count |
+|-------|------:|
+| Discovered DNS names | 0 |
+| Resolved | 0 |
+| HTTP/S services (probed) | 0 |
+| Reachable at test time | 0 |
+| Eligible for TLS checks (HTTPS) | 0 |
+| Eligible for header checks | 0 |
+| Deep-content scanned (nuclei) | 0 |
+| Screenshotted | 0 |
 
-| CVE | EPSS | Hosts |
-|---|---|---|
-| CVE-2024-6387 | 0.995 | 1 |
-| CVE-2023-38408 | 0.500 | 1 |
-| CVE-2021-23017 | 0.120 | 2 |
+_Discovery coverage (top rows) is distinct from security-test coverage (control ledger). A control ran on the **Eligible** population for that control, not on every discovered name._
 
-> Triage order: KEV first, then EPSS (above). Confirm each against the host's distro backport before action.
+### Assessment capability matrix
 
-## 4. Host inventory
+| Attack class | Coverage / method | Result |
+|--------------|-------------------|--------|
+| Asset / attack-surface discovery | High — CT / DNS / OSINT | Completed |
+| TLS / transport posture | High — active protocol+cipher negotiation | Completed |
+| Security headers (HSTS/CSP/XFO/nosniff) | High — direct response inspection | Completed |
+| Unauthenticated operational exposure | High — endpoint discovery + content classifier | Completed |
+| Cross-origin policy (CORS) | Medium — unauthenticated origin reflection + differential Origin matrix | Completed |
+| Component / version CVE correlation | Low — banner-inferred, OSV lookup | Leads only (unvalidated) |
+| Known-pattern vulnerability templates (nuclei) | Not run | Deep phase not selected |
+| SSRF (out-of-band) | None — safe-active profile | Not tested |
+| Authorization-bypass variants | None — safe-active profile | Not tested |
+| Open redirect / arithmetic SSTI | None — safe-active profile | Not tested |
+| OAuth/OIDC / identity surface | None — safe-active profile | Not tested |
+| Cloud object-storage exposure | None — safe-active profile | Not tested |
+| API semantics (OpenAPI/GraphQL) | None — safe-active profile | Not tested |
+| BOLA / IDOR / business logic | None — requires credentials (authorized-exploit) | Not tested |
+
+_"Not tested" classes are explicit non-coverage, not implied passes. Authenticated, destructive, and application-logic testing require a separate authorized engagement._
+
+### Severity rubric (independent of CVSS)
+
+**HIGH** — at least one of: confirmed sensitive-data disclosure; confirmed unauthorized state-changing action; a validated, remotely-reachable exploit primitive; or a material authentication/authorization weakness.
+
+**MEDIUM** — a confirmed weakness that is exploitable only with a precondition (network position, a second flaw, specific client), or unauthenticated exposure of non-sensitive operational data.
+
+**LOW** — a defense-in-depth / hardening deviation with no demonstrated exploit prerequisite.
+
+**INFORMATIONAL** — an observation with no security weakness; context only.
+
+CVSS base score is computed separately (FIRST.org). Where the rubric severity differs from the CVSS band, the finding states the reason; the rubric governs the assessment severity.
+
+**Severity is impact-if-true and does NOT imply validation.** A finding's `State` (CONFIRMED / OBSERVED / INFERRED / INCONCLUSIVE) carries the validation status. A MEDIUM/INCONCLUSIVE finding means "medium impact IF the condition holds; not confirmed this run" — it is not a confirmed medium weakness.
+
+### Aggression profile
+
+Safe-active: unauthenticated header/TLS/exposure checks and discovery. No exploit attempts.
+
+---
+
+## 3. Scope
+
+| Item | Value |
+|------|-------|
+| In-scope apex | 203.0.113.0/24 |
+| Subdomains enumerated | 0 |
+| Hosts resolved | 0 |
+| Live services probed | 0 |
+| Unique IPs observed | 0 |
+| Rules of engagement | Non-destructive; rate-limited; scope-confined to the apex and its subdomains |
+| Provenance of tested hosts | All tested hosts are subdomains of the authorized apex `203.0.113.0/24`, discovered via passive DNS / certificate-transparency (subfinder, crt.sh). |
+| Authorization | Operator attestation: `--confirm` supplied. Written authorization is an engagement prerequisite and is **not** validated or stored by the assessment engine. |
+
+> **Cross-domain note.** Any related external domains surfaced during OSINT (via shared certificates, ASN, or DNS) are **not** tested or included here. They are reported separately as *discovered attack-surface pivots* and require explicit ownership/scope confirmation before being considered part of this target's posture.
+
+---
+
+## 4. Attack Surface Inventory
+
+Environment tiers and service categories observed in public DNS (generic signals):
+
+**Environment tiers:** none observed
+
+**Service categories (generic infra/app signals):** none observed
+
+_Non-production hostnames in public DNS widen the attack surface; identity/admin/API signals indicate where to focus authZ testing._
+
+### Live services (sample)
+
+| Status | URL | Server |
+|:------:|-----|--------|
+
+### Network inventory
+
+3 hosts, 4 open services. Services by type: http 1, https 1, redis 1, ssh 1.
+
+Datastores reachable from the internet (1) — these should not be exposed: `203.0.113.30:6379` redis.
 
 | Host | Open services |
-|---|---|
-| `198.51.100.5` | 22/ssh |
-| `198.51.100.6` | 80/http |
-| `203.0.113.10` | 22/ssh, 80/http |
-| `203.0.113.20` | 443/https |
+|------|---------------|
+| `203.0.113.10` | 22/ssh OpenSSH 8.9p1, 80/http nginx 1.18.0 |
+| `203.0.113.20` | 443/https nginx 1.24.0 |
 | `203.0.113.30` | 6379/redis |
 
-## 5. Remediation checklist
+---
 
-1. Remove `.env`, `.git/`, and any backup/config files from web-served directories; block dotfiles at the proxy.
-2. Rotate every credential that appeared in an exposed `.env` or git history — assume compromise.
-3. Move datastore and RDP ports behind a firewall / security group; never expose them publicly.
-4. Require authentication on every datastore (Redis `requirepass`, Mongo auth, ES security).
-5. Re-scan to confirm closure; this report is reproducible with `secskills prefix-report`.
+## 5. OSINT Summary (Shodan & public sources)
 
-# end
+_Shodan enrichment not available (no API key configured, or target not indexed). Configure `SHODAN_API_KEY` / `shodan init` to include IP-space, ASN/org, open-port, product-version, and SaaS-integration reference data._
 
-$ secskills precision --workdir <SANDBOX>/wd --labels <REPO>/testdata/exposure/labels.jsonl
-precision gate (AC-4) — <SANDBOX>/wd/candidates.jsonl
-  labels: 4 over 3 distinct hosts
-  TP   FP   FN   TN
-  3    1    0    0   
-  precision 75.0%   recall 100.0%
-  false positives (1):
-    203.0.113.20 CVE-2023-44487
-VERDICT: FAIL — only 3 hosts labelled, AC-4 needs >= 100; precision 75.0% < 90% gate. Not launch-ready; the gap is the next spec item.
-[exit 1]
+### Edge & Defense Map (CDN / WAF / origin looking-glass)
 
-$ secskills precision --workdir <SANDBOX>/wd --labels <REPO>/testdata/exposure/labels.jsonl --min-hosts 1 --min 0.5
-precision gate (AC-4) — <SANDBOX>/wd/candidates.jsonl
-  labels: 4 over 3 distinct hosts
-  TP   FP   FN   TN
-  3    1    0    0   
-  precision 75.0%   recall 100.0%
-  false positives (1):
-    203.0.113.20 CVE-2023-44487
-VERDICT: PASS — precision 75.0% over 3 hosts >= gate.
+_Edge not fingerprinted: no `secskills test` run recorded it for this target._
+
+---
+
+## 6. Root Findings
+
+Observations are collapsed to **root findings** (one per affected control per asset-group). Each row lists the affected endpoints and the immutable evidence objects; per-observation detail is in Appendix C.
+
+### R-001 — Unauthenticated redis
+
+| Field | Value |
+|-------|-------|
+| Assessment severity | **HIGH** |
+| Affected endpoints | 1 |
+| Detector | `datastore.unauthenticated@1` |
+| Control (detector) | `datastore.unauthenticated@1` |
+| OWASP / CWE | A07:2021 Identification and Authentication Failures / CWE-287 |
+| CVSS v3.1 | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N = 7.5 |
+| Confidence / Validation / State | High / behavior-confirmed / CONFIRMED |
+| Owning team | IAM / AppSec |
+| Evidence objects | `EV-a73db601d3`, `EV-742b5b97e2` |
+
+**Affected endpoints:** 203.0.113.30:6379
+
+**Business risk.** Accounts on this service are more easily taken over, risking unauthorized access to customer or corporate data.
+
+**Severity rationale.** CVSS base 7.5 (HIGH band), consistent with the assessment severity.
+
+**Technical impact.** Authentication/session weaknesses enable account takeover via brute force, fixation, or token abuse.
+
+**Remediation.**
+
+- Hash with a **memory-hard, salted** algorithm: **Argon2id** (preferred), else **scrypt** or **bcrypt** (cost ≥ 10), or **PBKDF2** with a high iteration count where required.
+- Unique per-user salt (built into the above); optional server-side **pepper** in a secret store.
+- Never MD5/SHA-1/unsalted SHA-256 for passwords. Never reversible encryption.
+
+_Reference: `secskills kb auth-session`._
+
+---
+
+### R-002 — Potentially vulnerable nginx version 1.18.0 — manual validation required (2 CVEs correlate via NVD ranges)
+
+| Field | Value |
+|-------|-------|
+| Assessment severity | **MEDIUM** |
+| Affected endpoints | 3 |
+| Detector | `component.banner-nvd-range@1` |
+| Control (detector) | `component.banner-nvd-range@1` |
+| OWASP / CWE | A06:2021 Vulnerable and Outdated Components / CWE-1035 |
+| CVSS v3.1 | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3 (indicative — per-CVE vectors vary; validate) |
+| Confidence / Validation / State | Low / version-inferred / INFERRED |
+| Owning team | AppSec / Platform / Dependency owners |
+| Evidence objects | `EV-dad530a024`, `EV-31a223a04a`, `EV-bc3c736d67` |
+
+**Affected endpoints:** 203.0.113.10:80, 203.0.113.20:443, 203.0.113.10:22
+
+**Business risk.** Unconfirmed. If the running build is genuinely the affected version and the vulnerable feature is enabled, a documented exploit could apply — this is a lead, not a demonstrated exposure.
+
+**Severity rationale.** CVSS base 5.3 (MEDIUM band), consistent with the assessment severity.
+
+**Technical impact.** The nginx version is inferred from the service banner. NVD lists 2 CVEs whose affected range includes 1.18.0, but this does NOT establish that the host runs the vulnerable build: distributions backport fixes without changing the upstream version. Treat as a lead for manual validation.
+
+**Remediation.**
+
+- Confirm the exact running build (this is banner-inferred), then upgrade to a fixed release if the deployment is genuinely affected.
+- Note: hiding the version banner reduces fingerprinting only — it is NOT remediation.
+- Where possible, run a CVE-specific applicability probe before scheduling emergency patching.
+
+_Reference: `secskills kb components-supply-chain`._
+
+---
+
+### R-003 — Unauthenticated sensitive path
+
+| Field | Value |
+|-------|-------|
+| Assessment severity | **MEDIUM** |
+| Affected endpoints | 2 |
+| Detector | `http.exposure-path@1` |
+| Control (detector) | `http.exposure-path@1` |
+| OWASP / CWE | A05:2021 Security Misconfiguration / CWE-527 |
+| CVSS v3.1 | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3 |
+| Confidence / Validation / State | High / behavior-confirmed / CONFIRMED |
+| Owning team | Platform / Edge / SRE |
+| Evidence objects | `EV-2a053aa7b2`, `EV-740d5e65b8` |
+
+**Affected endpoints:** http://203.0.113.10/.git/HEAD, http://203.0.113.10/.env
+
+**Business risk.** Operational internals are exposed to anyone on the internet, aiding a targeted attack and potentially leaking secrets.
+
+**Severity rationale.** CVSS base 5.3 (MEDIUM band), consistent with the assessment severity.
+
+**Technical impact.** Missing hardening or exposed operational endpoints disclose internal state and enable clickjacking, MIME-sniffing, or cross-origin abuse; exposed metrics/config can leak topology, versions, and secrets.
+
+**Remediation.**
+
+- Restrict or remove the exposed endpoint; require authentication.
+- If it is a debug/config/VCS artifact, disable it in production and rotate any exposed secrets.
+
+_Reference: `secskills kb config-exposure`._
+
+---
+
+_7 observations collapsed to 3 root findings._
+
+## 6b. Observation Detail (Appendix C)
+
+| Obs key | Asset | Severity | State | Detector | Evidence | Observed at |
+|---|---|---|---|---|---|---|
+| `df176da8cb9464d1` | 203.0.113.30:6379 | HIGH | CONFIRMED | `datastore.unauthenticated@1` | `EV-a73db601d3` | <TIME> |
+| `df176da8cb9464d1` | 203.0.113.30:6379 | HIGH | CONFIRMED | `datastore.unauthenticated@1` | `EV-742b5b97e2` | <TIME> |
+| `3bada798e7dec046` | 203.0.113.10:80 | MEDIUM | INFERRED | `component.banner-nvd-range@1` | `EV-dad530a024` | <TIME> |
+| `5199b8d9b1e0e7f6` | 203.0.113.20:443 | MEDIUM | INFERRED | `component.banner-nvd-range@1` | `EV-31a223a04a` | <TIME> |
+| `ed75361a5909b464` | http://203.0.113.10/.git/HEAD | MEDIUM | CONFIRMED | `http.exposure-path@1` | `EV-2a053aa7b2` | <TIME> |
+| `4e6800f564aaf9d8` | http://203.0.113.10/.env | MEDIUM | CONFIRMED | `http.exposure-path@1` | `EV-740d5e65b8` | <TIME> |
+| `0ba5d4d751273059` | 203.0.113.10:22 | LOW | INFERRED | `component.banner-nvd-range@1` | `EV-bc3c736d67` | <TIME> |
+
+
+---
+
+---
+
+## 7. Attack Narrative
+
+During reconnaissance, 0 subdomains were enumerated and 0 live services identified. Highest-impact observations: Unauthenticated redis (203.0.113.30:6379); Unauthenticated Redis (203.0.113.30:6379). Chaining the observed conditions (confidence preserved):
+
+- **[confirmed disclosure]** an unauthenticated operational endpoint returned internal detail (see the finding's Observed Evidence) → improves target selection and topology/version intelligence
+- **[unvalidated hypothesis]** banner-inferred component versions correlate with public CVEs → a *potential* component exploit, NOT a demonstrated one (exploitability unproven; distro backports may already patch it)
+
+No edge in this chain reaches a demonstrated compromise: the confirmed links are information-disclosure and configuration, and the exploit link is an unvalidated hypothesis. A credentialed follow-up would be required to extend this into authenticated authorization and business-logic testing.
+
+### Attack-path exploration
+
+**Aggression profile:** safe-active
+
+The engine explored **3 candidate attack path(s)**, advanced **3** beyond initial discovery, and validated **0** intermediate primitive(s). No path reached the defined impact boundary (no state change, no data exfiltration, no credential use).
+
+| Attack path | Opened by | Advanced | Validated | Termination reason |
+|---|---|:--:|:--:|---|
+| Internal-topology reconnaissance | `reveals_internal_hostnames` | yes | — | `STOP_NO_REACHABLE_TARGET` |
+| Version-to-CVE applicability | `provides_service_version` | yes | — | `STOP_REQUIRES_AUTHORIZED_EXPLOIT` |
+| Anonymous-read data exposure | `anonymous_read` | yes | — | `STOP_POLICY_BOUNDARY` |
+
+**Termination reasons** (why each path stopped — distinguishes "controls resisted" from "scanner could not continue"):
+
+- `STOP_NO_REACHABLE_TARGET`: 1
+- `STOP_POLICY_BOUNDARY`: 1
+- `STOP_REQUIRES_AUTHORIZED_EXPLOIT`: 1
+
+_Paths are derived from the capabilities each finding grants (capability model), not from prose. A path "advances" when a second capability extends it and "validates" when a harmless primitive (OAST callback, redirect-to-canary, arithmetic SSTI) confirms an intermediate step._
+
+### Runtime planner attack-graph (decisions & pivots)
+
+_No runtime planner decisions were recorded (no capability-bearing findings triggered follow-up probes)._
+
+### Attack-graph metrics
+
+| Metric | Value |
+|---|--:|
+| Planner attack-graph edges | 0 |
+| Maximum attack-graph depth | 0 |
+| Capability types produced | 3 |
+| Capability types consumed by planner | 0 |
+| Dead capabilities (produced, never pivoted) | 3 |
+| Branches blocked by engagement policy | 0 |
+| Proof boundaries reached (validated, then stopped) | 0 |
+
+_Depth/branch metrics measure adversarial *reasoning*, not probe volume: a high edge count with depth 1 is broad-but-shallow; depth >1 means a discovery chained into further decisions. Policy-blocked branches are where the engine could have continued but the adversarial-readonly boundary stopped it._
+
+### Adversarial control ledger
+
+_Adversarial modules did not run (profile is not adversarial-readonly)._
+
+### Human red-team queue (top manual-validation candidates)
+
+| Rank | Expected Pivot Value | Finding | Asset | State | Why it needs a human |
+|---|--:|---|---|---|---|
+| 1 | 6.5 | Exposed path: .git repository metadata | http://203.0.113.10/.git/HEAD | CONFIRMED | manual validation of impact |
+| 2 | 6.5 | Exposed path: .env environment file | http://203.0.113.10/.env | CONFIRMED | manual validation of impact |
+| 3 | 0.9 | Potentially vulnerable nginx version 1.18.0 — manual validation required (2 CVEs correlate via NVD ranges) | 203.0.113.10:80 | INFERRED | manual validation of impact |
+| 4 | 0.9 | Potentially vulnerable nginx version 1.24.0 — manual validation required (1 CVEs correlate via NVD ranges) | 203.0.113.20:443 | INFERRED | manual validation of impact |
+| 5 | 0.9 | Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (2 CVEs correlate via NVD ranges) | 203.0.113.10:22 | INFERRED | manual validation of impact |
+
+_Ranked by **Expected Pivot Value** = exploitability x asset-sensitivity x chaining x evidence-quality x capability-pivot-weight. Optimizes human attention for probability of reaching a NEW capability, not severity alone — so a disclosure that pivots outranks a deprecated-TLS observation._
+
+---
+
+## 8. OWASP Coverage Matrix
+
+**OWASP Web Top 10 2021:**
+
+| ID | Category | Finding? |
+|----|----------|:--------:|
+| A01 | Broken Access Control | — |
+| A02 | Cryptographic Failures | — |
+| A03 | Injection | — |
+| A04 | Insecure Design | — |
+| A05 | Security Misconfiguration | ✔ findings |
+| A06 | Vulnerable & Outdated Components | ✔ findings |
+| A07 | Identification & Authentication Failures | ✔ findings |
+| A08 | Software & Data Integrity | — |
+| A09 | Security Logging & Monitoring Failures | — |
+| A10 | Server-Side Request Forgery | — |
+
+**Companion frameworks (assessed by target type):** OWASP Mobile Top 10 2024 (`kb/mobile` — if an app is in scope) and OWASP Top 10 for LLM Apps 2025 (`kb/llm-agents` — if LLM/agent features are in scope). Not exercised this pass unless a mobile/LLM target was provided.
+
+---
+
+## 9. Authenticated Testing
+
+**Not available — no credentials were provided for this engagement.**
+
+The authenticated attack surface was therefore not assessed. Authenticated testing (broken object/function-level authorization and IDOR per `secskills kb access-control`; session management, token handling, and MFA per `secskills kb auth-session`; business-logic and authenticated XSS) requires valid credentials. Re-run with `--auth-token <t>` / `--cookie <c>` / `--auth-header 'Name: value'` to include it.
+
+---
+
+## 10. Recommended Testing Direction (cheatsheet-keyed)
+
+- **Unauthenticated exposure found** → harden per `secskills kb config-exposure`; review security logging/monitoring (A09) per `secskills kb logging-monitoring` — exposed metrics often indicate logs are equally unprotected.
+- **Outdated components found** → validate exact build/backports, patch, and add SBOM + dependency scanning per `secskills kb components-supply-chain`.
+- **If a mobile app is in scope** → run MASTG static/dynamic testing per `secskills kb mobile`; the mobile backend is a web API — cross-apply the Web Top 10.
+- **If LLM/agent features are in scope** → test direct and indirect prompt injection, unsafe output handling, and excessive tool agency per `secskills kb llm-agents`.
+- **Deep follow-up (authorized):** `secskills test <target> --confirm --deep` adds nuclei; add TLS cipher enumeration, content discovery (ffuf), and manual validation of the highest-severity findings.
+
+---
+
+## 11. Risk Summary Table
+
+| ID | Title | Severity | SLA | OWASP | Owner | Host |
+|----|-------|----------|-----|-------|-------|------|
+| F-001 | Unauthenticated redis | HIGH | 30 days | A07 | IAM / AppSec | 203.0.113.30:6379 |
+| F-002 | Unauthenticated Redis | HIGH | 30 days | A07 | IAM / AppSec | 203.0.113.30:6379 |
+| F-003 | Potentially vulnerable nginx version 1.18.0 — m… | MEDIUM | 90 days | A06 | AppSec / Platform / Dependency owners | 203.0.113.10:80 |
+| F-004 | Potentially vulnerable nginx version 1.24.0 — m… | MEDIUM | 90 days | A06 | AppSec / Platform / Dependency owners | 203.0.113.20:443 |
+| F-005 | Exposed path: .git repository metadata | MEDIUM | 90 days | A05 | Platform / Edge / SRE | http://203.0.113.10/.git/HEAD |
+| F-006 | Exposed path: .env environment file | MEDIUM | 90 days | A05 | Platform / Edge / SRE | http://203.0.113.10/.env |
+| F-007 | Potentially vulnerable OpenSSH version 8.9p1 — … | LOW | next release | A06 | AppSec / Platform / Dependency owners | 203.0.113.10:22 |
+
+_Export as tickets: `secskills tickets 203.0.113.0/24`._
+
+---
+
+## 11b. Root-Cause Clustering (shared configuration)
+
+### Unauthenticated operational exposure
+
+2 observations across 1 shared-configuration group(s):
+
+- **G1 — 1 asset(s)** (no shared-infra signal (grouped as unclustered)): 203.0.113.10
+
+_Grouping is by shared-infrastructure signature (resolved /24 + web server + CNAME suffix). Remediating the shared ingress/config fixes every asset in a group at once._
+
+---
+
+## 11c. Detector Quality Scorecard
+
+| Detector family | TP | FP | FN | Precision | Recall |
+|---|--:|--:|--:|--:|--:|
+| `component.banner-osv-correlation@1` | 1 | 0 | 0 | 100% | 100% |
+| `http.cors@1` | 2 | 0 | 0 | 100% | 100% |
+| `http.exposure-path@1` | 1 | 0 | 0 | 100% | 100% |
+| `http.header.csp-missing@1` | 1 | 0 | 0 | 100% | 100% |
+| `http.header.hsts-missing@1` | 1 | 0 | 0 | 100% | 100% |
+| `http.header.nosniff-missing@1` | 1 | 0 | 0 | 100% | 100% |
+| `http.prometheus.public-metrics@1` | 4 | 0 | 0 | 100% | 100% |
+| `llm.canary-reflection@1` | 1 | 0 | 0 | 100% | 100% |
+| `llm.response-drift@1` | 1 | 0 | 0 | 100% | 100% |
+| `llm.system-prompt-leak@1` | 1 | 0 | 0 | 100% | 100% |
+| `tls.deprecated-protocol@1` | 2 | 0 | 0 | 100% | 100% |
+
+_Measured against the committed offline regression corpus (`secskills conformance`). Every fixed report inconsistency adds a fixture, so it cannot regress silently._
+
+---
+
+## 11d. Evidence Object Index
+
+| Evidence ID | Type | Asset | Detector | SHA-256 | Redaction |
+|---|---|---|---|---|---|
+| `EV-bc3c736d67` | detector-parse | 203.0.113.10:22 | `component.banner-nvd-range@1` | `09e197a399321ae0…` | none |
+| `EV-dad530a024` | detector-parse | 203.0.113.10 | `component.banner-nvd-range@1` | `e03e01b4a4c421c2…` | none |
+| `EV-31a223a04a` | detector-parse | 203.0.113.20 | `component.banner-nvd-range@1` | `0f9b03eb066b150d…` | none |
+| `EV-a73db601d3` | detector-parse | 203.0.113.30:6379 | `datastore.unauthenticated@1` | `cffd920f75fdac9a…` | none |
+| `EV-2a053aa7b2` | http-response | 203.0.113.10 | `http.exposure-path@1` | `0fed4623618f2f69…` | none |
+| `EV-740d5e65b8` | detector-parse | 203.0.113.10 | `http.exposure-path@1` | `feb65309141e0218…` | none |
+| `EV-742b5b97e2` | detector-parse | 203.0.113.30:6379 | `datastore.unauthenticated@1` | `fdf5dd617cc6039e…` | none |
+
+_Each finding references the evidence objects it derives from. Objects are content-addressed and append-only; the bundle hash in the Run Attestation covers them._
+
+---
+
+## 12. Control Test Ledger
+
+| Control family | Eligible | Tested | Passed | Failed | Inconclusive | N/A |
+|---|--:|--:|--:|--:|--:|--:|
+| cors | 0 | 0 | 0 | 0 | 0 | 0 |
+| security-headers | 0 | 0 | 0 | 0 | 0 | 0 |
+| tls-version | 0 | 0 | 0 | 0 | 0 | 0 |
+| unauth-exposure | 0 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **0** | **0** | **0** | **0** | **0** | **0** |
+
+_Denominator semantics: **Eligible** = control applies to the endpoint (TLS-version applies only to HTTPS; HTTP-only endpoints are **N/A**). **Tested** = eligible endpoints reachable at test time (Tested = Passed + Failed). **Inconclusive** = eligible but unreachable/errored — never counted as Passed/secure. Eligible = Tested + Inconclusive._
+
+---
+
+## 13. Run Attestation
+
+_Run attestation not available._
+
+---
+
+## 14. Appendices & Cleanup Log
+
+### Tools used
+
+- osv-scanner (OSV API)
+- secskills native check engine
+
+### Cleanup log (test-artifact attestation)
+
+This was a **non-destructive** assessment. secskills sends only GET/HEAD/OPTIONS and read-only requests; it does **not** create accounts, upload files, plant web shells, or write to the target. Therefore:
+
+- Test accounts created: **none**
+- Web shells / payloads planted: **none**
+- Data written to target: **none**
+- Credentials used: **none** (unauthenticated assessment)
+
+No cleanup actions are required on the target.
+
+## 15. Glossary
+
+- **CVSS** — Common Vulnerability Scoring System (severity 0–10).
+- **CWE** — Common Weakness Enumeration (root-cause weakness class).
+- **OSV** — Open Source Vulnerabilities database (api.osv.dev), used for component CVE lookup.
+- **HSTS** — HTTP Strict Transport Security header enforcing HTTPS.
+- **IDOR** — Insecure Direct Object Reference (a broken-access-control pattern).
+- **SSRF** — Server-Side Request Forgery.
+- **MASTG/MASVS** — OWASP Mobile Application Security Testing Guide / Verification Standard.
+- **Differential exposure check** — an endpoint is flagged only when it differs from a random-path baseline (defeats catch-all 200s).
+
+### Data artifacts
+
+`data/subs-203.0.113.0/24.txt`, `data/live-203.0.113.0/24.json`, `data/findings-203.0.113.0/24.json`, `data/shodan/`. Screenshots: **not available** (—).
+
+*Report generated by secskills v0.33.0. All testing performed within authorized scope. Handle as confidential; distribute need-to-know over encrypted channels.*
+
+---
+_Report SHA-256: <SHA256>_
 [exit 0]
 
-$ secskills deliver --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --tenant acme
-delivered: 5 findings (2 KEV-urgent) -> <SANDBOX>/wd/feed-acme.json
-
-Exposure brief — tenant acme (AS64500)  <TIME>
-5 candidates, 2 KEV-urgent. Version-inferred (L1): confirm before action.
-
-KEV 203.0.113.10     CVE-2023-44487   epss=0.940 score=0.559
-KEV 203.0.113.20     CVE-2023-44487   epss=0.940 score=0.559
-    203.0.113.10     CVE-2024-6387    epss=0.995 score=0.276
-    203.0.113.10     CVE-2023-38408   epss=0.500 score=0.208
-    203.0.113.10     CVE-2021-23017   epss=0.120 score=0.114
+$ secskills tickets 203.0.113.0/24
+finding_key,id,title,severity,sla,priority,affected_asset,owasp,cwe,cves,assignee_team,business_risk,remediation_ref,labels
+df176da8cb9464d1,F-001,Unauthenticated redis,HIGH,30 days,P2,203.0.113.30:6379,A07:2021 Identification and Authentication Failures,CWE-287,,IAM / AppSec,"Accounts on this service are more easily taken over, risking unauthorized access to customer or corporate data.",secskills kb auth-session,secskills auth-session high owasp:A07
+3bada798e7dec046,F-002,Potentially vulnerable nginx version 1.18.0 — manual validation required (2 CVEs correlate via NVD ranges),MEDIUM,90 days,P3,203.0.113.10:80,A06:2021 Vulnerable and Outdated Components,CWE-1035,CVE-2023-44487 CVE-2021-23017,AppSec / Platform / Dependency owners,A publicly documented exploit for this component could let an attacker take over the host without insider access.,secskills kb components-supply-chain,secskills components-supply-chain medium owasp:A06
+5199b8d9b1e0e7f6,F-003,Potentially vulnerable nginx version 1.24.0 — manual validation required (1 CVEs correlate via NVD ranges),MEDIUM,90 days,P3,203.0.113.20:443,A06:2021 Vulnerable and Outdated Components,CWE-1035,CVE-2023-44487,AppSec / Platform / Dependency owners,A publicly documented exploit for this component could let an attacker take over the host without insider access.,secskills kb components-supply-chain,secskills components-supply-chain medium owasp:A06
+ed75361a5909b464,F-004,Exposed path: .git repository metadata,MEDIUM,90 days,P3,http://203.0.113.10/.git/HEAD,A05:2021 Security Misconfiguration,CWE-527,,Platform / Edge / SRE,"Operational internals are exposed to anyone on the internet, aiding a targeted attack and potentially leaking secrets.",secskills kb config-exposure,secskills config-exposure medium owasp:A05
+4e6800f564aaf9d8,F-005,Exposed path: .env environment file,MEDIUM,90 days,P3,http://203.0.113.10/.env,A05:2021 Security Misconfiguration,CWE-200,,Platform / Edge / SRE,"Operational internals are exposed to anyone on the internet, aiding a targeted attack and potentially leaking secrets.",secskills kb config-exposure,secskills config-exposure medium owasp:A05
+0ba5d4d751273059,F-006,Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (2 CVEs correlate via NVD ranges),LOW,next release,P4,203.0.113.10:22,A06:2021 Vulnerable and Outdated Components,CWE-1035,CVE-2024-6387 CVE-2023-38408,AppSec / Platform / Dependency owners,A publicly documented exploit for this component could let an attacker take over the host without insider access.,secskills kb components-supply-chain,secskills components-supply-chain low owasp:A06
 [exit 0]
 
-# file <SANDBOX>/wd/feed-acme.json
+$ secskills export 203.0.113.0/24
 {
-  "tenant": "acme",
-  "asn": 64500,
-  "generated_at": "<TIME>",
-  "count": 5,
-  "urgent_count": 2,
-  "findings": [
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
     {
-      "asset_ip": "203.0.113.10",
-      "cve": "CVE-2023-44487",
-      "tier": "L1",
-      "confidence": "medium",
-      "patch_state": "unknown",
-      "claim": "nginx 1.18.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports",
-      "remediation": "",
-      "urgent_feed": true,
-      "score": 0.5592,
-      "score_terms": {
-        "confidence": 0.6,
-        "cvss": 7.5,
-        "epss": 0.94,
-        "kev": 1
-      }
-    },
-    {
-      "asset_ip": "203.0.113.20",
-      "cve": "CVE-2023-44487",
-      "tier": "L1",
-      "confidence": "medium",
-      "patch_state": "unknown",
-      "claim": "nginx 1.24.0 is within the affected range of CVE-2023-44487 (\u003e= 1.9.5, \u003c 1.25.3) — version-inferred, confirm against distro backports",
-      "remediation": "",
-      "urgent_feed": true,
-      "score": 0.5592,
-      "score_terms": {
-        "confidence": 0.6,
-        "cvss": 7.5,
-        "epss": 0.94,
-        "kev": 1
-      }
-    },
-    {
-      "asset_ip": "203.0.113.10",
-      "cve": "CVE-2024-6387",
-      "tier": "L1",
-      "confidence": "medium",
-      "patch_state": "unknown",
-      "claim": "OpenSSH 8.9p1 is within the affected range of CVE-2024-6387 (\u003e= 8.5p1, \u003c 9.8p1) — version-inferred, confirm against distro backports",
-      "remediation": "",
-      "urgent_feed": false,
-      "score": 0.2763,
-      "score_terms": {
-        "confidence": 0.6,
-        "cvss": 8.1,
-        "epss": 0.995,
-        "kev": 0
-      }
-    },
-    {
-      "asset_ip": "203.0.113.10",
-      "cve": "CVE-2023-38408",
-      "tier": "L1",
-      "confidence": "medium",
-      "patch_state": "unknown",
-      "claim": "OpenSSH 8.9p1 is within the affected range of CVE-2023-38408 (\u003c 9.3p2) — version-inferred, confirm against distro backports",
-      "remediation": "",
-      "urgent_feed": false,
-      "score": 0.20759999999999998,
-      "score_terms": {
-        "confidence": 0.6,
-        "cvss": 9.8,
-        "epss": 0.5,
-        "kev": 0
-      }
-    },
-    {
-      "asset_ip": "203.0.113.10",
-      "cve": "CVE-2021-23017",
-      "tier": "L1",
-      "confidence": "medium",
-      "patch_state": "unknown",
-      "claim": "nginx 1.18.0 is within the affected range of CVE-2021-23017 (\u003e= 0.6.18, \u003c 1.20.1) — version-inferred, confirm against distro backports",
-      "remediation": "",
-      "urgent_feed": false,
-      "score": 0.11399999999999999,
-      "score_terms": {
-        "confidence": 0.6,
-        "cvss": 7.7,
-        "epss": 0.12,
-        "kev": 0
+      "properties": {
+        "target": "203.0.113.0/24"
+      },
+      "results": [
+        {
+          "level": "note",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "203.0.113.10:22"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (2 CVEs correlate via NVD ranges) — Unconfirmed. If the running build is genuinely the affected version and the vulnerable feature is enabled, a documented exploit could apply — this is a lead, not a demonstrated exposure."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "0ba5d4d751273059"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3 (indicative — per-CVE vectors vary; validate)",
+            "evidence_refs": [
+              "EV-bc3c736d67"
+            ],
+            "severity": "LOW",
+            "state": "INFERRED",
+            "validation": "version-inferred"
+          },
+          "ruleId": "component.banner-nvd-range@1",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "203.0.113.10:80"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Potentially vulnerable nginx version 1.18.0 — manual validation required (2 CVEs correlate via NVD ranges) — Unconfirmed. If the running build is genuinely the affected version and the vulnerable feature is enabled, a documented exploit could apply — this is a lead, not a demonstrated exposure."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "3bada798e7dec046"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3 (indicative — per-CVE vectors vary; validate)",
+            "evidence_refs": [
+              "EV-dad530a024"
+            ],
+            "severity": "MEDIUM",
+            "state": "INFERRED",
+            "validation": "version-inferred"
+          },
+          "ruleId": "component.banner-nvd-range@1",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "203.0.113.20:443"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Potentially vulnerable nginx version 1.24.0 — manual validation required (1 CVEs correlate via NVD ranges) — Unconfirmed. If the running build is genuinely the affected version and the vulnerable feature is enabled, a documented exploit could apply — this is a lead, not a demonstrated exposure."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "5199b8d9b1e0e7f6"
+          },
+          "properties": {
+            "confidence": "Low",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3 (indicative — per-CVE vectors vary; validate)",
+            "evidence_refs": [
+              "EV-31a223a04a"
+            ],
+            "severity": "MEDIUM",
+            "state": "INFERRED",
+            "validation": "version-inferred"
+          },
+          "ruleId": "component.banner-nvd-range@1",
+          "ruleIndex": 0
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "203.0.113.30:6379"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unauthenticated redis — Accounts on this service are more easily taken over, risking unauthorized access to customer or corporate data."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "df176da8cb9464d1"
+          },
+          "properties": {
+            "confidence": "High",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N = 7.5",
+            "evidence_refs": [
+              "EV-a73db601d3"
+            ],
+            "severity": "HIGH",
+            "state": "CONFIRMED",
+            "validation": "behavior-confirmed"
+          },
+          "ruleId": "datastore.unauthenticated@1",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://203.0.113.10/.git/HEAD"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Exposed path: .git repository metadata — Operational internals are exposed to anyone on the internet, aiding a targeted attack and potentially leaking secrets."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "ed75361a5909b464"
+          },
+          "properties": {
+            "confidence": "High",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3",
+            "evidence_refs": [
+              "EV-2a053aa7b2"
+            ],
+            "severity": "MEDIUM",
+            "state": "CONFIRMED",
+            "validation": "behavior-confirmed"
+          },
+          "ruleId": "http.exposure-path@1",
+          "ruleIndex": 2
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://203.0.113.10/.env"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Exposed path: .env environment file — Operational internals are exposed to anyone on the internet, aiding a targeted attack and potentially leaking secrets."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "4e6800f564aaf9d8"
+          },
+          "properties": {
+            "confidence": "High",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N = 5.3",
+            "evidence_refs": [
+              "EV-740d5e65b8"
+            ],
+            "severity": "MEDIUM",
+            "state": "CONFIRMED",
+            "validation": "behavior-confirmed"
+          },
+          "ruleId": "http.exposure-path@1",
+          "ruleIndex": 2
+        },
+        {
+          "level": "error",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "203.0.113.30:6379"
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "Unauthenticated Redis — Accounts on this service are more easily taken over, risking unauthorized access to customer or corporate data."
+          },
+          "partialFingerprints": {
+            "secskillsFindingKey": "df176da8cb9464d1"
+          },
+          "properties": {
+            "confidence": "High",
+            "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N = 7.5",
+            "evidence_refs": [
+              "EV-742b5b97e2"
+            ],
+            "severity": "HIGH",
+            "state": "CONFIRMED",
+            "validation": "behavior-confirmed"
+          },
+          "ruleId": "datastore.unauthenticated@1",
+          "ruleIndex": 1
+        }
+      ],
+      "tool": {
+        "driver": {
+          "informationUri": "https://github.com/gleicon/secskills",
+          "name": "secskills",
+          "rules": [
+            {
+              "id": "component.banner-nvd-range@1",
+              "name": "component.banner-nvd-range@1",
+              "properties": {
+                "cwe": "CWE-1035",
+                "owasp": "A06:2021 Vulnerable and Outdated Components",
+                "security-severity": "5.3"
+              },
+              "shortDescription": {
+                "text": "Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (2 CVEs correlate via NVD ranges)"
+              }
+            },
+            {
+              "id": "datastore.unauthenticated@1",
+              "name": "datastore.unauthenticated@1",
+              "properties": {
+                "cwe": "CWE-287",
+                "owasp": "A07:2021 Identification and Authentication Failures",
+                "security-severity": "7.5"
+              },
+              "shortDescription": {
+                "text": "Unauthenticated redis"
+              }
+            },
+            {
+              "id": "http.exposure-path@1",
+              "name": "http.exposure-path@1",
+              "properties": {
+                "cwe": "CWE-527",
+                "owasp": "A05:2021 Security Misconfiguration",
+                "security-severity": "5.3"
+              },
+              "shortDescription": {
+                "text": "Unauthenticated sensitive path"
+              }
+            }
+          ],
+          "version": "0.33.0"
+        }
       }
     }
-  ]
+  ],
+  "version": "2.1.0"
 }
-# end
-
-$ secskills deliver --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --tenant nobody
-[stderr]
-error: no tenant "nobody" in <REPO>/testdata/exposure/tenants.json
-[exit 1]
-
-$ secskills deliver --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --tenant acme --webhook http://hooks.example/x
-delivered: 5 findings (2 KEV-urgent) -> <SANDBOX>/wd/feed-acme.json
-
-Exposure brief — tenant acme (AS64500)  <TIME>
-5 candidates, 2 KEV-urgent. Version-inferred (L1): confirm before action.
-
-KEV 203.0.113.10     CVE-2023-44487   epss=0.940 score=0.559
-KEV 203.0.113.20     CVE-2023-44487   epss=0.940 score=0.559
-    203.0.113.10     CVE-2024-6387    epss=0.995 score=0.276
-    203.0.113.10     CVE-2023-38408   epss=0.500 score=0.208
-    203.0.113.10     CVE-2021-23017   epss=0.120 score=0.114
-[stderr]
-error: webhook must be https (got "http") — the feed is sensitive
-[exit 1]
-
-$ secskills notify --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --kev-event CVE-2024-6387 --event-at <TIME>
-NOTIFY acme       CVE-2024-6387    1 asset(s)  latency <DUR>
-1 notification(s) -> <SANDBOX>/wd/notifications.jsonl
-VERDICT: PASS — worst latency <N>s within 1h0m0s, no scan on the path (NFR-1/AC-2).
 [exit 0]
 
-# file <SANDBOX>/wd/notifications.jsonl
-{"tenant":"acme","cve":"CVE-2024-6387","assets":["203.0.113.10"],"event_at":"<TIME>","detected_at":"<TIME>","latency_sec":<N>}
-
-# end
-
-$ secskills fleet --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json --k 1
-fleet intelligence — 2 tenants, k=1 (anonymised: counts only)
-
-top CVEs across the fleet:
-  tenants  hosts  KEV  CVE
-  2        3      KEV  CVE-2023-44487
-  2        2           CVE-2021-23017
-  1        1           CVE-2023-38408
-  1        1           CVE-2024-6387
-
-top stacks across the fleet:
-  tenants  hosts  product
-  2        3      nginx
-  2        2      OpenSSH
+$ secskills findings set --target 203.0.113.0/24 --id NET-CVE-203.0.113.20:443 --status accepted --note backport verified
+NET-CVE-203.0.113.20:443: status accepted
 [exit 0]
 
-$ secskills fleet --workdir <SANDBOX>/wd --tenants <REPO>/testdata/exposure/tenants.json
-fleet intelligence — 2 tenants, k=2 (anonymised: counts only)
+$ secskills findings set --target 203.0.113.0/24 --id NET-CVE-203.0.113.20:443 --status mitigated
+[stderr]
+error: status "mitigated" not settable by hand (use open, accepted, or manual)
+[exit 1]
 
-top CVEs across the fleet:
-  tenants  hosts  KEV  CVE
-  2        3      KEV  CVE-2023-44487
-  2        2           CVE-2021-23017
-
-top stacks across the fleet:
-  tenants  hosts  product
-  2        3      nginx
-  2        2      OpenSSH
+$ secskills cvematch 203.0.113.0/24
+cvematch: 3 version-inferred CVE candidates (2 KEV-listed) on 2 services -> <CACHE>/secskills/203.0.113.0_24/candidates.jsonl
+findings: 0 new, 2 updated, 0 regressed, 1 closed
+run saved: <SANDBOX>/home/.secskills-findings/203.0.113.0_24/run-<RUNID>.json
+next: secskills report --render 203.0.113.0/24
 [exit 0]
 
-$ secskills cvematch
-[stderr]
-error: usage: secskills cvematch --workdir <dir>
-[exit 1]
-
-$ secskills cvematch --workdir <SANDBOX>/empty
-[stderr]
-error: no enriched observations — run `secskills enrich` first: stat <SANDBOX>/empty/enriched-observations.jsonl: no such file or directory
-[exit 1]
+$ secskills findings show 203.0.113.0/24
+{
+  "run_id": "<RUNID>",
+  "target": "203.0.113.0/24",
+  "date": "<TIME>",
+  "type": "network",
+  "finding_counts": {
+    "HIGH": 2,
+    "LOW": 1,
+    "MEDIUM": 4
+  },
+  "findings": [
+    {
+      "id": "NET-CVE-203.0.113.10:22",
+      "title": "Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (2 CVEs correlate via NVD ranges)",
+      "host": "203.0.113.10:22",
+      "severity": "LOW",
+      "status": "mitigated",
+      "evidence_cmd": "",
+      "expected_open_pattern": "",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [
+        {
+          "change": "✓ fixed",
+          "date": "<TIME>",
+          "disposition": "FIXED",
+          "prev_status": "open",
+          "retest_evidence": "no longer produced by a network re-run"
+        }
+      ],
+      "owasp": "A06:2021 Vulnerable and Outdated Components",
+      "cwe": "CWE-1035",
+      "kb_class": "components-supply-chain",
+      "cves": [
+        "CVE-2024-6387",
+        "CVE-2023-38408"
+      ],
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb components-supply-chain",
+        "Remediation: upgrade to a fixed release and confirm the running build. Hiding the version banner is not remediation."
+      ],
+      "probe_kind": "manual",
+      "confidence": "Low",
+      "validation": "version-inferred",
+      "impact": "The OpenSSH version is inferred from the service banner. NVD lists 2 CVEs whose affected range includes 8.9p1, but this does NOT establish that the host runs the vulnerable build: distributions backport fixes without changing the upstream version. Treat as a lead for manual validation.",
+      "observed_evidence": "banner version OpenSSH 8.9p1 on 203.0.113.10:22\n    CVE-2024-6387 cvss=8.1 epss=0.995\n    CVE-2023-38408 cvss=9.8 epss=0.500",
+      "discovered_from": "network sweep (cvematch)",
+      "detector_id": "component.banner-nvd-range@1",
+      "finding_key": "0ba5d4d751273059",
+      "root_finding_key": "0ba5d4d751273059",
+      "evidence_state": "INFERRED",
+      "evidence_refs": [
+        "EV-bc3c736d67"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>",
+      "fixed_at": "<TIME>",
+      "capabilities": [
+        "provides_service_version"
+      ]
+    },
+    {
+      "id": "NET-CVE-203.0.113.10:80",
+      "title": "Potentially vulnerable nginx version 1.18.0 — manual validation required (2 CVEs correlate via NVD ranges)",
+      "host": "203.0.113.10:80",
+      "severity": "MEDIUM",
+      "status": "open",
+      "evidence_cmd": "",
+      "expected_open_pattern": "",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [],
+      "owasp": "A06:2021 Vulnerable and Outdated Components",
+      "cwe": "CWE-1035",
+      "kb_class": "components-supply-chain",
+      "cves": [
+        "CVE-2023-44487",
+        "CVE-2021-23017"
+      ],
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb components-supply-chain",
+        "Remediation: upgrade to a fixed release and confirm the running build. Hiding the version banner is not remediation."
+      ],
+      "probe_kind": "manual",
+      "confidence": "Low",
+      "validation": "version-inferred",
+      "impact": "The nginx version is inferred from the service banner. NVD lists 2 CVEs whose affected range includes 1.18.0, but this does NOT establish that the host runs the vulnerable build: distributions backport fixes without changing the upstream version. Treat as a lead for manual validation.",
+      "observed_evidence": "banner version nginx 1.18.0 on 203.0.113.10:80\nKEV CVE-2023-44487 cvss=7.5 epss=0.940\n    CVE-2021-23017 cvss=7.7 epss=0.120\n[x] CISA KEV (exploited in the wild): CVE-2023-44487",
+      "discovered_from": "network sweep (cvematch)",
+      "detector_id": "component.banner-nvd-range@1",
+      "finding_key": "3bada798e7dec046",
+      "root_finding_key": "3bada798e7dec046",
+      "evidence_state": "INFERRED",
+      "evidence_refs": [
+        "EV-dad530a024"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>",
+      "capabilities": [
+        "provides_service_version"
+      ]
+    },
+    {
+      "id": "NET-CVE-203.0.113.20:443",
+      "title": "Potentially vulnerable nginx version 1.24.0 — manual validation required (1 CVEs correlate via NVD ranges)",
+      "host": "203.0.113.20:443",
+      "severity": "MEDIUM",
+      "status": "accepted",
+      "evidence_cmd": "",
+      "expected_open_pattern": "",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [
+        {
+          "by": "tester",
+          "change": "open -\u003e accepted",
+          "date": "<TIME>",
+          "disposition": "SET",
+          "prev_status": "open",
+          "retest_evidence": "backport verified"
+        }
+      ],
+      "owasp": "A06:2021 Vulnerable and Outdated Components",
+      "cwe": "CWE-1035",
+      "kb_class": "components-supply-chain",
+      "cves": [
+        "CVE-2023-44487"
+      ],
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb components-supply-chain",
+        "Remediation: upgrade to a fixed release and confirm the running build. Hiding the version banner is not remediation."
+      ],
+      "probe_kind": "manual",
+      "confidence": "Low",
+      "validation": "version-inferred",
+      "impact": "The nginx version is inferred from the service banner. NVD lists 1 CVEs whose affected range includes 1.24.0, but this does NOT establish that the host runs the vulnerable build: distributions backport fixes without changing the upstream version. Treat as a lead for manual validation.",
+      "observed_evidence": "banner version nginx 1.24.0 on 203.0.113.20:443\nKEV CVE-2023-44487 cvss=7.5 epss=0.940\n[x] CISA KEV (exploited in the wild): CVE-2023-44487",
+      "discovered_from": "network sweep (cvematch)",
+      "detector_id": "component.banner-nvd-range@1",
+      "finding_key": "5199b8d9b1e0e7f6",
+      "root_finding_key": "5199b8d9b1e0e7f6",
+      "evidence_state": "INFERRED",
+      "evidence_refs": [
+        "EV-31a223a04a"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>",
+      "capabilities": [
+        "provides_service_version"
+      ]
+    },
+    {
+      "id": "NET-DB-203.0.113.30:6379",
+      "title": "Unauthenticated redis",
+      "host": "203.0.113.30:6379",
+      "severity": "HIGH",
+      "status": "open",
+      "evidence_cmd": "",
+      "expected_open_pattern": "",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [],
+      "owasp": "A07:2021 Identification and Authentication Failures",
+      "cwe": "CWE-287",
+      "kb_class": "auth-session",
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb auth-session"
+      ],
+      "probe_kind": "manual",
+      "confidence": "High",
+      "validation": "behavior-confirmed",
+      "observed_evidence": "OPEN-NOAUTH: PING answered without AUTH\n[x] unauthenticated datastore access",
+      "discovered_from": "network sweep (dbcheck)",
+      "detector_id": "datastore.unauthenticated@1",
+      "finding_key": "df176da8cb9464d1",
+      "root_finding_key": "df176da8cb9464d1",
+      "evidence_state": "CONFIRMED",
+      "evidence_refs": [
+        "EV-a73db601d3"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>"
+    },
+    {
+      "id": "NET-LEAK-203.0.113.10:80-exposed-vcs",
+      "title": "Exposed path: .git repository metadata",
+      "host": "http://203.0.113.10/.git/HEAD",
+      "severity": "MEDIUM",
+      "status": "open",
+      "evidence_cmd": "curl -s http://203.0.113.10/.git/HEAD | grep -c 'repositoryformatversion'",
+      "expected_open_pattern": "repositoryformatversion",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [],
+      "owasp": "A05:2021 Security Misconfiguration",
+      "cwe": "CWE-527",
+      "kb_class": "config-exposure",
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb config-exposure"
+      ],
+      "probe_kind": "body-contains",
+      "probe_url": "http://203.0.113.10/.git/HEAD",
+      "probe_arg": "repositoryformatversion",
+      "confidence": "High",
+      "validation": "behavior-confirmed",
+      "observed_evidence": "ref: refs/heads/main",
+      "discovered_from": "network sweep (leakcheck)",
+      "detector_id": "http.exposure-path@1",
+      "finding_key": "ed75361a5909b464",
+      "root_finding_key": "ed75361a5909b464",
+      "evidence_state": "CONFIRMED",
+      "evidence_refs": [
+        "EV-2a053aa7b2"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>",
+      "capabilities": [
+        "anonymous_read",
+        "reveals_internal_hostnames"
+      ]
+    },
+    {
+      "id": "NET-LEAK-203.0.113.10:80-exposed-dotenv",
+      "title": "Exposed path: .env environment file",
+      "host": "http://203.0.113.10/.env",
+      "severity": "MEDIUM",
+      "status": "open",
+      "evidence_cmd": "",
+      "expected_open_pattern": "",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [],
+      "owasp": "A05:2021 Security Misconfiguration",
+      "cwe": "CWE-200",
+      "kb_class": "config-exposure",
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb config-exposure"
+      ],
+      "probe_kind": "manual",
+      "confidence": "High",
+      "validation": "behavior-confirmed",
+      "observed_evidence": "keys: DB_PASSWORD, APP_KEY (values redacted)",
+      "discovered_from": "network sweep (leakcheck)",
+      "detector_id": "http.exposure-path@1",
+      "finding_key": "4e6800f564aaf9d8",
+      "root_finding_key": "4e6800f564aaf9d8",
+      "evidence_state": "CONFIRMED",
+      "evidence_refs": [
+        "EV-740d5e65b8"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>",
+      "capabilities": [
+        "anonymous_read",
+        "reveals_internal_hostnames"
+      ]
+    },
+    {
+      "id": "NET-LEAK-203.0.113.30:6379-redis-unauth",
+      "title": "Unauthenticated Redis",
+      "host": "203.0.113.30:6379",
+      "severity": "HIGH",
+      "status": "open",
+      "evidence_cmd": "",
+      "expected_open_pattern": "",
+      "response_hash": "",
+      "first_seen_run": "<RUNID>",
+      "last_tested_run": "<RUNID>",
+      "retest_history": [],
+      "owasp": "A07:2021 Identification and Authentication Failures",
+      "cwe": "CWE-287",
+      "kb_class": "auth-session",
+      "references": [
+        "OWASP Top 10: https://owasp.org/Top10/",
+        "Cheat sheet: secskills kb auth-session"
+      ],
+      "probe_kind": "manual",
+      "confidence": "High",
+      "validation": "behavior-confirmed",
+      "observed_evidence": "PING -\u003e PONG without AUTH\n[x] unauthenticated datastore access",
+      "discovered_from": "network sweep (leakcheck)",
+      "detector_id": "datastore.unauthenticated@1",
+      "finding_key": "df176da8cb9464d1",
+      "root_finding_key": "df176da8cb9464d1",
+      "evidence_state": "CONFIRMED",
+      "evidence_refs": [
+        "EV-742b5b97e2"
+      ],
+      "observed_at": "<TIME>",
+      "first_seen": "<TIME>",
+      "last_seen": "<TIME>"
+    }
+  ]
+}[exit 0]
 
 $ secskills plan --asn AS64500 --shards 2 --out <SANDBOX>/plan
 [asn] AS64500: 4 prefixes (cache, fetched <TIME>)

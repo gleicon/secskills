@@ -14,19 +14,17 @@ import (
 
 func cmdEnrich(args []string) error {
 	fs := flag.NewFlagSet("enrich", flag.ContinueOnError)
-	wd := fs.String("workdir", "", "workdir containing observations.jsonl")
+	wdFlag := fs.String("workdir", "", "workdir containing observations.jsonl (default: the target's workdir)")
 	confirm := fs.Bool("confirm", false, "authorization confirmed")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	if *wd == "" {
-		return fmt.Errorf("usage: secskills enrich --workdir <dir> --confirm")
-	}
-	obs, err := probe.Load(filepath.Join(*wd, "observations.jsonl"))
+	_, wd, err := blockTarget(fs, args, wdFlag, "secskills enrich <block> --confirm [--workdir dir]")
 	if err != nil {
 		return err
 	}
-	if err := scope.GateNotice("enrich", fmt.Sprintf("%d services in %s", len(obs), *wd), *confirm); err != nil {
+	obs, err := probe.Load(filepath.Join(wd, "observations.jsonl"))
+	if err != nil {
+		return err
+	}
+	if err := scope.GateNotice("enrich", fmt.Sprintf("%d services in %s", len(obs), wd), *confirm); err != nil {
 		return err
 	}
 	kev := exposure.LoadKEVForEnrich() // optional, for the name-level cross-reference
@@ -43,7 +41,7 @@ func cmdEnrich(args []string) error {
 		enriched = append(enriched, o)
 	}
 
-	out := filepath.Join(*wd, "enriched-observations.jsonl")
+	out := filepath.Join(wd, "enriched-observations.jsonl")
 	os.Remove(out)
 	store := probe.Store{Path: out}
 	for _, o := range enriched {

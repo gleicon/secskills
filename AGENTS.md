@@ -29,7 +29,7 @@ secskills doctor      # verify tools; prints install commands for what's missing
 | `secskills discover --cidr\|--asn … --confirm` | sweep a network block (per-IP authz, > /20 needs `--allow-large`) | authz |
 | `secskills enrich\|leakcheck --workdir <d> --confirm` | versions/CPE; exposed files, open datastores | authz |
 | `secskills dbcheck --workdir <d> --confirm --intrusive-confirm` | open/default-cred datastores | authz ×2 |
-| `secskills feed\|cvematch\|lifecycle\|prefix-report …` | offline intelligence joins over a workdir | — |
+| `secskills feed\|cvematch <block>` | intelligence cache; offline CVE leads as findings | — |
 
 Full reference: `secskills help`, `docs/usage.md`, <https://gleicon.github.io/secskills/usage.html>.
 

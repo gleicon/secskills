@@ -1,6 +1,6 @@
 # Running headless in a VM — capture now, process later
 
-Exposure mode is built so the expensive, network-facing work (sweeping a block,
+Network mode is built so the expensive, network-facing work (sweeping a block,
 grabbing banners, probing exposure) happens in one place and the analysis
 (joining against vulnerability feeds, scoring, reporting) happens anywhere, even
 air-gapped. This is a direct consequence of the design: the center of gravity is
@@ -20,9 +20,9 @@ Two properties make the split clean:
 
 | Phase | Commands | Network reach |
 |-------|----------|---------------|
-| **Capture** (target-facing) | `discover --cidr/--asn`, `enrich`, `leakcheck`, `dbcheck`, `kprobe` | the targets; RIPE Stat / `whois` when resolving an ASN |
+| **Capture** (target-facing) | `discover --cidr/--asn`, `enrich`, `leakcheck`, `dbcheck` | the targets; RIPE Stat / `whois` when resolving an ASN |
 | **Feeds** (OSINT, not the target) | `feed kev`, `feed epss`, `feed nvd --product <p>` | the internet (CISA, FIRST, NVD) only |
-| **Process** (offline joins) | `cvematch`, `lifecycle reconcile`, `prefix-report` | none — local JSONL only |
+| **Process** (offline) | `findings import`, `cvematch`, `report` | none — local JSONL only |
 
 `enrich` belongs in **capture**, not process: it reconnects to each host to read
 service banners. Everything in **process** reads only files.
@@ -41,12 +41,13 @@ capture-203_0_113_0_24/
   observations.jsonl           # the substrate: every reachable service, raw
   enriched-observations.jsonl  # + product/version/CPE from banners
   leaks.jsonl                  # exposed .git/.env, dir listings, unauth stores
-  dbchecks.jsonl               # datastore auth posture (if INTRUSIVE=yes)
+  dbcheck.jsonl                # datastore default-credential results (if INTRUSIVE=yes)
+  findings.json                # the findings leakcheck/dbcheck wrote
   data/                        # ASN→prefix resolution cache
 ```
 
-After `process.sh` it also holds `candidates.jsonl`, `findings.jsonl`, and the
-Markdown report. The workdir is append-only and resumable: a kill mid-sweep
+After `process.sh` it also holds `candidates.jsonl`, the CVE-lead findings, and
+`report.md`; the run is saved under `~/.secskills-findings/<block>/`. The workdir is append-only and resumable: a kill mid-sweep
 keeps every observation already written (AC-7), so a capture can be stopped and
 restarted on a flaky VM without losing or corrupting data.
 
@@ -109,20 +110,22 @@ SECSKILLS_FEED=/mnt/feed PREFIXES=plan/shard-3.txt CONFIRM=yes ./capture.sh
 
 ### Collect and process once
 
-Gather the per-VM workdirs and merge the enriched observations into one workdir,
-then run the join a single time. The store is content-addressed, so any overlap
-dedupes:
+Gather the per-machine workdirs, merge their files into one workdir, and process
+it once. The stores are content-addressed and findings have stable IDs, so
+overlap dedupes:
 
 ```sh
 mkdir -p merged
 cat capture-shard-*/enriched-observations.jsonl | sort -u > merged/enriched-observations.jsonl
-cat capture-shard-*/leaks.jsonl                 2>/dev/null | sort -u > merged/leaks.jsonl
-OUT=./merged ./process.sh      # cvematch + lifecycle + report, offline, once
+cat capture-shard-*/leaks.jsonl   2>/dev/null | sort -u > merged/leaks.jsonl
+cat capture-shard-*/dbcheck.jsonl 2>/dev/null | sort -u > merged/dbcheck.jsonl
+OUT=./merged BLOCK=AS64500 ./process.sh   # findings import + cvematch + report, offline
 ```
 
-Lifecycle state (`findings.jsonl`) lives in the merged workdir and persists across
-runs, so week-over-week re-verification is one `process.sh` against the same
-`merged/` — no re-scan, re-using the same feed cache.
+Findings live in `merged/findings.json` and the run under `~/.secskills-findings/AS64500/`.
+Next week, run `process.sh` against the same `merged/` with refreshed feeds: leads
+that no longer match close as fixed, returning ones reopen, and statuses you set
+with `findings set` are kept.
 
 ## Notes
 

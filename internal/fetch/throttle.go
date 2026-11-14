@@ -46,7 +46,7 @@ func throttle(source string) {
 // HTTPDo performs a throttled request with exponential backoff that honors
 // Retry-After on 429/503. Returns the body on 2xx.
 func HTTPDo(source, method, url, body string, retries int) ([]byte, error) {
-	client := &http.Client{Timeout: 25 * time.Second}
+	client := &http.Client{Timeout: 25 * time.Second, Transport: &http.Transport{Proxy: http.ProxyFromEnvironment, DialContext: dial}}
 	var lastErr error
 	for attempt := 0; attempt <= retries; attempt++ {
 		throttle(source)

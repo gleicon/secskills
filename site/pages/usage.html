@@ -87,26 +87,30 @@ tickets, exports, and retests read from it. Treat it like a credentials store.</
 <tr><td><code>tickets &lt;target&gt;</code></td><td>One row per finding, CSV or JSON, with severity, SLA, priority, owner, and business risk.</td></tr>
 <tr><td><code>export --format sarif|cyclonedx &lt;target&gt;</code></td><td>SARIF 2.1.0, or CycloneDX 1.5 with VEX.</td></tr>
 <tr><td><code>findings list|show &lt;target&gt;</code></td><td>Inspect stored runs.</td></tr>
+<tr><td><code>findings set --target … --id … --status accepted</code></td><td>Change one finding's status with a note; re-runs keep it.</td></tr>
 <tr><td><code>override --target … --key … --severity … --reason …</code></td><td>Record a reviewed severity change. The automated value is kept beside it.</td></tr>
 <tr><td><code>attest --sign|--verify &lt;target&gt;</code></td><td>Sign a run with your ed25519 key, or verify a signed run.</td></tr>
 </tbody>
 </table>
 </div>
 
-<h2 id="exposure">Network blocks</h2>
-<p>For an ASN or CIDR you are authorized to assess. The capture stages touch the network;
-the rest run offline over the workdir. <a href="cases.html#block">Full recipe</a></p>
+<h2 id="network">Network blocks</h2>
+<p>For an ASN or CIDR you are authorized to assess. The block, written as you gave it to
+<code>discover</code>, is the target for every command, and the results are ordinary findings:
+<code>report</code>, <code>tickets</code>, <code>export</code>, <code>report --retest</code>, and
+<code>findings set</code> work on it. <a href="cases.html#block">Full recipe</a></p>
 <div class="scroll">
 <table>
 <thead><tr><th>Command</th><th>Does</th></tr></thead>
 <tbody>
-<tr><td><code>discover --cidr …</code> / <code>--asn …</code></td><td>Sweep into <code>observations.jsonl</code>. Blocks wider than /20 need <code>--allow-large</code>.</td></tr>
-<tr><td><code>enrich</code>, <code>leakcheck</code>, <code>kprobe</code></td><td>Versions and CPEs; exposed files and open datastores; single-packet kernel-path probes.</td></tr>
-<tr><td><code>dbcheck</code></td><td>Open or vendor-default-credential datastores. Needs <code>--confirm</code> and <code>--intrusive-confirm</code>.</td></tr>
+<tr><td><code>discover --cidr …</code> / <code>--asn …</code></td><td>Sweep the block. Blocks wider than /20 need <code>--allow-large</code>.</td></tr>
+<tr><td><code>enrich &lt;block&gt;</code></td><td>Read service banners: product, version, CPE.</td></tr>
+<tr><td><code>leakcheck &lt;block&gt;</code></td><td>Exposed <code>.git</code>, <code>.env</code>, server-status, listings, and unauthenticated Redis or Elasticsearch become findings.</td></tr>
+<tr><td><code>dbcheck &lt;block&gt;</code></td><td>Datastores accepting a vendor default credential become findings. Needs <code>--confirm</code> and <code>--intrusive-confirm</code>.</td></tr>
 <tr><td><code>feed kev|epss|nvd</code></td><td>Cache vulnerability intelligence. No target traffic.</td></tr>
-<tr><td><code>cvematch</code>, <code>lifecycle</code>, <code>prefix-report</code></td><td>Rank CVE candidates, track their state, write the block report.</td></tr>
-<tr><td><code>plan</code>, <code>token</code></td><td>Split a block across workers; sign their scope.</td></tr>
-<tr><td><code>precision</code>, <code>deliver</code>, <code>notify</code>, <code>fleet</code></td><td>Precision gate, per-tenant feeds, alert latency, anonymised aggregates.</td></tr>
+<tr><td><code>cvematch &lt;block&gt;</code></td><td>One CVE lead per service whose version is in an NVD range, KEV-listed CVEs first. Closes leads that no longer match. Offline.</td></tr>
+<tr><td><code>findings import &lt;block&gt;</code></td><td>Turn captured leak and datastore results into findings, after merging captures.</td></tr>
+<tr><td><code>plan --asn … --shards N</code></td><td>Split a large block across capture machines.</td></tr>
 </tbody>
 </table>
 </div>
@@ -139,7 +143,6 @@ the rest run offline over the workdir. <a href="cases.html#block">Full recipe</a
 <tr><td><code>SECSKILLS_SCOPE</code></td><td>Scope file path instead of <code>./.secskills-scope.yml</code>.</td></tr>
 <tr><td><code>SECSKILLS_FEED</code></td><td>Feed cache instead of <code>~/.secskills/feed</code>. Share one read-only cache across workers.</td></tr>
 <tr><td><code>SECSKILLS_RATE</code></td><td>Requests per second for sweeps and probes (default 5).</td></tr>
-<tr><td><code>SECSKILLS_TOKEN_KEY</code></td><td>Shared HMAC key for scope tokens.</td></tr>
 <tr><td><code>SECSKILLS_OAST_DOMAIN</code>, <code>SECSKILLS_OAST_POLL_URL</code></td><td>Your OAST collaborator for blind checks.</td></tr>
 <tr><td><code>SHODAN_API_KEY</code>, <code>CENSYS_API_ID</code>, <code>CENSYS_API_SECRET</code></td><td>Optional OSINT keys. Never written into reports.</td></tr>
 <tr><td><code>~/.secskills-findings/</code></td><td>Findings store.</td></tr>

@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gleicon/secskills/internal/exposure"
+
 	"github.com/gleicon/secskills"
 	"github.com/gleicon/secskills/internal/engine"
 	"github.com/gleicon/secskills/internal/finding"
@@ -48,7 +50,11 @@ func renderProReport(target, wd string, findings []finding.Finding) string {
 
 	// ---- 1. Executive Summary -------------------------------------------------
 	p("## 1. Executive Summary\n\n")
-	p("%s\n\n", riskNarrative(target, counts, len(subs), len(live)))
+	if hosts, svcs := exposure.InventoryCounts(wd); svcs > 0 {
+		p("%s\n\n", blockNarrative(target, counts, hosts, svcs))
+	} else {
+		p("%s\n\n", riskNarrative(target, counts, len(subs), len(live)))
+	}
 	if d := retestDeltaSection(target); d != "" {
 		p("%s\n\n", d)
 	}
@@ -117,6 +123,9 @@ func renderProReport(target, wd string, findings []finding.Finding) string {
 	}
 	if len(live) > 30 {
 		p("\n_(+%d more in `data/live-%s.json`)_\n", len(live)-30, target)
+	}
+	if inv := exposure.Inventory(wd); inv != "" {
+		p("\n### Network inventory\n\n%s", inv)
 	}
 	p("\n---\n\n")
 
@@ -202,6 +211,18 @@ func severityCounts(fs []finding.Finding) map[string]int {
 		m[strings.ToUpper(f.Severity)]++
 	}
 	return m
+}
+
+func blockNarrative(target string, c map[string]int, hosts, svcs int) string {
+	total := 0
+	for _, v := range c {
+		total += v
+	}
+	return fmt.Sprintf("We swept the network block **%s** and found **%d open services on %d hosts**, recording **%d findings** "+
+		"(%d high, %d medium, %d low/info). Findings marked *version-inferred* come from service banners and are leads to validate: "+
+		"distributions backport fixes without changing the version. Exposed files and open datastores were observed directly. "+
+		"Exploitation, credential attacks, and destructive checks were out of scope.",
+		target, svcs, hosts, total, c["HIGH"]+c["CRITICAL"], c["MEDIUM"], c["LOW"]+c["INFORMATIONAL"])
 }
 
 func riskNarrative(target string, c map[string]int, subs, live int) string {

@@ -1,10 +1,17 @@
 package report
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"net"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+
+	"github.com/gleicon/secskills/internal/fetch"
+	"github.com/gleicon/secskills/internal/netsec"
 
 	"github.com/gleicon/secskills/internal/finding"
 )
@@ -115,5 +122,35 @@ func TestRunManifestSignVerifyTamper(t *testing.T) {
 	os.WriteFile(env, b, 0o644)
 	if err := VerifyRunManifest(wd); err == nil {
 		t.Fatal("forged envelope payload accepted")
+	}
+}
+
+// Rendering a report must never contact the target: reports are produced
+// offline from stored findings and evidence, without the authorization gate.
+// Every outbound connection from the fetch layer is forbidden and counted,
+// whatever host or port a renderer would derive from the target.
+func TestReportRenderingIsOffline(t *testing.T) {
+	var hits atomic.Int64
+	prev := fetch.Dial
+	fetch.Dial = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		hits.Add(1)
+		return nil, errors.New("network forbidden during report rendering")
+	}
+	t.Cleanup(func() { fetch.Dial = prev })
+	netsec.AllowLocalProbes = true // skip DNS so any probe reaches the dialer
+	t.Cleanup(func() { netsec.AllowLocalProbes = false })
+	t.Setenv("HOME", t.TempDir())
+
+	wd := t.TempDir()
+	fs := sample()
+	for _, f := range fs {
+		if err := finding.AddFinding(wd, f); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = renderProReport("app.example.com", wd, fs)
+	_ = renderHTMLReport("app.example.com", wd, fs)
+	if n := hits.Load(); n != 0 {
+		t.Fatalf("rendering a report opened %d network connection(s)", n)
 	}
 }

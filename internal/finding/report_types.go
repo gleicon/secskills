@@ -13,6 +13,8 @@ import (
 func FindingType(f *Finding) string {
 	t := strings.ToLower(f.Title)
 	switch {
+	case f.DetectorID == "datastore.unauthenticated@1":
+		return "datastore-open"
 	case f.ProbeKind == "tls-weak" || strings.Contains(t, "tls 1.0") || strings.Contains(t, "tls 1.1") || strings.Contains(t, "weak tls") || strings.Contains(t, "3des") || strings.Contains(t, "cipher"):
 		return "tls-deprecated"
 	case strings.Contains(t, "hsts"):
@@ -229,6 +231,8 @@ func DetectorIDFor(f *Finding) string {
 		return "http.exposure-path@1"
 	case "component-lead":
 		return "component.banner-osv-correlation@1"
+	case "datastore-open":
+		return "datastore.unauthenticated@1"
 	case "prompt-injection":
 		return "content.prompt-injection@1"
 	}

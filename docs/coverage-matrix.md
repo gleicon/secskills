@@ -22,10 +22,9 @@ produces, and where it lands in the report.
 | Report | `report --render/--html/--pdf` | native + chrome (PDF) | md / html / pdf | all | (the whole document) |
 | Re-test | `report --retest` | native structured probes | run delta | — | Remediation tracker |
 | Interop | `export --format sarif\|cyclonedx`, `tickets` | native | SARIF 2.1.0, CycloneDX 1.5 + VEX, CSV/JSON rows | all | — (CI / tracker) |
-| Exposure — sweep | `discover --cidr/--asn` | native rate-gated TCP connect scan | `observations.jsonl` | — | Exposure report: inventory |
-| Exposure — enrich & leaks | `enrich`, `leakcheck`, `dbcheck`, `kprobe` | native banners, HTTP, RESP/OP_MSG, mysql client | `enriched-observations.jsonl`, `leaks.jsonl`, `dbcheck.jsonl` | config-exposure, components-supply-chain | Exposure report §1–2 |
-| Exposure — CVE join | `feed kev/epss/nvd`, `cvematch`, `lifecycle` | CISA KEV, FIRST EPSS, NVD 2.0 | `candidates.jsonl`, `findings.jsonl` | components-supply-chain | Exposure report §3 |
-| Exposure — report | `prefix-report`, `deliver` | native | `exposure-report.md`, `feed-<tenant>.json` | all | (the block report) |
+| Network — sweep | `discover --cidr/--asn` | native rate-gated TCP connect scan | `observations.jsonl` | — | Attack Surface · Network inventory |
+| Network — enrich & checks | `enrich`, `leakcheck`, `dbcheck` | native banners, HTTP, RESP/OP_MSG, mysql client | findings (`NET-LEAK-…`, `NET-DB-…`) | config-exposure, auth-session | Detailed findings |
+| Network — CVE join | `feed kev/epss/nvd`, `cvematch` | CISA KEV, FIRST EPSS, NVD 2.0 | findings (`NET-CVE-…`), `candidates.jsonl` | components-supply-chain | Detailed findings |
 
 ## B. The 8-field finding (playbook §03) → secskills source
 

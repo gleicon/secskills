@@ -34,8 +34,7 @@ Invoke-WebRequest "$base/secskills-windows-amd64.exe" -OutFile secskills.exe
 Invoke-WebRequest "$base/SHA256SUMS" -OutFile SHA256SUMS
 (Get-FileHash secskills.exe -Algorithm SHA256).Hash.ToLower()
 Select-String "secskills-windows-amd64.exe" SHA256SUMS   <span class="c"># the two hashes must match</span></code></pre>
-<p class="note">The kernel reachability probe (<code>kprobe</code>) is Linux-only, and the
-headless capture kit scripts need a POSIX shell.</p>
+<p class="note">The headless capture kit scripts need a POSIX shell.</p>
 
 <h2 id="source">From source</h2>
 <pre><code>git clone https://github.com/gleicon/secskills

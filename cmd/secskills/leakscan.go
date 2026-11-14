@@ -16,23 +16,22 @@ import (
 
 func cmdLeakcheck(args []string) error {
 	fs := flag.NewFlagSet("leakcheck", flag.ContinueOnError)
-	wd := fs.String("workdir", "", "workdir containing observations.jsonl (required)")
+	wdFlag := fs.String("workdir", "", "workdir containing observations.jsonl (default: the target's workdir)")
 	confirm := fs.Bool("confirm", false, "authorization confirmed")
-	if err := fs.Parse(args); err != nil {
+	save := fs.Bool("save", true, "save a run for report/retest")
+	target, wd, err := blockTarget(fs, args, wdFlag, "secskills leakcheck <block> --confirm [--workdir dir]")
+	if err != nil {
 		return err
 	}
-	if *wd == "" {
-		return fmt.Errorf("usage: secskills leakcheck --workdir <dir> --confirm")
-	}
-	obs, err := probe.Load(filepath.Join(*wd, "observations.jsonl"))
+	obs, err := probe.Load(filepath.Join(wd, "observations.jsonl"))
 	if err != nil {
 		return fmt.Errorf("load observations: %w", err)
 	}
 	if len(obs) == 0 {
-		return fmt.Errorf("no observations in %s", *wd)
+		return fmt.Errorf("no observations in %s", wd)
 	}
 	// One gate for the whole set: these are active (read-only) requests.
-	if err := scope.GateNotice("leakcheck", fmt.Sprintf("%d services in %s", len(obs), *wd), *confirm); err != nil {
+	if err := scope.GateNotice("leakcheck", fmt.Sprintf("%d services in %s", len(obs), wd), *confirm); err != nil {
 		return err
 	}
 
@@ -58,7 +57,7 @@ func cmdLeakcheck(args []string) error {
 		}
 	}
 
-	out := filepath.Join(*wd, "leaks.jsonl")
+	out := filepath.Join(wd, "leaks.jsonl")
 	os.Remove(out)
 	for _, f := range findings {
 		if err := jsonl.AppendJSONL(out, f); err != nil {
@@ -66,5 +65,5 @@ func cmdLeakcheck(args []string) error {
 		}
 	}
 	exposure.ReportLeaks(findings, out)
-	return nil
+	return syncAndSave(target, wd, exposure.FamilyLeak, exposure.LeakFindings(findings), *save)
 }

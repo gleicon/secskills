@@ -93,53 +93,58 @@ Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/cr
 error: authorization not confirmed
 [exit 1]
 
-$ secskills leakcheck --workdir <SANDBOX>/wd
+$ secskills leakcheck 203.0.113.0/24
 [stderr]
-AUTHORIZATION REQUIRED — leakcheck mode, target: 6 services in <SANDBOX>/wd
+AUTHORIZATION REQUIRED — leakcheck mode, target: 4 services in <CACHE>/secskills/203.0.113.0_24
 
 This sends traffic to / executes against the target. You must have written
 authorization from the target owner. Re-run once authorized:
 
-  secskills leakcheck 6 services in <SANDBOX>/wd --confirm
+  secskills leakcheck 4 services in <CACHE>/secskills/203.0.113.0_24 --confirm
 
 Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
 error: authorization not confirmed
 [exit 1]
 
-$ secskills enrich --workdir <SANDBOX>/wd
+$ secskills enrich 203.0.113.0/24
 [stderr]
-AUTHORIZATION REQUIRED — enrich mode, target: 6 services in <SANDBOX>/wd
+AUTHORIZATION REQUIRED — enrich mode, target: 4 services in <CACHE>/secskills/203.0.113.0_24
 
 This sends traffic to / executes against the target. You must have written
 authorization from the target owner. Re-run once authorized:
 
-  secskills enrich 6 services in <SANDBOX>/wd --confirm
+  secskills enrich 4 services in <CACHE>/secskills/203.0.113.0_24 --confirm
 
 Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
 error: authorization not confirmed
 [exit 1]
 
-$ secskills dbcheck --workdir <SANDBOX>/wd
+$ secskills dbcheck 203.0.113.0/24
 [stderr]
 error: dbcheck makes authentication attempts against hosts; it requires BOTH --confirm and --intrusive-confirm
 [exit 1]
 
-$ secskills dbcheck --workdir <SANDBOX>/wd --confirm
+$ secskills dbcheck 203.0.113.0/24 --confirm
 [stderr]
 error: dbcheck makes authentication attempts against hosts; it requires BOTH --confirm and --intrusive-confirm
 [exit 1]
 
-$ secskills kprobe --ip 203.0.113.10 --port 22
+$ secskills leakcheck --workdir <CACHE>/secskills/203.0.113.0_24
 [stderr]
-AUTHORIZATION REQUIRED — kprobe mode, target: 203.0.113.10:22
+AUTHORIZATION REQUIRED — leakcheck mode, target: 4 services in <CACHE>/secskills/203.0.113.0_24
 
 This sends traffic to / executes against the target. You must have written
 authorization from the target owner. Re-run once authorized:
 
-  secskills kprobe 203.0.113.10:22 --confirm
+  secskills leakcheck 4 services in <CACHE>/secskills/203.0.113.0_24 --confirm
 
 Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/credential tests.
 error: authorization not confirmed
+[exit 1]
+
+$ secskills leakcheck
+[stderr]
+error: usage: secskills leakcheck <block> --confirm [--workdir dir]
 [exit 1]
 
 $ secskills watch example.com

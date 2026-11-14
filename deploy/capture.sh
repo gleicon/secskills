@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# secskills exposure mode — CAPTURE phase (target-facing). Runs on a VM near the target
+# secskills network mode — CAPTURE phase (target-facing). Runs on a VM near the target
 # network. Produces a self-contained workdir of append-only JSONL that you carry
 # home and process offline with process.sh. No LLM, no agent, no internet needed
 # beyond reaching the targets (and RIPE/whois when resolving an ASN).
@@ -63,12 +63,12 @@ fi
 "$BIN" enrich --workdir "$OUT" $CONF || echo "[warn] enrich skipped"
 
 # 3. Read-only exposure pass (exposed .git/.env, dir listings, unauth ES/Redis).
-#    Never records credential values — key names only.
-"$BIN" leakcheck --workdir "$OUT" $CONF || echo "[warn] leakcheck skipped"
+#    Writes findings into the workdir; never records credential values.
+"$BIN" leakcheck --workdir "$OUT" --save=false $CONF || echo "[warn] leakcheck skipped"
 
 # 4. Datastore default-credential / open-auth posture. Owner-authorized, intrusive.
 if [ "${INTRUSIVE:-}" = "yes" ]; then
-  "$BIN" dbcheck --workdir "$OUT" --confirm --intrusive-confirm || echo "[warn] dbcheck skipped"
+  "$BIN" dbcheck --workdir "$OUT" --save=false --confirm --intrusive-confirm || echo "[warn] dbcheck skipped"
 fi
 
 # 5. Optional: fetch feeds on the VM so the kit is fully self-contained.

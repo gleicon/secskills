@@ -94,6 +94,6 @@ add `--insecure-auth`, which exposes those credentials to anyone on the network 
 ## Next
 
 - [Usage & commands](usage.md) — every command, profiles, files, environment.
-- [Exposure mode](exposure.md) — ASN/CIDR sweeps and offline CVE joins.
+- [Network mode](network.md) — scan an ASN or CIDR you own; results are ordinary findings.
 - [Reporting & compliance](reporting.md).
 - Website: <https://gleicon.github.io/secskills/>

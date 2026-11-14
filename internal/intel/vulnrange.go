@@ -1,6 +1,9 @@
 package intel
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // Version-range matching for userland products (spec FR-4, the non-kernel path).
 // A VulnRange is an affected-version constraint for one CVE against one CPE
@@ -141,4 +144,29 @@ func (r VulnRange) summarize() string {
 		return "all versions"
 	}
 	return strings.Join(p, ", ")
+}
+
+// numericTokens splits s on non-digit runs and returns the integer value of
+// each digit run, stopping at the distro tag (a token containing "el", "amzn",
+// etc. is still numeric-split; the leading kernel numbers dominate the compare).
+func numericTokens(s string) []int {
+	var out []int
+	cur := strings.Builder{}
+	flush := func() {
+		if cur.Len() > 0 {
+			if n, err := strconv.Atoi(cur.String()); err == nil {
+				out = append(out, n)
+			}
+			cur.Reset()
+		}
+	}
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			cur.WriteRune(r)
+		} else {
+			flush()
+		}
+	}
+	flush()
+	return out
 }

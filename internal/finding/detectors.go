@@ -141,7 +141,12 @@ func AssessSeverity(f *Finding) (string, string) {
 	case "llm-sysleak":
 		return "MEDIUM", "chatbot disclosed system instructions on direct request; enables guardrail-bypass design"
 	case "component-lead":
+		if strings.Contains(ev, "[x] cisa kev") {
+			return "MEDIUM", "version-inferred lead for a CVE exploited in the wild (CISA KEV); validate the running build first"
+		}
 		return "LOW", "version-inferred lead; exploitability not established"
+	case "datastore-open":
+		return "HIGH", "confirmed unauthenticated or default-credential access to an internet-reachable datastore"
 	}
 	if !confirmed {
 		return "LOW", "unconfirmed / defense-in-depth"
@@ -179,6 +184,8 @@ func DetectorRegistry() []DetectorMeta {
 		{ID: "http.prometheus.public-metrics@1", IdentityCompatible: true, Description: "unauthenticated Prometheus metrics"},
 		{ID: "http.exposure-path@1", IdentityCompatible: true, Description: "unauthenticated sensitive path"},
 		{ID: "component.banner-osv-correlation@1", IdentityCompatible: true, Description: "banner-inferred component CVE lead"},
+		{ID: "component.banner-nvd-range@1", IdentityCompatible: true, Description: "banner version inside an NVD CVE range (network sweep lead)"},
+		{ID: "datastore.unauthenticated@1", IdentityCompatible: true, Description: "datastore open without auth or with a vendor default credential"},
 		{ID: "content.prompt-injection@1", IdentityCompatible: true, Description: "prompt-injection content in target data"},
 		{ID: "llm.canary-reflection@1", IdentityCompatible: true, Description: "LLM endpoint reflects planted canary (AC-2 logging indicator)"},
 		{ID: "llm.response-drift@1", IdentityCompatible: true, Description: "deterministic-oracle drift across warm-up rounds (AC-1.b indicator)"},
@@ -221,6 +228,9 @@ func HasValidatedPrimitive(f *Finding) bool {
 	}
 	ev := strings.ToLower(f.ObservedEvidence)
 	switch FindingType(f) {
+	case "datastore-open":
+		return strings.Contains(ev, "[x] unauthenticated datastore access") ||
+			strings.Contains(ev, "[x] vendor default credential accepted")
 	case "metrics-exposed", "exposure-path":
 		return strings.Contains(ev, "credential value confirmed") ||
 			strings.Contains(ev, "[x] bearer token / api key value") ||
