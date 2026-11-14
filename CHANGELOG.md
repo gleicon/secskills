@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.33.1] - 2026-11-14
+
+### Security
+
+- **Reproduction commands quote target-derived values.** The command stored with
+  an exposed-path finding joined the URL and an `.env` key name into a shell
+  string without quoting. Both come from the target, so a hostile server could
+  plant `$(…)` in a command shown in reports for a person to paste. secskills
+  never executes these commands. They are now quoted with `ShellQuote`, and
+  dotenv key names that aren't plain identifiers are dropped. The OSV planner's
+  reproduction command, whose version string comes from a fingerprint, is quoted
+  the same way.
+
+
 ## [0.33.0] - 2026-11-14
 
 Network mode — scanning an ASN or CIDR you own — is now part of the main

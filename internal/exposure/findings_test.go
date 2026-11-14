@@ -174,3 +174,20 @@ func TestSvcTallyDeterministic(t *testing.T) {
 		}
 	}
 }
+
+func TestLeakEvidenceCommandIsSafeToPaste(t *testing.T) {
+	l := LeakFinding{IP: "203.0.113.10", Port: 80, Kind: "exposed-dotenv",
+		URL:      "http://203.0.113.10/.env';id;'",
+		Evidence: "dotenv exposed: 3 keys [$(touch /tmp/pwn), A';id;', DB_PASSWORD] (values redacted)"}
+	f := LeakFindings([]LeakFinding{l})[0]
+	if f.ProbeArg != "DB_PASSWORD=" {
+		t.Errorf("malformed key names must be dropped, got signature %q", f.ProbeArg)
+	}
+	if strings.Contains(f.ObservedEvidence, "credential-like keys exposed (values redacted): $(") {
+		t.Error("malformed key name reached the evidence key list")
+	}
+	want := `curl -s 'http://203.0.113.10/.env'\''`
+	if !strings.HasPrefix(f.EvidenceCmd, want) || !strings.HasSuffix(f.EvidenceCmd, `grep -c 'DB_PASSWORD='`) {
+		t.Errorf("evidence command not quoted: %s", f.EvidenceCmd)
+	}
+}

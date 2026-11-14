@@ -143,7 +143,7 @@ func plannerRound(wd, host string, findings []finding.Finding, depth int) []find
 			Confidence: "Low", Validation: "version-inferred", CVEs: finding.CapList(ids, 12),
 			ObservedEvidence: fmt.Sprintf("Version %s of %s was fingerprinted; OSV reports %d advisories for this version (%s). Banner-inferred — confirm the exact build and feature exposure before scheduling emergency patching.", ver, tech, len(ids), strings.Join(finding.CapList(ids, 8), ", ")),
 			ImpactText:       "Version-inferred CVE lead. Exploitability is not established; hiding the banner is not remediation. Validate applicability, then upgrade if genuinely affected.",
-			EvidenceCmd:      "echo query OSV for " + pkg + "@" + ver, ProbeKind: "manual", ProbeURL: "https://" + host,
+			EvidenceCmd:      "echo query OSV for " + netsec.ShellQuote(pkg+"@"+ver), ProbeKind: "manual", ProbeURL: "https://" + host,
 			EvidenceRefs: []string{ev}, DetectorID: "component.banner-osv-correlation@1", Capabilities: []string{finding.CapServiceVersion},
 		})
 		persistEdge(wd, PlannerEdge{Host: host, Depth: depth, FromCap: finding.CapServiceVersion,

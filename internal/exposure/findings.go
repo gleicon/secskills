@@ -1,7 +1,10 @@
 package exposure
 
 import (
+	"regexp"
+
 	"fmt"
+	"github.com/gleicon/secskills/internal/netsec"
 	"net"
 	"sort"
 	"strings"
@@ -45,6 +48,10 @@ func leakSignature(l LeakFinding) string {
 	return ""
 }
 
+// envKeyRe is the shape of a dotenv key. Key names come from the target, so
+// anything else is dropped before it reaches a signature or a command.
+var envKeyRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_.]*$`)
+
 // dotenvKeys extracts the key names from redactEnv's evidence
 // ("N keys [A, B] (values redacted)").
 func dotenvKeys(ev string) []string {
@@ -54,7 +61,7 @@ func dotenvKeys(ev string) []string {
 	}
 	var keys []string
 	for _, k := range strings.Split(ev[i+1:j], ",") {
-		if k = strings.TrimSpace(k); k != "" && k != "…" {
+		if k = strings.TrimSpace(k); envKeyRe.MatchString(k) {
 			keys = append(keys, k)
 		}
 	}
@@ -105,7 +112,8 @@ func LeakFindings(ls []LeakFinding) []finding.Finding {
 			f.Host = l.URL
 			if sig := leakSignature(l); sig != "" {
 				f.ProbeKind, f.ProbeURL, f.ProbeArg = "body-contains", l.URL, sig
-				f.EvidenceCmd = "curl -s " + l.URL + " | grep -c '" + sig + "'"
+				// target-derived values: quoted so the printed command is safe to paste
+				f.EvidenceCmd = "curl -s " + netsec.ShellQuote(l.URL) + " | grep -c " + netsec.ShellQuote(sig)
 				f.ExpectedOpen = sig
 			}
 		}
