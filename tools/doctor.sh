@@ -11,9 +11,10 @@
 #   tools/doctor.sh --tools nuclei,httpx  # only these
 #   tools/doctor.sh --json | --quiet | --list-categories
 #
-# Exit: 0 all BASELINE tools present; 1 a baseline tool missing.
-# Design (D-1): only baseline is required. Power tools are optional — absent ones
-# are reported with an install command, never a hard stop.
+# Exit: 0 unless the selected mode cannot run (sandbox without docker).
+# Design (D-1): every other tool is optional — absent ones are reported with an
+# install command, never a hard stop. Tier "skills" is used by the agent skills
+# and lib/ helpers, not by the secskills binary.
 
 set -uo pipefail
 
@@ -66,7 +67,7 @@ render_install() { local spec="$1"
   esac
 }
 
-MISSING_BASELINE=0; FIRST=1
+MISSING_REQUIRED=0; FIRST=1
 [ "$FORMAT" = "json" ] && printf '['
 [ "$FORMAT" = "text" ] && { echo "== secskills doctor =="; echo "platform: $PLAT   mode: $MODE   category: $CAT"; echo ""; }
 
@@ -84,7 +85,7 @@ while IFS=$'\t' read -r name tier category modes mac linux note; do
     done
   fi
   [ "$PLAT" = "mac" ] && cmd="$(render_install "$mac")" || cmd="$(render_install "$linux")"
-  [ "$status" = absent ] && [ "$tier" = baseline ] && MISSING_BASELINE=1
+  [ "$status" = absent ] && [ "$MODE" = sandbox ] && [ "$name" = docker ] && MISSING_REQUIRED=1
   if [ "$FORMAT" = "json" ]; then
     [ "$FIRST" -eq 0 ] && printf ','; FIRST=0
     printf '{"tool":"%s","tier":"%s","category":"%s","modes":"%s","status":"%s","install":"%s"}' \
@@ -99,14 +100,14 @@ while IFS=$'\t' read -r name tier category modes mac linux note; do
   fi
 done <<< "$REGISTRY"
 
-[ "$FORMAT" = "json" ] && { printf ']\n'; exit $MISSING_BASELINE; }
+[ "$FORMAT" = "json" ] && { printf ']\n'; exit $MISSING_REQUIRED; }
 
 echo ""
-if [ "$MISSING_BASELINE" -eq 1 ]; then
-  echo "RESULT: baseline tool missing — install the ✗ baseline tools before running secskills."
+if [ "$MISSING_REQUIRED" -eq 1 ]; then
+  echo "RESULT: sandbox mode needs docker — install it first."
 else
-  echo "RESULT: baseline OK. secskills runs; install ✗ power tools to widen coverage. tldt (optimizer) strongly recommended to keep OSINT output cheap."
+  echo "RESULT: ready. Each ✗ only narrows coverage. Tier \"skills\" is used by the agent skills and lib/ helpers."
 fi
 [ "$PLAT" = "linux" ] && echo "PATH note: go -> \$(go env GOPATH)/bin ; cargo -> ~/.cargo/bin ; pipx -> ~/.local/bin must be on PATH."
 [ "$PLAT" = "mac" ] && echo "httpx note: verify projectdiscovery build — httpx --version | grep -i projectdiscovery"
-exit $MISSING_BASELINE
+exit $MISSING_REQUIRED

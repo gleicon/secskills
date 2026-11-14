@@ -4,11 +4,11 @@ Install the binary first (`go install github.com/gleicon/secskills/cmd/secskills
 or a release binary — see the [install page](https://gleicon.github.io/secskills/install.html)).
 This file covers the **external tools** it can drive.
 
-secskills follows graceful degradation (D-1): **power** tools are optional and
-each widens coverage for one mode. **Baseline** tools are used by the agent
-skills and the `lib/` shell helpers; the binary itself runs without them, but
-`secskills doctor` reports them and exits `1` while one is missing. Run the
-doctor first — it prints the exact install command per missing tool for your
+secskills follows graceful degradation (D-1): every tool is optional except
+`docker` for sandbox mode. Tools in the **skills** tier are used by the agent
+skills and the `lib/` shell helpers, not by the binary. `secskills doctor` exits
+`1` only when the selected mode cannot run (`--mode sandbox` without docker). Run
+the doctor first — it prints the exact install command per missing tool for your
 platform:
 
 ```bash
@@ -18,7 +18,7 @@ secskills doctor --quiet     # only the gaps
 
 `tools/doctor.sh` is the equivalent shell reference with the same flags.
 
-## Baseline (required)
+## Skills tier (agent skills and `lib/` helpers)
 
 | Tool | Purpose | macOS (brew) | Ubuntu |
 |------|---------|--------------|--------|
@@ -28,8 +28,7 @@ secskills doctor --quiet     # only the gaps
 | `python3` | OSV queries, processing | `brew install python3` | `sudo apt-get install -y python3` |
 | `git` | KB refresh, findings backup | `brew install git` | `sudo apt-get install -y git` |
 
-macOS bundles `curl`/`dig`; Ubuntu bundles `python3`/`curl` on most images. A
-missing baseline tool makes the doctor exit `1`.
+macOS bundles `curl`/`dig`; Ubuntu bundles `python3`/`curl` on most images.
 
 ## Token optimizer (strongly recommended)
 

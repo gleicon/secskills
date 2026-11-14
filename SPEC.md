@@ -94,7 +94,7 @@ NFR-7: Portability: Source and knowledge content SHALL be language/stack-agnosti
 
 ## Interfaces
 
-**Skills (CLI-invocable in Claude Code)** — names indicative, finalized in roadmap:
+**Skills (CLI-invocable in Claude Code):**
 - `secskills` — router: target + intent → mode + relevant test classes.
 - `secskills-discover` — attack-surface discovery for a live target.
 - `secskills-test` — run OWASP-mapped active tests against discovered surface (live/sandbox); authorization-gated.

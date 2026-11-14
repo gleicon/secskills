@@ -10,7 +10,7 @@ import (
 // Tool is one row of the embedded registry (tools/registry.tsv).
 type Tool struct {
 	Name     string `json:"tool"`
-	Tier     string `json:"tier"`     // baseline | power | optimizer
+	Tier     string `json:"tier"`     // skills | power | optimizer
 	Category string `json:"category"` // core, osint, dns, http, ...
 	Modes    string `json:"modes"`    // csv: discover,test,source,...
 	Mac      string `json:"-"`
@@ -97,3 +97,14 @@ func ModeMatch(toolModes, req string) bool {
 	}
 	return strings.Contains(m, ","+req+",")
 }
+
+// requiredByMode lists the external tools a mode cannot run without. Every
+// other tool only widens coverage: the binary skips it and says so. Tools in
+// the "skills" tier are used by the agent skills and lib/ shell helpers, not by
+// the binary.
+var requiredByMode = map[string][]string{
+	"sandbox": {"docker"},
+}
+
+// RequiredFor returns the tools mode cannot run without ("all" needs none).
+func RequiredFor(mode string) []string { return requiredByMode[mode] }

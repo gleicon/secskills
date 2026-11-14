@@ -1,6 +1,6 @@
 ---
 name: secskills-doctor
-description: "Preflight check for secskills. Verifies every tool the package can use — baseline (curl/dig/jq/python3/git) and optional power tools (subfinder, httpx, nuclei, katana, dalfox, sslscan, osv-scanner, trufflehog, ast-grep, docker) — reports what is present or missing per mode, and prints the exact install command for macOS (brew) or Ubuntu (apt/go/cargo). Read-only; installs nothing."
+description: "Preflight check for secskills. Verifies every tool the package can use — the skills tier (curl/dig/jq/python3/git, used by these skills) and optional power tools (subfinder, httpx, nuclei, katana, dalfox, sslscan, osv-scanner, trufflehog, ast-grep, docker) — reports what is present or missing per mode, and prints the exact install command for macOS (brew) or Ubuntu (apt/go/cargo). Read-only; installs nothing."
 ---
 
 Run the environment check before an assessment so a mode does not stop halfway
@@ -20,20 +20,20 @@ secskills doctor --json              # machine-readable
 secskills doctor --list-categories
 ```
 
-Exit code `0` = all baseline tools present (secskills can run). Exit `1` = a
-baseline tool is missing.
+Exit code `1` only when the selected mode cannot run: `--mode sandbox` without
+docker. Otherwise `0`, with every ✗ listed as optional.
 
 ## Tiers (D-1)
 
-- **Baseline** (required): `curl`, `dig`, `jq`, `python3`, `git`. Missing one
-  blocks the run.
+- **Skills** (`curl`, `dig`, `jq`, `python3`, `git`): used by these skills and the
+  `lib/` shell helpers. The secskills binary does not need them.
 - **Power** (optional): each widens coverage for one mode. Absent → the mode
   degrades gracefully and notes the gap; never a hard stop. `docker` is required
   **only** for sandbox mode.
 
 ## Per-mode tool needs
 
-| Mode | Baseline | Power tools |
+| Mode | Skills tier | Power tools |
 |------|----------|-------------|
 | source | curl, jq, python3 | ast-grep (engine), osv-scanner |
 | discover | curl, dig, jq | subfinder, amass, httpx |

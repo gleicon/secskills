@@ -50,7 +50,12 @@ func cmdDoctor(args []string) error {
 	}
 
 	var filtered []tooling.Tool
-	missingBaseline := false
+	required := map[string]bool{}
+	for _, n := range tooling.RequiredFor(*mode) {
+		required[n] = true
+	}
+	var missingRequired []string
+	missingOptional := 0
 	for _, t := range reg {
 		if !tooling.ModeMatch(t.Modes, *mode) {
 			continue
@@ -96,8 +101,12 @@ func cmdDoctor(args []string) error {
 		} else {
 			t.Install = tooling.RenderInstall(t.Linux, plat)
 		}
-		if t.Status == "absent" && t.Tier == "baseline" {
-			missingBaseline = true
+		if t.Status != "present" {
+			if required[t.Name] {
+				missingRequired = append(missingRequired, t.Name)
+			} else {
+				missingOptional++
+			}
 		}
 		filtered = append(filtered, t)
 	}
@@ -105,8 +114,8 @@ func cmdDoctor(args []string) error {
 	if *asJSON {
 		b, _ := json.Marshal(filtered)
 		fmt.Println(string(b))
-		if missingBaseline {
-			return fmt.Errorf("baseline tool missing")
+		if len(missingRequired) > 0 {
+			return fmt.Errorf("%s mode needs %s", *mode, strings.Join(missingRequired, ", "))
 		}
 		return nil
 	}
@@ -130,10 +139,14 @@ func cmdDoctor(args []string) error {
 		}
 	}
 	fmt.Println()
-	if missingBaseline {
-		fmt.Println("RESULT: baseline tool missing — install the ✗ baseline tools first.")
-		return fmt.Errorf("baseline tool missing")
+	if len(missingRequired) > 0 {
+		fmt.Printf("RESULT: %s mode needs %s — install it first.\n", *mode, strings.Join(missingRequired, ", "))
+		return fmt.Errorf("%s mode needs %s", *mode, strings.Join(missingRequired, ", "))
 	}
-	fmt.Println("RESULT: baseline OK. Install ✗ power tools to widen coverage; tldt recommended.")
+	if missingOptional > 0 {
+		fmt.Printf("RESULT: ready. %d optional tool(s) missing; each ✗ only narrows coverage. Tier \"skills\" is used by the agent skills and lib/ helpers.\n", missingOptional)
+		return nil
+	}
+	fmt.Println("RESULT: ready. All listed tools present.")
 	return nil
 }

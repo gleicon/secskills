@@ -13,9 +13,8 @@ import (
 // a hand-labelled set of >=100 hosts must be >= 90%, and both the corpus and the
 // measurement must be committed. This command is the measurement: it joins a
 // ground-truth label set against the candidates the pipeline produced and prints
-// precision/recall with a PASS/FAIL verdict. The label corpus is operator-
-// supplied (who labels is spec open-Q4); `testdata/precision/labels.example.jsonl`
-// documents the schema.
+// precision/recall with a PASS/FAIL verdict. The label corpus is supplied by
+// the operator; `testdata/precision/labels.example.jsonl` documents the schema.
 //
 // A label is one (ip, cve, label) row where label is "vuln" (the host really is
 // affected) or "safe" (it is not — e.g. a backport fixed it behind an unchanged

@@ -11,7 +11,7 @@ func TestParseRegistry(t *testing.T) {
 	}
 	var baseline, hasNuclei, hasTLDT bool
 	for _, tool := range reg {
-		if tool.Name == "curl" && tool.Tier == "baseline" {
+		if tool.Name == "curl" && tool.Tier == "skills" {
 			baseline = true
 		}
 		if tool.Name == "nuclei" {
@@ -61,5 +61,21 @@ func TestModeMatch(t *testing.T) {
 func TestHTTPXThreadsDefault(t *testing.T) {
 	if httpxThreads(0) != "40" || httpxThreads(-1) != "40" || httpxThreads(8) != "8" {
 		t.Errorf("httpxThreads: %s %s %s", httpxThreads(0), httpxThreads(-1), httpxThreads(8))
+	}
+}
+
+func TestRequiredFor(t *testing.T) {
+	if got := RequiredFor("sandbox"); len(got) != 1 || got[0] != "docker" {
+		t.Errorf("sandbox requires %v, want [docker]", got)
+	}
+	for _, m := range []string{"all", "source", "discover", "test", "live"} {
+		if got := RequiredFor(m); len(got) != 0 {
+			t.Errorf("%s requires %v, want none", m, got)
+		}
+	}
+	for _, tl := range ParseRegistry() {
+		if tl.Tier != "skills" && tl.Tier != "power" && tl.Tier != "optimizer" {
+			t.Errorf("%s has unknown tier %q", tl.Name, tl.Tier)
+		}
 	}
 }

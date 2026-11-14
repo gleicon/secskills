@@ -10,10 +10,8 @@ observations.
 
 Two properties make the split clean:
 
-- **No LLM, no agent in v0.** The whole external pipeline is plain Go. The only
-  LLM consumers are the future Phase-2 L3 agent tier (which may assert patch
-  state) and the `llmproxy` probe — and that probe *tests* an LLM API router as
-  a target, it is not a runtime dependency. You can run everything described here
+- **No LLM, no agent.** The whole external pipeline is plain Go. The `llmproxy`
+  probe *tests* an LLM API router as a target; it is not a runtime dependency. You can run everything described here
   with no model and no network beyond the targets.
 - **No CGO.** `make dist` cross-compiles a single static binary per platform.
   Copy it to a VM; it needs no runtime, no shared libraries, no interpreter.

@@ -20,9 +20,8 @@ import (
 //     it is almost certainly the same service (far stronger than a title match).
 //  2. Censys adapter (key-gated, like Shodan) to widen the origin-candidate net.
 //
-// JARM/JA3 active TLS fingerprinting is tracked as future work: it requires
-// crafting raw TLS ClientHello variants that crypto/tls does not expose, so it
-// needs a raw-TLS library and is out of the stdlib-only constraint.
+// JARM/JA3 active TLS fingerprinting is not implemented: it requires crafting
+// raw TLS ClientHello variants that crypto/tls does not expose.
 
 // leafCertSHA256 dials host:443 (SNI = sniName) and returns the SHA-256 of the
 // leaf certificate. Empty on failure.

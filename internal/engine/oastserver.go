@@ -12,8 +12,8 @@ import (
 // Run this on a public host with a wildcard DNS record (*.oast.example -> this
 // host). The SSRF/webhook probes embed a unique token as a subdomain/path; when
 // the target performs a server-side fetch, this server logs the interaction and
-// the engine confirms it via /poll?token=<id>. HTTP-based (DNS-based OAST needs a
-// DNS server library and is tracked as future work).
+// the engine confirms it via /poll?token=<id>. HTTP callbacks only; DNS-based
+// OAST is not implemented.
 //
 //   secskills oast-server --listen :8080 --store ~/.secskills-oast.jsonl
 //

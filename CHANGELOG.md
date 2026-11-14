@@ -1,20 +1,31 @@
 # Changelog
 
-## [Unreleased]
+## [0.32.0] - 2026-11-13
 
 ### Changed
 
-- `secskills help` lists the real MCP tool set and points to the website, and notes
+- **`secskills doctor` exit code.** It exits `1` only when the selected mode
+  can't run (`--mode sandbox` without docker). It used to fail whenever
+  `curl`, `dig`, `jq`, `python3` or `git` was missing, though the binary uses none
+  of them. Those tools are now the `skills` tier, used by the agent skills and
+  `lib/` helpers. `tools/doctor.sh` behaves the same way.
+- `secskills help` lists the real MCP tool set, links to the website, and says
   where the workdir lives.
-- Docs: README (install from binaries, plugin marketplace, exposure-mode section,
-  safety), `INSTALL.md` and the doctor skill use `secskills doctor` (64 tools, 19
-  categories; baseline tools are only needed by the skills and `lib/` helpers),
-  `docs/usage.md` matches the CLI (profiles, exposure commands, flag positions,
-  files and environment), `docs/getting-started.md` (binaries, workdir, TLS for
-  credentials, `sandbox --confirm`), coverage matrix (exposure stages, interop, CVSS
-  vectors), `AGENTS.md` and `ADAPTERS.md` (marketplace install, workdir and data
-  containment rules).
-- Website: the install page explains baseline tools, and usage notes where flags may go.
+- The docs describe what exists, not what's planned. Removed `roadmap.md`,
+  `PROGRESS.md` (a build log of "next" notes) and `IMPORT.md` (a planning map).
+  `SPEC-EXPOSURE.md` is now a design record of what's built: unbuilt feed sources,
+  LLM extraction, MCP finding tools, phases, open questions and the watchlist are
+  gone; requirement and decision IDs cited in code are kept. Code comments no
+  longer promise future work.
+- README, `INSTALL.md`, `docs/usage.md`, `docs/getting-started.md`, the coverage
+  matrix, `AGENTS.md`, `ADAPTERS.md`, the doctor and discover skills, and the
+  website now match the CLI: release binaries, plugin marketplace, exposure-mode
+  commands, test profiles, where flags can go, files and environment.
+
+### Fixed
+
+- `docs/getting-started.md` showed `sandbox` without the required `--confirm`.
+- The coverage matrix said CVSS was a band only; full CVSS 3.1 vectors exist.
 
 ## [0.31.2] - 2026-11-13
 

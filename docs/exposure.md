@@ -39,7 +39,7 @@ Every candidate carries a tier:
 | L0 | cached observation | no |
 | L1 | single probe / version-inferred | no |
 | L2 | template match | no |
-| L3 | agent-verified (Phase-2) | **yes** — only L3 |
+| L3 | host-reported package/kernel state, supplied as asset input (secskills does not collect it) | **yes** — only L3 |
 
 External tiers never claim "patched" or "vulnerable": a distro backport can fix a
 CVE behind an unchanged version string, so a banner version in an affected range

@@ -153,7 +153,7 @@ Capture on a VM and analyze offline with `make bundle` and `deploy/`
 ([docs/offline-vm.md](docs/offline-vm.md)). Recipes: [docs/exposure.md](docs/exposure.md).
 Spec: [SPEC-EXPOSURE.md](SPEC-EXPOSURE.md).
 
-Release history: [CHANGELOG.md](CHANGELOG.md). Build log and roadmap: [PROGRESS.md](PROGRESS.md).
+Release history: [CHANGELOG.md](CHANGELOG.md).
 
 Evidence handling, retention and governance: see [EVIDENCE-POLICY.md](EVIDENCE-POLICY.md).
 

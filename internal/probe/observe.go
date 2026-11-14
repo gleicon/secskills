@@ -17,11 +17,10 @@ import (
 const ObservationFingerprintVersion = 1
 
 // Observation is one externally-observed fact about a reachable (ip, port): the
-// service, product/version, CPE, and TLS metadata derived without authentication
+// service, product/version, CPE, and optional TLS metadata derived without authentication
 // or state change. It is the v0 cache unit and the first non-finding output
 // type (spec N-2). Rows are append-only, sourced, and timestamped; Fingerprint
-// gives each one a stable content address so the store can dedupe and, later,
-// back vector search over the corpus.
+// gives each one a stable content address so the store can dedupe.
 type Observation struct {
 	IP      string `json:"ip"`
 	Port    int    `json:"port"`

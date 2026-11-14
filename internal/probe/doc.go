@@ -9,7 +9,7 @@
 // (Mode A) and a token-scoped worker (Mode B) share one request path.
 //
 // Observation is the first non-finding output type and the v0 cache unit. It is
-// append-only, sourced, timestamped, and content-addressed from day one, so the
-// stored corpus can later back vector search ("Google for vuln") without a
-// rewrite. The scan is throwaway; the store is the asset.
+// append-only, sourced, timestamped, and content-addressed, so a stored corpus
+// can be re-joined against newer intelligence without re-scanning. The scan is
+// throwaway; the store is the asset.
 package probe
