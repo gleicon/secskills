@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.32.1] - 2026-11-13
+
+### Changed
+
+- **Retracted v0.31.0, v0.31.1, v0.31.2 and v0.32.0.** The repository history
+  was rewritten to remove third-party organization names and domains: assessed
+  targets, an employer, and real domains used as placeholders. Examples now use
+  `example.*` names and documentation IP ranges. The source behind those four tags
+  changed in the rewrite, so Go tooling skips them; use v0.32.1 or later. Code
+  behaviour is the same as v0.32.0.
+- Dependencies: `golang.org/x/net` 0.62.0; GitHub Actions `checkout` v7,
+  `setup-go` v7, `configure-pages` v6, `deploy-pages` v5, `upload-pages-artifact` v5.
+
+
 ## [0.32.0] - 2026-11-13
 
 ### Changed
