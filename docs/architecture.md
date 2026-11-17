@@ -28,10 +28,10 @@ the tool registry are **embedded** (`go:embed`) so the binary runs offline.
 
 The earlier shell prototype hit portability pain — `shasum` vs `sha256sum`,
 `timeout` vs `gtimeout`, BSD vs GNU tools, bash 3.2 vs 5.x. The binary gives one
-static artifact (mac/linux/arm), real tests, embedded offline data, and
+static artifact (Linux, macOS, Windows), real tests, embedded offline data, and
 in-process orchestration (resolve-then-probe, pd-httpx path resolution, temp-file
-buffering, backgrounding, rate limits). The shell `lib/*.sh` + `tools/*.sh` remain
-as a readable reference.
+buffering, backgrounding, rate limits). The shell prototype has been retired; the
+skills drive the binary.
 
 ## The discover pipeline
 
@@ -39,6 +39,14 @@ as a readable reference.
 (projectdiscovery, minimal flags, temp-file output) → Shodan enrichment. Resolving
 first avoids wasting the run on dead names; the binary resolves the projectdiscovery
 `httpx` even when Python's `httpx` shadows it on PATH.
+
+## Network mode
+
+For an ASN or CIDR: a rate-limited TCP connect sweep (per-IP authorization, /20
+cap) stores observations; `enrich` reads banners; `leakcheck`/`dbcheck` and the
+offline `cvematch` join write ordinary findings (`internal/exposure`), so the
+same store, report, retest, tickets, and export serve blocks and apps. See
+`SPEC-NETWORK.md`.
 
 ## The check engine
 
@@ -51,13 +59,17 @@ partial results.
 
 ## Safety model
 
-- **Authorization gate** in the core: `discover`/`test`/`sandbox` refuse without
-  `--confirm` or an authorized `.secskills-scope.yml`. `--intrusive` needs a
-  second confirmation. DoS and mass third-party scanning are always refused.
+- **Authorization gate** in the core: every target-touching command (`discover`,
+  `test`, `sandbox`, `watch`, `integrity`, `enrich`, `leakcheck`, `dbcheck`)
+  refuses without `--confirm` or an authorized `.secskills-scope.yml`.
+  `--intrusive` needs a second confirmation. DoS and mass third-party scanning are
+  always refused.
+- **Offline reporting**: reports, tickets, and exports render from stored
+  findings and evidence and never contact the target (pinned by a test).
 - **Scope confinement**: every probe checks the confirmed scope; out-of-scope
   hosts are skipped.
 - **Untrusted target output**: every target-derived string is run through
-  `neutralizeUntrusted` (strip invisible/bidi/control unicode, redact injection
+  `textutil.NeutralizeUntrusted` (strip invisible/bidi/control unicode, redact injection
   patterns, collapse newlines) before it reaches a finding, report, or stdout;
   injection content is recorded as a finding; tldt adds a second detection layer.
   See `SECURITY.md`.
@@ -100,7 +112,11 @@ assets.go, version.go root package secskills: go:embed of the data below + Versi
 kb/, recipes/, data/  embedded knowledge base, recipes, fingerprints, default creds
 thirdparty/ast-grep-rules/  embedded ast-grep rules (rules/ is a symlink)
 skills/               Claude Code SKILL.md adapters
-lib/, tools/          shell reference + doctor.sh/ingest.sh + registry.tsv
+lib/                  methodology the skills read: authorization gate, OSINT
+                      sources, report template
+tools/                registry.tsv (embedded tool registry), ingest.sh (KB refresh)
+thirdparty/           manual playbooks (redteam-pentest, xss-assist) + ast-grep rules
+deploy/               capture kit: setup.sh, capture.sh, process.sh
 examples/embed/       using internal/probe as a library
 docs/                 this documentation
 ```

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gleicon/secskills/internal/intel"
 	"github.com/gleicon/secskills/internal/jsonl"
 )
 
@@ -65,25 +64,6 @@ func LoadDBChecks(path string) []DBResult {
 		var r DBResult
 		if jsonl.JSONUnmarshalLine(ln, &r) {
 			out = append(out, r)
-		}
-	}
-	return out
-}
-
-// LoadCandidates reads candidates.jsonl, or nil.
-func LoadCandidates(path string) []intel.Candidate {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	var out []intel.Candidate
-	for _, ln := range strings.Split(string(b), "\n") {
-		if strings.TrimSpace(ln) == "" {
-			continue
-		}
-		var c intel.Candidate
-		if jsonl.JSONUnmarshalLine(ln, &c) {
-			out = append(out, c)
 		}
 	}
 	return out

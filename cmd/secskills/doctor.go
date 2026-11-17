@@ -144,7 +144,7 @@ func cmdDoctor(args []string) error {
 		return fmt.Errorf("%s mode needs %s", *mode, strings.Join(missingRequired, ", "))
 	}
 	if missingOptional > 0 {
-		fmt.Printf("RESULT: ready. %d optional tool(s) missing; each ✗ only narrows coverage. Tier \"skills\" is used by the agent skills and lib/ helpers.\n", missingOptional)
+		fmt.Printf("RESULT: ready. %d optional tool(s) missing; each ✗ only narrows coverage. Tier \"skills\" is used by the agent skills' manual steps and tools/ingest.sh.\n", missingOptional)
 		return nil
 	}
 	fmt.Println("RESULT: ready. All listed tools present.")

@@ -4,10 +4,11 @@ import (
 	"regexp"
 
 	"fmt"
-	"github.com/gleicon/secskills/internal/netsec"
 	"net"
 	"sort"
 	"strings"
+
+	"github.com/gleicon/secskills/internal/netsec"
 
 	"github.com/gleicon/secskills/internal/finding"
 	"github.com/gleicon/secskills/internal/intel"

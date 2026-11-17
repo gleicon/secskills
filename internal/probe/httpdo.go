@@ -71,9 +71,6 @@ func newClient(guard Guard, userAgent string, allowLocal bool) *Client {
 	}
 }
 
-// JoinBase appends p to base without doubling or dropping the separator.
-func JoinBase(base, p string) string { return strings.TrimRight(base, "/") + p }
-
 // DoBounded performs one guarded request and returns status, headers, and a
 // body bounded to maxBytes. An empty body sends no payload (GET/HEAD); a
 // non-empty body is sent as JSON. ok is false on any guard rejection, build,
@@ -129,10 +126,4 @@ func (c *Client) GetWithBasicAuth(url, user, pass string, maxBytes int64) (int, 
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(io.LimitReader(resp.Body, maxBytes))
 	return resp.StatusCode, resp.Header, string(b), true
-}
-
-// PostJSONBody performs a guarded bounded POST with a JSON body.
-func (c *Client) PostJSONBody(url, body string, maxBytes int64) (int, string, bool) {
-	code, _, resp, ok := c.DoBounded("POST", url, body, maxBytes)
-	return code, resp, ok
 }

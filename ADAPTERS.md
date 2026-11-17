@@ -60,5 +60,4 @@ client would run them unattended, which must not happen without the gate.
 One static artifact (mac/linux/arm), no bash-portability tax (`shasum` vs
 `sha256sum`, `timeout` vs `gtimeout`, BSD vs GNU), real tests, embedded KB +
 rules (`go:embed`) so it runs offline. External pentest tools stay external —
-the binary shells out to them, never reimplements them. The shell `lib/*.sh`
-remain as a readable reference and a fallback.
+the binary shells out to them, never reimplements them.

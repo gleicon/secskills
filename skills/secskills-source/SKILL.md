@@ -43,6 +43,12 @@ The manual steps below apply when driving ast-grep directly.
 ## Output
 
 A findings list in the Finding Format of `lib/report-template.md`, each anchored
-to `file:line`, severity-ranked, with KB-keyed remediation. Feed to
-`/secskills-report`, or emit inline for a quick review. No `emit_finding` probe
-command is meaningful for static findings — set them `status: manual` if stored.
+to `file:line`, severity-ranked, with KB-keyed remediation. Emit it inline for a
+quick review, or store each confirmed finding for a report:
+
+```bash
+secskills findings add --target <repo> --id SRC-01 --title "…" --host path/to/file.go:42 \
+  --severity HIGH --status manual
+secskills findings write-run --target <repo>
+secskills report --render <repo>
+```

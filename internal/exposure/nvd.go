@@ -45,12 +45,6 @@ type nvdResponse struct {
 	} `json:"vulnerabilities"`
 }
 
-// cpeVendorProduct splits a CPE 2.3 criteria string into vendor and product.
-func cpeVendorProduct(cpe string) (vendor, product string) {
-	v, p, _ := cpeParts(cpe)
-	return v, p
-}
-
 // cpeParts splits a CPE 2.3 criteria string into vendor, product, and the
 // version field (field 6). A version of "*" or "-" means "not pinned here" —
 // the affected set is then given by the separate versionStart/End bounds.

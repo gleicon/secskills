@@ -24,7 +24,7 @@ jobs:
           want="${GITHUB_REF_NAME#v}"
           got=$(sed -n 's/^var Version = "\(.*\)"/\1/p' version.go)
           [ "$want" = "$got" ] || { echo "tag $GITHUB_REF_NAME but version.go says $got"; exit 1; }
-          for f in .claude-plugin/plugin.json manifest.json; do
+          for f in .claude-plugin/plugin.json; do
             v=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$f" | head -1)
             [ "$want" = "$v" ] || { echo "tag $GITHUB_REF_NAME but $f says $v"; exit 1; }
           done

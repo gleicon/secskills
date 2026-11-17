@@ -1,7 +1,9 @@
 # Reporting & compliance
 
-secskills produces three report formats from the same findings, plus a re-test
-delta. Reports are written for a technical CISO who must split evidence across
+secskills produces three report formats from the same findings, plus an auditor
+report and a re-test delta, for any target: a domain, a sandbox, a repository, or
+a network block. Reports render offline from stored findings and evidence; they
+never contact the target. Reports are written for a technical CISO who must split evidence across
 teams and use the document as audit evidence.
 
 ## Formats
@@ -11,6 +13,7 @@ teams and use the document as audit evidence.
 | Markdown | `secskills report --render <target>` | Terminal / repo / hand-off. Full sectioned report. |
 | HTML | `secskills report --html <target> --output f.html` | Web view; source for PDF. |
 | PDF | `secskills report --pdf <target> --output f.pdf` | Big-4-style deliverable. Needs headless Chrome/Chromium. |
+| Auditor | `secskills report --audit <target>` | Control objectives, test ledger, attestation. |
 | Re-test | `secskills report --retest <target>` | fixed / still-present / regressed vs the last run. |
 
 If no headless browser is present, `--pdf` writes the HTML and tells you to use
@@ -22,8 +25,8 @@ your browser's Print-to-PDF. Check with `secskills doctor --category report`.
 2. Document control (frameworks, compliance mapping, confidentiality)
 3. Executive summary — risk narrative, **risk heat-map**, key findings, coverage
 4. Methodology & scope
-5. Findings summary table (ID, severity, CVSS band, OWASP, **owning team**)
-6. Detailed findings — per finding: affected asset, OWASP, CWE, CVSS band, CVEs,
+5. Findings summary table (ID, severity, CVSS, OWASP, **owning team**)
+6. Detailed findings — per finding: affected asset, OWASP, CWE, CVSS 3.1 vector and score, CVEs,
    **SOC 2 / ISO 27001 / PCI-DSS controls**, owning team, impact, evidence, remediation
 7. Compliance coverage matrix
 8. Evidence index (screenshots, raw data)
@@ -52,8 +55,6 @@ Each finding maps to the controls it is evidence for:
 These references indicate the criteria a finding is relevant to — evidence
 support for an audit, not an audit opinion.
 
-## PLACEHOLDER_REMOVED
-
 ## Evidence & risk model (CISO-grade)
 
 secskills separates **severity** from **confidence**, and states how each finding
@@ -67,8 +68,12 @@ was validated — so a reader can trust the rating:
   HTML responses only; `ACAO:*` is elevated only with `Allow-Credentials: true`.
 - **Component CVEs are leads, not proof:** version→CVE correlation is `version-inferred`,
   capped at MEDIUM, titled "manual validation required" — hiding a banner is not remediation.
-- **/metrics is deep-inspected:** severity follows what actually leaked (internal
-  hostnames, k8s names, versions, secrets → HIGH; generic runtime metrics → LOW).
+- **/metrics is deep-inspected:** severity follows what actually leaked (a
+  validated credential → HIGH; a credential-like pattern or internal topology →
+  MEDIUM; generic runtime metrics → LOW).
+- **Network blocks** add a network inventory (hosts, services, reachable
+  datastores). Banner-version CVE matches are leads (LOW, or MEDIUM when a CVE is
+  in CISA KEV); open or default-credential datastores are HIGH.
 - **Root issues:** many per-host observations collapse into a few root issues
   ("163 observations → a handful of platform/edge issues").
 - **Deliverable naming:** "External Attack Surface & Security Assessment" unless a
@@ -77,14 +82,9 @@ was validated — so a reader can trust the rating:
   discovered and the authorization basis; cross-domain OSINT pivots are reported
   separately and require scope confirmation before inclusion.
 
-## CVSS
-
-secskills reports an **indicative CVSS v3.1 band** per severity (Critical 9.0–10.0,
-High 7.0–8.9, Medium 4.0–6.9, Low 0.1–3.9). Per-finding vectors are a manual
-follow-up; component CVEs carry their OSV identifiers.
-
 ## Data artifacts
 
-Alongside the report: `data/subs-*.txt`, `data/live-*.json`, `data/findings-*.json`,
-`data/shodan/`, `nuclei.jsonl`, and `screenshots/`. These are **sensitive** — treat
-like a credentials store; never commit engagement data.
+The target's workdir holds the raw data behind the report (subdomains, live
+hosts, findings, evidence objects, Shodan data, nuclei output, screenshots, and
+for blocks the observations). It is created readable by you only. Treat it and
+`~/.secskills-findings/` like a credentials store; never commit engagement data.

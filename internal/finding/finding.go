@@ -54,7 +54,7 @@ type Finding struct {
 	DetectorID string `json:"detector_id,omitempty"`
 	Key        string `json:"finding_key,omitempty"`      // observation identity (asset+detector+condition)
 	RootKey    string `json:"root_finding_key,omitempty"` // collapse identity (asset+detector family)
-	// Formal evidence state (state machine) + immutable evidence object ids.
+	// Evidence state (derived from validation) + immutable evidence object ids.
 	State        string   `json:"evidence_state,omitempty"`
 	EvidenceRefs []string `json:"evidence_refs,omitempty"`
 	// Severity provenance: automated (rubric) severity is immutable; a human

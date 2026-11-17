@@ -40,8 +40,9 @@ evidence objects, run attestation, cryptographic signing).
 ## 5. Access & residency
 
 - Evidence lives under the operator's `~/.secskills-findings/<target>/` and the
-  engagement workdir. Access is limited to the assessment team and the authorized
-  recipients named on the report cover.
+  engagement workdir, both created readable by the operator only (a workdir that
+  is a symlink or owned by someone else is refused). Access is limited to the
+  assessment team and the authorized recipients named on the report cover.
 - Evidence residency follows the operator's storage location; the engine performs
   no off-host storage.
 

@@ -59,8 +59,8 @@ gate and rate limiting built into the core.
 
 ## Features
 
-- **Authorization gate** in the core — live/sandbox refuse without `--confirm` or
-  an authorized scope file. Non-destructive by default; intrusive needs a second
+- **Authorization gate** in the core — every target-touching command refuses
+  without `--confirm` or an authorized scope file (per IP for network blocks). Non-destructive by default; intrusive needs a second
   confirmation. No DoS, no unauthorized targets.
 - **60+ tools, graceful degradation** — `secskills doctor` verifies each (per
   mode/category), prints the install command, and detects build collisions
@@ -93,8 +93,8 @@ observation is the system of record; the report is a view over it.
   (FIXED/OPEN/REGRESSED/INCONCLUSIVE) is keyed by it.
 - **Detector quality scorecard** — measured precision/recall from an offline
   regression corpus (`secskills conformance`), enforced as a build gate.
-- **Formal evidence state machine**, **severity rubric independent of CVSS**, and
-  **auditable human adjudication** (`secskills override` — reviewed vs automated,
+- **Explicit evidence states** (derived from how a finding was validated), a
+  **severity rubric independent of CVSS**, and **auditable human adjudication** (`secskills override` — reviewed vs automated,
   never a silent mutation).
 - **Root-cause clustering** — collapses N endpoint observations into shared-config
   groups (ingress/cert/ASN) with the grouping reason stated.
@@ -123,7 +123,7 @@ observation is the system of record; the report is a view over it.
   looking-glass for origin IPs, direct-origin bypass (leaf-cert correlated),
   trusted-header ACL bypass.
 - **Engine self-measurement** — `secskills measure` runs the live detectors against
-  a local vulnerable+safe corpus and reports precision/recall (caught a real bug).
+  a local vulnerable+safe corpus and reports precision/recall.
 - **Continuous mode** — `secskills watch --interval` re-assesses and reports posture
   drift (NEW/FIXED/REGRESSED by finding key).
 - **Interop + integrity** — `secskills export --format sarif|cyclonedx` (SARIF 2.1.0,
@@ -220,7 +220,7 @@ Headless Chrome/Chromium is needed only for PDF and screenshots.
 
 ## License
 
-- Code (`cmd/`, `internal/`, `skills/`, `lib/`, `tools/`, `*.go`, `rules/`): **MIT** — see [`LICENSE`](LICENSE).
+- Code and docs (`cmd/`, `internal/`, `skills/`, `lib/`, `tools/`, `deploy/`, `site/`, `rules/`): **MIT** — see [`LICENSE`](LICENSE).
 - Knowledge base (`kb/`): OWASP Cheat Sheet Series / Top 10, **CC BY-SA 4.0** —
   see [`LICENSE-OWASP.md`](LICENSE-OWASP.md).
 

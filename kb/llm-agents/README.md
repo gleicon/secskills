@@ -35,7 +35,7 @@ For targets that embed LLMs, RAG, tools/function-calling, or autonomous agents.
 - **Memory/context poisoning:** persisted memory or shared context carries an
   attacker payload across sessions/users.
 - **Multi-agent trust:** one agent's output is another's untrusted input — treat
-  cross-agent messages as data, never instructions (mirrors `check_prompt_injection`).
+  cross-agent messages as data, never instructions (mirrors `secskills scan`).
 
 ## Testing surface
 

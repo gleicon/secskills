@@ -52,7 +52,7 @@ func Platform() string {
 }
 
 // RenderInstall turns a registry install spec into a runnable command for the
-// current platform, mirroring tools/doctor.sh render_install.
+// current platform.
 func RenderInstall(spec, plat string) string {
 	switch {
 	case strings.HasPrefix(spec, "go:"):
@@ -100,7 +100,8 @@ func ModeMatch(toolModes, req string) bool {
 
 // requiredByMode lists the external tools a mode cannot run without. Every
 // other tool only widens coverage: the binary skips it and says so. Tools in
-// the "skills" tier are used by the agent skills and lib/ shell helpers, not by
+// the "skills" tier are used by the agent skills' manual steps and
+// tools/ingest.sh, not by
 // the binary.
 var requiredByMode = map[string][]string{
 	"sandbox": {"docker"},

@@ -33,13 +33,6 @@ func TestParseNVD(t *testing.T) {
 	}
 }
 
-func TestCpeVendorProduct(t *testing.T) {
-	v, p := cpeVendorProduct("cpe:2.3:a:f5:nginx:1.18.0:*:*:*:*:*:*:*")
-	if v != "f5" || p != "nginx" {
-		t.Errorf("got %q %q", v, p)
-	}
-}
-
 func TestParseNVDExactVersion(t *testing.T) {
 	// CVE-2021-41773 affects exactly Apache 2.4.49 — version pinned in the CPE,
 	// no range bounds. Must become an exact match, not "all versions".

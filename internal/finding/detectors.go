@@ -5,55 +5,27 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Item 4 — Formal evidence state machine.
-// A finding's epistemic state is explicit and only moves along defined edges.
-// This prevents illegitimate jumps (e.g. a version banner silently becoming
-// CONFIRMED because a severity classifier changed).
+// Item 4 — Explicit evidence states.
+// A finding's epistemic state is derived from how it was validated, never from
+// its severity, so a version banner cannot become CONFIRMED because a severity
+// classifier changed.
 // ---------------------------------------------------------------------------
 
-// EvidenceState is a finding's position in the evidence state machine.
+// EvidenceState is how far a finding has been validated.
 type EvidenceState string
 
 // Evidence states.
 const (
-	StDiscovered       EvidenceState = "DISCOVERED"
 	StObserved         EvidenceState = "OBSERVED"
 	StInferred         EvidenceState = "INFERRED"
 	StConfirmed        EvidenceState = "CONFIRMED"
 	StExploitValidated EvidenceState = "EXPLOIT_VALIDATED"
-	StSuppressed       EvidenceState = "SUPPRESSED"
 	StNotApplicable    EvidenceState = "NOT_APPLICABLE"
 	StInconclusive     EvidenceState = "INCONCLUSIVE"
-	StError            EvidenceState = "ERROR"
 )
 
-// evidenceTransitions defines the only legal state moves. A transition not in
-// this table is rejected by canTransition — the state machine is closed.
-var evidenceTransitions = map[EvidenceState][]EvidenceState{
-	StDiscovered:       {StObserved, StInferred, StNotApplicable, StInconclusive, StError, StSuppressed},
-	StObserved:         {StConfirmed, StInferred, StInconclusive, StNotApplicable, StError, StSuppressed},
-	StInferred:         {StConfirmed, StExploitValidated, StSuppressed, StInconclusive, StNotApplicable, StError},
-	StConfirmed:        {StExploitValidated, StSuppressed, StInconclusive, StError},
-	StExploitValidated: {StSuppressed},
-	StInconclusive:     {StObserved, StConfirmed, StInferred, StNotApplicable, StError, StSuppressed},
-	// terminal-ish states
-	StSuppressed:    {},
-	StNotApplicable: {},
-	StError:         {StInconclusive, StObserved},
-}
-
-// CanTransition reports whether from -> to is a legal evidence-state move.
-func CanTransition(from, to EvidenceState) bool {
-	for _, s := range evidenceTransitions[from] {
-		if s == to {
-			return true
-		}
-	}
-	return from == to
-}
-
-// stateForValidation maps the finding's validation tag to a formal state, so the
-// existing detector output feeds the state machine without a second source of truth.
+// stateForValidation maps the finding's validation tag to its evidence state,
+// so detector output is the single source of truth.
 func stateForValidation(validation string) EvidenceState {
 	switch validation {
 	case "exploited":

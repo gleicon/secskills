@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.33.2] - 2026-11-16
+
+### Changed
+
+- **Skills drive the binary.** All nine skills now call `secskills` commands
+  instead of telling the agent to source shell helpers, and point to the
+  playbooks at their real path (`thirdparty/`). The discover skill covers network
+  blocks; the sandbox skill says what the binary does and prints the report target.
+- **Specs describe what is built.** `SPEC.md` is rewritten from the original
+  skill-package plan to the engine as built.
+- **Docs are accurate.** The README, `SECURITY.md`, `EVIDENCE-POLICY.md`,
+  `docs/architecture.md`, `docs/reporting.md`, `lib/authz-gate.md`,
+  `lib/osint-sources.md`, `lib/report-template.md`, and the opencode command are
+  updated. `docs/reporting.md` no longer contradicts itself about CVSS: findings
+  carry a computed 3.1 vector.
+- `secskills sandbox` prints the target name to pass to `report`.
+
+### Removed
+
+- Shell helpers duplicated by the binary: `lib/safety.sh`, `lib/throttle.sh`,
+  `lib/tldt.sh`, `lib/findings-store.sh`, and `tools/doctor.sh`.
+- `manifest.json`: nothing read it, and it had drifted from the code.
+- Unreachable code: the evidence-state transition table (states are derived from
+  validation, and nothing enforced transitions), three evidence states nothing
+  produced, two unused type aliases, and five unused functions.
+
+
 ## [0.33.1] - 2026-11-14
 
 ### Security

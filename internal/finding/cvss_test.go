@@ -49,3 +49,27 @@ func TestSetStatus(t *testing.T) {
 		t.Error("unknown id must fail")
 	}
 }
+
+// Evidence state comes from how a finding was validated, never from severity:
+// a version-inferred lead stays INFERRED even when its severity is raised.
+func TestEvidenceStateFromValidation(t *testing.T) {
+	wd := t.TempDir()
+	f := Finding{ID: "L-1", Title: "Potentially vulnerable OpenSSH version 8.9p1 — manual validation required (1 CVEs)",
+		Host: "203.0.113.10:22", Severity: "CRITICAL", Validation: "version-inferred", ObservedEvidence: "[x] CISA KEV: CVE-1"}
+	if err := AddFinding(wd, f); err != nil {
+		t.Fatal(err)
+	}
+	got := LoadWorkFindings(wd)[0]
+	if got.State != string(StInferred) {
+		t.Errorf("version-inferred finding state %q, want INFERRED", got.State)
+	}
+	if got.Severity == "CRITICAL" {
+		t.Error("the rubric must not let a version-inferred lead stay CRITICAL")
+	}
+	for v, want := range map[string]EvidenceState{"exploited": StExploitValidated, "behavior-confirmed": StConfirmed,
+		"inconclusive": StInconclusive, "": StObserved} {
+		if s := stateForValidation(v); s != want {
+			t.Errorf("stateForValidation(%q) = %s, want %s", v, s, want)
+		}
+	}
+}

@@ -16,7 +16,7 @@ import (
 var UserAgent = "secskills/" + secskills.Version + " (+authorized-security-assessment)"
 
 // sourceInterval returns the conservative minimum time between calls to a free
-// data source, mirroring lib/throttle.sh so both implementations behave alike.
+// data source.
 func sourceInterval(source string) time.Duration {
 	switch source {
 	case "crtsh", "wayback", "urlscan", "github":

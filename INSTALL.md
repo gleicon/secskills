@@ -6,7 +6,7 @@ This file covers the **external tools** it can drive.
 
 secskills follows graceful degradation (D-1): every tool is optional except
 `docker` for sandbox mode. Tools in the **skills** tier are used by the agent
-skills and the `lib/` shell helpers, not by the binary. `secskills doctor` exits
+skills' manual steps and `tools/ingest.sh`, not by the binary. `secskills doctor` exits
 `1` only when the selected mode cannot run (`--mode sandbox` without docker). Run
 the doctor first — it prints the exact install command per missing tool for your
 platform:
@@ -16,9 +16,8 @@ secskills doctor             # what is present/missing, per mode
 secskills doctor --quiet     # only the gaps
 ```
 
-`tools/doctor.sh` is the equivalent shell reference with the same flags.
 
-## Skills tier (agent skills and `lib/` helpers)
+## Skills tier (agent skills and `tools/ingest.sh`)
 
 | Tool | Purpose | macOS (brew) | Ubuntu |
 |------|---------|--------------|--------|

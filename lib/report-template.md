@@ -1,8 +1,8 @@
 # Report template (lifted from redteam-pentest, D-3)
 
-`secskills-report` assembles a single markdown report at the output path
-(default `./<target>_secskills_report.md`). Findings across all three modes
-(source / sandbox / live) feed the same template.
+The structure `secskills report` renders, and the format to follow when writing
+extra narrative by hand. Findings from every mode (source, sandbox, live,
+network) feed the same template.
 
 ## Report structure
 
@@ -89,6 +89,6 @@ grounds secskills over a bare scanner.
 
 ## Glossary
 
-Append the glossary from `vendor/redteam-pentest.md` (section "## Glossary",
+Append the glossary from `thirdparty/redteam-pentest.md` (section "## Glossary",
 the fenced block) verbatim to every report. It defines ASN, CT log, CORS, CSP,
 CVSS, IDOR, JWT, OIDC, OSV, SSRF, XSS, and the scoring terms used above.

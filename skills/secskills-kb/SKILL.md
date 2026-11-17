@@ -20,6 +20,16 @@ kb/
   ssrf-xxe/                  A10 — SSRF, XXE
   files-deserialization/     file upload, path traversal, deserialization
   logging-monitoring/        A09 — security logging, monitoring
+  mobile/                    OWASP Mobile Top 10 2024 / MASTG
+  llm-agents/                OWASP Top 10 for LLM Apps 2025, agentic risks
+```
+
+The binary serves the same content offline:
+
+```bash
+secskills kb                 # list classes
+secskills kb injection       # one class
+secskills recipes injection  # secure vs vulnerable code for Node, Python, Go
 ```
 
 Each `<class>/` holds one or more markdown entries. Every entry opens with a

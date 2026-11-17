@@ -26,7 +26,7 @@ docker. Otherwise `0`, with every ✗ listed as optional.
 ## Tiers (D-1)
 
 - **Skills** (`curl`, `dig`, `jq`, `python3`, `git`): used by these skills and the
-  `lib/` shell helpers. The secskills binary does not need them.
+  `tools/ingest.sh`. The secskills binary does not need them.
 - **Power** (optional): each widens coverage for one mode. Absent → the mode
   degrades gracefully and notes the gap; never a hard stop. `docker` is required
   **only** for sandbox mode.

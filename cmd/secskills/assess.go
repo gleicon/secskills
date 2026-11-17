@@ -429,5 +429,6 @@ func cmdSandbox(args []string) error {
 		finding.AddFinding(wd, fnd[i])
 	}
 	fmt.Printf("[sandbox] %d findings against isolated instance -> %s\n", len(fnd), finding.WorkFindings(wd))
+	fmt.Printf("next: secskills report --render %s   (container and image are removed now)\n", "sandbox-"+tag)
 	return nil
 }

@@ -13,11 +13,13 @@ relevant OWASP classes, and hand off. You do not test anything yourself.
 | Repo path, directory, or code files | source | `/secskills-source` |
 | Buildable/runnable app (Dockerfile, compose, binary) | sandbox | `/secskills-sandbox` |
 | URL or domain reachable over the network | live | `/secskills-discover` then `/secskills-test` |
+| ASN or CIDR block the operator owns | network | `/secskills-discover` (network section) |
 | Ambiguous | ask one question, then route | — |
 
 Source mode is the safe default when the operator has the code and no explicit
-live target. Live and sandbox modes touch a target → they run behind the
-authorization gate (`lib/authz-gate.md`).
+live target. Live, network, and sandbox modes touch a target, so they run behind
+the authorization gate (`lib/authz-gate.md`). Before a first engagement, route to
+`/secskills-intake` to settle authorization and scope.
 
 ## Intent → OWASP class mapping
 
@@ -41,5 +43,5 @@ For deep reference on any class without running a test, route to `/secskills-kb`
 ## Output
 
 State: chosen mode, the skill to invoke, the OWASP classes in scope, and — for
-live/sandbox — a reminder that the authorization gate runs first. Then stop; let
+live, network, and sandbox — a reminder that the authorization gate runs first. Then stop; let
 the operator invoke the mode skill.

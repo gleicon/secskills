@@ -1,47 +1,57 @@
 ---
 name: secskills-report
-description: "Assemble the findings report from any mode (source/sandbox/live) using the standard template, and run re-test/delta against a prior run. Produces a human-readable markdown report — severity, evidence, affected surface, and OWASP-cheat-sheet-keyed remediation — plus fixed/still-present/new status on retest."
+description: "Produce the findings report for any mode (source/sandbox/live/network), and retest a prior run. Markdown, HTML, PDF, or a short auditor report — severity, evidence, affected asset, and OWASP-cheat-sheet-keyed remediation — plus fixed/still-present/regressed status on retest, ticket rows, and SARIF/CycloneDX export."
 disable-model-invocation: true
 ---
 
-Turn collected findings into a report a human can act on, and track them across
-runs. Template, finding format, remediation phases, and glossary live in
-`lib/report-template.md`; the findings store and retest loop in
-`lib/findings-store.sh` (D-3, D-4).
+Turn stored findings into a report a person can act on, and track them across
+runs. The binary renders everything offline from stored findings and evidence;
+generating a report never contacts the target.
 
-## Report generation
+## Render
 
-1. Read findings from `$SECSKILLS_WORKDIR/findings.json` (live/sandbox) and/or
-   the static findings list (source mode).
-2. Render the full structure from `lib/report-template.md`: header, executive
-   summary (risk narrative + counts + strengths + systemic issues + phased
-   roadmap), surface, fingerprint, attack narrative, detailed findings, risk
-   table, Top 10 coverage matrix, OSV component analysis, tools/methodology,
-   glossary (appended verbatim from `vendor/redteam-pentest.md`).
-3. Every finding uses the Finding Format and names the `kb/` cheat sheet that
-   keyed its remediation.
-4. **PII scrubbing:** never emit extracted emails/names/personal data — report
-   the category ("maintainer email disclosed"), not the value. Run every
-   evidence blob through `secskills_scrub_pii` (`lib/tldt.sh`) before it enters
-   the report; it redacts emails, API keys, tokens, JWTs, SSNs, and cards.
-5. Write to `./<target>_secskills_report.md` (or `--output <path>`).
+```bash
+secskills report --render <target>                       # Markdown to stdout
+secskills report --html <target> --output report.html
+secskills report --pdf  <target> --output report.pdf     # needs Chrome/Chromium
+secskills report --audit <target> --output audit.md      # control objectives, ledger, attestation
+secskills report --lint <target>                         # check invariants before sending
+```
 
-## Persisting findings (D-4)
+The target is what was assessed: a domain, `sandbox-<tag>`, or a network block
+such as `203.0.113.0/24`. Findings are read from the target's workdir, else from
+the latest saved run. For findings recorded by hand, save a run first:
+`secskills findings write-run --target <target>`.
 
-If `--save-findings`, `source lib/findings-store.sh` and call
-`secskills_write_run <target>` — freezes `findings.json` into
-`~/.secskills-findings/<target>/run-<id>.json` and updates `latest`. The store
-holds sensitive findings: treat like a credentials store, never commit public.
+## Retest
 
-## Re-test / delta (FR-10)
+```bash
+secskills report --retest <target>
+```
 
-`--retest <target>`: skip discovery, `source lib/findings-store.sh`, call
-`secskills_retest <target>`. It re-runs each finding's `evidence_cmd`, classifies
-**open / mitigated / regressed** (with response-hash drift detection), writes a
-new run file, and prints the delta table. To diff two arbitrary runs, use the
-comparison loop in `vendor/redteam-pentest.md` §8.5.
+Each finding is re-probed with a structured check (no shell) and marked fixed,
+still present, regressed, inconclusive, or manual. A new run is saved.
+
+## Hand off
+
+```bash
+secskills tickets <target> --format csv --output tickets.csv
+secskills export --format sarif <target> --output findings.sarif
+secskills findings set --target <target> --id <ID> --status accepted --note "why"
+secskills override --target <target> --key <finding_key> --severity LOW --reason "why"
+secskills attest --sign <target>
+```
+
+## Writing narrative by hand
+
+When the operator wants extra prose (an attack narrative, a phased roadmap), use
+the structure and finding format in `lib/report-template.md`, and the glossary in
+`thirdparty/redteam-pentest.md` (section "Glossary").
+
+**Personal data:** report the category ("maintainer email disclosed"), never the
+value. Run any evidence you paste into prose through `secskills scrub <file>`.
 
 ## Output
 
-The report path, the finding counts by severity, and — on retest — the
-fixed/still-present/new/regressed summary.
+The report path, finding counts by severity, and — on retest — the
+fixed/still-present/regressed summary.
