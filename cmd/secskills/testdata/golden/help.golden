@@ -1,6 +1,6 @@
 $ secskills 
 [stderr]
-secskills 0.33.2 — security assessment orchestrator
+secskills 0.33.3 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -56,7 +56,7 @@ Workdir: $SECSKILLS_WORKDIR, else <user cache dir>/secskills/<target> (owner-onl
 
 $ secskills help
 [stderr]
-secskills 0.33.2 — security assessment orchestrator
+secskills 0.33.3 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]
@@ -111,14 +111,14 @@ Workdir: $SECSKILLS_WORKDIR, else <user cache dir>/secskills/<target> (owner-onl
 [exit 0]
 
 $ secskills version
-secskills 0.33.2
+secskills 0.33.3
 [exit 0]
 
 $ secskills no-such-command
 [stderr]
 unknown command: no-such-command
 
-secskills 0.33.2 — security assessment orchestrator
+secskills 0.33.3 — security assessment orchestrator
 
 USAGE:
   secskills <command> [args]

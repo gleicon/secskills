@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.33.3] - 2026-11-18
+
+### Changed
+
+- Dependencies: `golang.org/x/net` 0.63.0.
+- `AGENTS.md` matches the CLI: network commands take the block as the target, the
+  gate rule lists every target-touching command, and the MCP tool list includes
+  `recipes_get`.
+
+
 ## [0.33.2] - 2026-11-16
 
 ### Changed
