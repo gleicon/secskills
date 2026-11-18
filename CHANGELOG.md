@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.33.4] - 2026-11-18
+
+### Fixed
+
+- **Report output order varied between runs.** Tallies with equal counts
+  (systemic issues, top products, the subdomain signal line, root-cause groups,
+  EPSS scores) were ordered by Go's random map iteration, so the same findings
+  could render differently; CI caught it on Linux. Ties now sort by name.
+- **`plan` could put equal-size prefixes in different shards on each run.**
+  Shard assignment is now deterministic.
+
+
 ## [0.33.3] - 2026-11-18
 
 ### Changed

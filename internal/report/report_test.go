@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -152,5 +153,22 @@ func TestReportRenderingIsOffline(t *testing.T) {
 	_ = renderHTMLReport("app.example.com", wd, fs)
 	if n := hits.Load(); n != 0 {
 		t.Fatalf("rendering a report opened %d network connection(s)", n)
+	}
+}
+
+// Tallies with equal counts must render the same way on every run.
+func TestSystemicIssuesTieOrderIsStable(t *testing.T) {
+	fs := []finding.Finding{
+		{KBClass: "auth-session"}, {KBClass: "config-exposure"},
+		{KBClass: "auth-session"}, {KBClass: "config-exposure"},
+	}
+	first := systemicIssues(fs)
+	for i := 0; i < 100; i++ {
+		if got := systemicIssues(fs); got != first {
+			t.Fatalf("tie order changed between runs:\n%s\nvs\n%s", first, got)
+		}
+	}
+	if strings.Index(first, "authentication") > strings.Index(first, "security-header") {
+		t.Errorf("ties must sort by class name:\n%s", first)
 	}
 }

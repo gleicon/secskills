@@ -27,7 +27,12 @@ func ShardPrefixes(prefixes []string, n int) []Shard {
 	for _, p := range prefixes {
 		items = append(items, sized{p, prefixIPs(p)})
 	}
-	sort.Slice(items, func(i, j int) bool { return items[i].ips > items[j].ips })
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].ips != items[j].ips {
+			return items[i].ips > items[j].ips
+		}
+		return items[i].cidr < items[j].cidr // equal sizes: same shards every run
+	})
 
 	if n > len(items) {
 		n = len(items)

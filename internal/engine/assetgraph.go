@@ -105,7 +105,12 @@ func ClusterRootIssues(findings []finding.Finding, live []tooling.LiveHost) stri
 			sort.Strings(hosts)
 			gs = append(gs, grp{sig, hosts})
 		}
-		sort.Slice(gs, func(i, j int) bool { return len(gs[i].hosts) > len(gs[j].hosts) })
+		sort.Slice(gs, func(i, j int) bool {
+			if len(gs[i].hosts) != len(gs[j].hosts) {
+				return len(gs[i].hosts) > len(gs[j].hosts)
+			}
+			return gs[i].sig < gs[j].sig
+		})
 		gi := 0
 		for _, g := range gs {
 			gi++

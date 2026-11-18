@@ -191,3 +191,16 @@ func TestLeakEvidenceCommandIsSafeToPaste(t *testing.T) {
 		t.Errorf("evidence command not quoted: %s", f.EvidenceCmd)
 	}
 }
+
+func TestShardPrefixesDeterministicOnTies(t *testing.T) {
+	in := []string{"198.51.100.0/24", "203.0.113.0/24", "192.0.2.0/24"}
+	first := ShardPrefixes(in, 2)
+	for i := 0; i < 50; i++ {
+		got := ShardPrefixes(in, 2)
+		for s := range got {
+			if strings.Join(got[s].Prefixes, ",") != strings.Join(first[s].Prefixes, ",") {
+				t.Fatalf("equal-size prefixes landed in different shards between runs")
+			}
+		}
+	}
+}

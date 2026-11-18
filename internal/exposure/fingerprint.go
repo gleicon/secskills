@@ -245,7 +245,12 @@ func ReportEnrich(obs []Observation, kev []KEVEntry, out string) {
 	for k, v := range prod {
 		top = append(top, kv{k, v})
 	}
-	sort.Slice(top, func(i, j int) bool { return top[i].v > top[j].v })
+	sort.Slice(top, func(i, j int) bool {
+		if top[i].v != top[j].v {
+			return top[i].v > top[j].v
+		}
+		return top[i].k < top[j].k
+	})
 	fmt.Println("top products:")
 	for i, e := range top {
 		if i >= 12 {

@@ -185,7 +185,12 @@ func FeedEPSS(args []string) error {
 	if err != nil {
 		return err
 	}
-	sort.Slice(scores, func(i, j int) bool { return scores[i].EPSS > scores[j].EPSS })
+	sort.Slice(scores, func(i, j int) bool {
+		if scores[i].EPSS != scores[j].EPSS {
+			return scores[i].EPSS > scores[j].EPSS
+		}
+		return scores[i].CVE < scores[j].CVE
+	})
 	if len(scores) == 0 {
 		fmt.Println("[epss] no scores (CVEs unknown to EPSS)")
 		return nil

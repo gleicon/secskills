@@ -277,7 +277,12 @@ func systemicIssues(fs []finding.Finding) string {
 	for k, v := range byClass {
 		s = append(s, kv{k, v})
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].v > s[j].v })
+	sort.Slice(s, func(i, j int) bool {
+		if s[i].v != s[j].v {
+			return s[i].v > s[j].v
+		}
+		return s[i].k < s[j].k // ties: stable by class
+	})
 	var lines []string
 	labels := map[string]string{
 		"config-exposure":         "security-header / misconfiguration gaps (A05) — best fixed once at the CDN/edge",
@@ -367,7 +372,12 @@ func topN(m map[string]int, n int) string {
 	for k, v := range m {
 		s = append(s, kv{k, v})
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].v > s[j].v })
+	sort.Slice(s, func(i, j int) bool {
+		if s[i].v != s[j].v {
+			return s[i].v > s[j].v
+		}
+		return s[i].k < s[j].k
+	})
 	var out []string
 	for i, e := range s {
 		if i >= n {
