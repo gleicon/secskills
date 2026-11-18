@@ -17,7 +17,7 @@ PAGES = [
     ("index", "Overview", "secskills", "One binary for authorized security assessment: discover, test, and report on a repo, a sandboxed build, or a live target."),
     ("install", "Install", "Install secskills", "Install with go install or a checksummed release binary, add optional tools, and connect Claude Code, opencode, or any MCP client."),
     ("usage", "Usage", "Using secskills", "Concepts, every command, test profiles, files, and environment variables."),
-    ("cases", "Common cases", "Common cases", "Copy-paste recipes for code review, web app assessment, retests, CI export, network blocks, and offline capture."),
+    ("guides", "Guides", "Guides", "Task guides: web app pentest, attack-surface exploration, ASN/CIDR scanning, offline capture, source review, sandbox, LLM apps, monitoring."),
     ("safety", "Safety", "Safety model", "How secskills enforces authorization, stays non-destructive, and contains engagement data."),
 ]
 
@@ -88,6 +88,9 @@ def main():
     for slug, label, title, desc in PAGES:
         body = (SITE / "pages" / f"{slug}.html").read_text().replace("{{VERSION}}", VERSION)
         (OUT / f"{slug}.html").write_text(render(slug, label, title, desc, body))
+    # the page used to be called cases.html; keep old links working
+    (OUT / "cases.html").write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=guides.html">'
+        '<link rel="canonical" href="guides.html"><title>Guides · secskills</title><a href="guides.html">Guides</a>')
     (OUT / "404.html").write_text(render("404", "", "Not found", "Page not found.",
         '<h1>Not found</h1><p class="lede">That page does not exist. Start from the <a href="./">overview</a>.</p>',
         base="/secskills/"))

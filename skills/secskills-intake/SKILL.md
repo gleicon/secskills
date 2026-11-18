@@ -43,7 +43,7 @@ vague terms. Cover, in order:
    only? — *Recommend web/app only unless the profile's IP blocks are owned by the
    client and explicitly authorized. If they are, list the CIDRs under `targets:`
    (network mode checks every IP against them) and plan
-   `discover --cidr` → `enrich` → `leakcheck` → `cvematch` (`docs/network.md`).*
+   `discover --cidr` → `enrich` → `leakcheck` → `cvematch` (`docs/guides/scan-network-block.md`).*
 5. **Target class (drives the framework).** Web app / API / mobile app / LLM-or-agent
    system? — *Web/API → OWASP Web Top 10; mobile → `kb/mobile` (MASTG); LLM/agent →
    `kb/llm-agents`.* Ask if a mobile binary or LLM endpoint is in scope.

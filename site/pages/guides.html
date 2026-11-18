@@ -1,0 +1,102 @@
+<h1>Guides</h1>
+<p class="lede">Task-by-task walkthroughs. Each section gives the commands in order; the full
+guide in the repository adds what to read in the results and where to go deeper. Every
+command that touches a target assumes written authorization.</p>
+
+<h2 id="pentest">Penetration test of a web app</h2>
+<ol class="steps">
+<li><h3>Research and scope</h3>
+<pre><code>secskills profile app.example.com --output ENGAGEMENT-profile.md
+secskills scope --init      <span class="c"># edit: authorized, targets, out_of_scope, expires</span>
+chmod 600 .secskills-scope.yml && secskills scope --validate</code></pre>
+<p>In Claude Code, <code>/secskills-intake app.example.com</code> runs this as an interview.</p></li>
+<li><h3>Map and test</h3>
+<pre><code>secskills discover app.example.com
+secskills test app.example.com --deep
+secskills test app.example.com --profile adversarial-readonly</code></pre></li>
+<li><h3>Logged-in surface</h3>
+<pre><code>secskills test app.example.com --auth-token "$USER_A" --auth-token-b "$USER_B"</code></pre>
+<p>The second identity drives the access-control differential. Use test accounts.</p></li>
+<li><h3>Report and verify</h3>
+<pre><code>secskills report --pdf app.example.com --output app.pdf
+secskills tickets app.example.com --format csv --output tickets.csv
+secskills report --retest app.example.com</code></pre></li>
+</ol>
+<p><a href="https://github.com/gleicon/secskills/blob/main/docs/guides/pentest-web-app.md">Full guide</a></p>
+
+<h2 id="explore">Explore what a target exposes</h2>
+<pre><code>secskills graph app.example.com --output graph/   <span class="c"># related domains, listed for scope review, never tested</span>
+secskills fetch crtsh "https://crt.sh/?q=%25.example.com&amp;output=json"
+secskills shodan example.com                      <span class="c"># with a key</span>
+secskills fp list                                 <span class="c"># technologies the fingerprints recognize</span></code></pre>
+<p><code>test</code> finds and checks identity providers, OpenAPI and GraphQL schemas,
+registries, CI/CD and monitoring panels, secrets managers, object storage, DNS hygiene
+and takeover candidates, and the CDN in front, with an origin-bypass check under
+<code>adversarial-readonly</code>.
+<a href="https://github.com/gleicon/secskills/blob/main/docs/guides/explore-attack-surface.md">Full guide</a></p>
+
+<h2 id="network">Scan an ASN or CIDR you own</h2>
+<ol class="steps">
+<li><h3>Size it and scope it</h3>
+<pre><code>secskills plan --asn AS64500 --shards 1 --out ./plan   <span class="c"># prefixes and address counts, no target traffic</span></code></pre>
+<p>List the CIDRs under <code>targets:</code> in the scope file. Authorization is
+checked per IP.</p></li>
+<li><h3>Sweep one prefix, then widen</h3>
+<pre><code>secskills discover --cidr 203.0.113.0/24
+secskills enrich    203.0.113.0/24
+secskills leakcheck 203.0.113.0/24
+secskills discover --asn AS64500</code></pre></li>
+<li><h3>Join with intelligence, offline</h3>
+<pre><code>secskills feed kev &amp;&amp; secskills feed epss &amp;&amp; secskills feed nvd --product openssh
+secskills cvematch 203.0.113.0/24
+secskills report --render 203.0.113.0/24</code></pre>
+<p>Triage open datastores first, then exposed <code>.env</code>/<code>.git</code>, then
+KEV-listed CVE leads. CVE leads come from banners: confirm the running build.</p></li>
+<li><h3>Every week</h3>
+<pre><code>secskills feed kev &amp;&amp; secskills feed epss
+secskills cvematch 203.0.113.0/24
+secskills report --retest 203.0.113.0/24</code></pre></li>
+</ol>
+<p><a href="https://github.com/gleicon/secskills/blob/main/docs/guides/scan-network-block.md">Full guide</a></p>
+
+<h2 id="offline">Capture near the network, analyze elsewhere</h2>
+<pre><code>make bundle                                            <span class="c"># binary + scripts + feed cache</span>
+secskills plan --asn AS64500 --shards 4 --out ./plan   <span class="c"># one prefix list per machine</span>
+PREFIXES=plan/shard-0.txt CONFIRM=yes ./capture.sh     <span class="c"># on each capture machine</span>
+OUT=./merged BLOCK=AS64500 ./process.sh                <span class="c"># at home, offline</span></code></pre>
+<p><a href="https://github.com/gleicon/secskills/blob/main/docs/guides/capture-offline.md">Full guide</a></p>
+
+<h2 id="source">Review source code, locally or in CI</h2>
+<pre><code>secskills source ./my-service
+secskills source --json ./my-service &gt; sast.json
+jq '[.[] | select(.severity == "error")] | length' sast.json   <span class="c"># gate CI on this</span></code></pre>
+<p><code>source</code> exits 0 whenever the scan ran; gate on the JSON. Needs
+<code>ast-grep</code>.
+<a href="https://github.com/gleicon/secskills/blob/main/docs/guides/review-source.md">Full guide</a></p>
+
+<h2 id="sandbox">Test a build in isolation</h2>
+<pre><code>secskills sandbox ./build-context <mark>--confirm</mark> --port 8080
+secskills report --render sandbox-&lt;tag&gt;</code></pre>
+<p>No host mounts, all capabilities dropped, published to loopback only, removed afterwards.
+<a href="https://github.com/gleicon/secskills/blob/main/docs/guides/test-in-sandbox.md">Full guide</a></p>
+
+<h2 id="llm">Test an LLM app or gateway</h2>
+<pre><code>secskills test chat.example.com <mark>--confirm</mark> --profile adversarial-readonly
+secskills integrity snapshot https://gateway.example.com/v1/models <mark>--confirm</mark>
+secskills integrity verify   https://gateway.example.com/v1/models <mark>--confirm</mark></code></pre>
+<p>Canary reflection, system-prompt leak, response drift, and OAST-confirmed server-side
+fetch on OpenAI- and Ollama-style chat endpoints.
+<a href="https://github.com/gleicon/secskills/blob/main/docs/guides/test-llm-apps.md">Full guide</a></p>
+
+<h2 id="monitor">Monitor and verify fixes</h2>
+<pre><code>secskills report --retest app.example.com
+secskills watch app.example.com <mark>--confirm</mark> --interval 6h
+secskills findings set --target app.example.com --id F003 --status accepted --note "why"
+secskills attest --sign app.example.com</code></pre>
+<p><a href="https://github.com/gleicon/secskills/blob/main/docs/guides/monitor-and-retest.md">Full guide</a></p>
+
+<h2 id="agent">Let an agent help, safely</h2>
+<pre><code>claude mcp add secskills -- secskills mcp</code></pre>
+<p>Over MCP an agent can look up guidance, pull recipes, and scan source. It cannot start a
+live scan: target-touching commands stay behind the CLI gate, where a person confirms
+authorization. The Claude Code plugin's skills drive the same binary.</p>

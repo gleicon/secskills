@@ -118,7 +118,7 @@ tools/                registry.tsv (embedded tool registry), ingest.sh (KB refre
 thirdparty/           manual playbooks (redteam-pentest, xss-assist) + ast-grep rules
 deploy/               capture kit: setup.sh, capture.sh, process.sh
 examples/embed/       using internal/probe as a library
-docs/                 this documentation
+docs/                 reference docs; docs/guides/ task walkthroughs
 ```
 
 Dependencies point one way: `cmd/secskills` → `report` → `engine` →

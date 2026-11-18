@@ -5,95 +5,70 @@
 ```bash
 go install github.com/gleicon/secskills/cmd/secskills@latest
 secskills version
-
-# or from a checkout
-git clone https://github.com/gleicon/secskills && cd secskills
-make install            # go install ./cmd/secskills
 ```
 
-Requires **Go 1.27.4+** (older Go downloads it automatically). Without Go, download a static binary from the
-[latest release](https://github.com/gleicon/secskills/releases/latest) and check it
-against `SHA256SUMS` (commands per OS on the
-[install page](https://gleicon.github.io/secskills/install.html)).
+Requires Go 1.27.4 or newer; an older Go downloads 1.27.4 automatically. Without
+Go, download a static binary from the
+[latest release](https://github.com/gleicon/secskills/releases/latest) and check
+it against `SHA256SUMS` (commands per OS on the
+[install page](https://gleicon.github.io/secskills/install.html)). From a
+checkout: `make install`.
 
-Runtime security tools are optional — secskills degrades
-gracefully and tells you what's missing:
+External security tools are optional. The doctor shows what is present and how
+to install the rest:
 
 ```bash
-secskills doctor                 # 64 tools, present/missing, per category
-secskills doctor --mode discover # only what discover uses
-secskills doctor --category report   # is a headless browser present (PDF)?
+secskills doctor                     # every tool, present or missing, with install commands
+secskills doctor --mode discover     # only what one mode uses
+secskills doctor --category report   # headless browser for PDF reports
 ```
 
-Install missing tools with the command the doctor prints (brew / apt / go / cargo
-/ pipx). See [INSTALL.md](../INSTALL.md).
+See [INSTALL.md](../INSTALL.md) for the tool list.
 
-## Your first engagement (live target)
-
-**Only test targets you are authorized to test.**
+## A first run that touches nothing
 
 ```bash
-# 1. Research — passive OSINT, no traffic to the target
-secskills profile example.com --output ENGAGEMENT-profile.md
-
-# 2. Scope — write the engagement file the gate honors
-secskills scope --init
-#    edit .secskills-scope.yml: authorized: true, targets:, out_of_scope:, expires:
-secskills scope --validate
-
-# 3. Discover — subdomains → resolve → live hosts (+ Shodan if a key is set)
-secskills discover example.com
-
-# 4. Test — headers, TLS, exposure, CVEs; --deep adds nuclei/sslscan/screenshots
-secskills test example.com --deep
-
-# 5. Report — Markdown, HTML, or professional PDF (SOC2/ISO/PCI mapped)
-secskills report --pdf example.com --output example_report.pdf
+secskills selftest                   # end-to-end pipeline against a local disposable server
+secskills kb                         # the embedded OWASP knowledge base
+secskills kb injection
+secskills recipes access-control     # secure vs vulnerable code for Node, Python, Go
+secskills source .                   # static review of a repo you own (needs ast-grep)
 ```
 
-With an authorized `.secskills-scope.yml`, steps 3–4 need no `--confirm`. Without
-it, add `--confirm` (and confirm you hold written authorization).
+## Before anything touches a target
 
-Discovery output and evidence go to a private per-target workdir,
-`<user cache dir>/secskills/<target>` (override with `SECSKILLS_WORKDIR`; keep it
-off shared paths like `/tmp`). Saved runs go to `~/.secskills-findings/<target>/`.
+Every command that sends traffic refuses until you confirm you are authorized:
 
-## Guided intake (recommended)
-
-In Claude Code / opencode, run the intake skill instead of steps 1–2 — it
-interviews you until nothing is loose and writes the scope file for you:
-
-```
-/secskills-intake example.com
+```text
+$ secskills discover example.com
+AUTHORIZATION REQUIRED — discover mode, target: example.com
+…
+error: authorization not confirmed
 ```
 
-Install the skills with `claude plugin marketplace add gleicon/secskills` and
-`claude plugin install secskills@secskills`.
+Pass `--confirm` only with written authorization, or keep an authorized scope
+file (`secskills scope --init`, then edit and `secskills scope --validate`).
+Details: [SECURITY.md](../SECURITY.md) and the
+[safety page](https://gleicon.github.io/secskills/safety.html).
 
-## Source & sandbox modes
+## Where things go
 
-```bash
-secskills source ./my-repo          # static ast-grep review, no network, no gate
-secskills sandbox ./build-context --confirm   # build+run isolated in Docker, then test
-```
+- **Workdir** per target: `<user cache dir>/secskills/<target>`, readable by you
+  only (override with `SECSKILLS_WORKDIR`; never a shared path like `/tmp`).
+- **Saved runs**: `~/.secskills-findings/<target>/`.
+- **Feeds** for network mode: `~/.secskills/feed`.
 
-## Authenticated testing
-
-Supply credentials to test the authenticated surface; omit them and it's marked
-*not available* in the report:
-
-```bash
-secskills test example.com --auth-token "$TOKEN"
-secskills test example.com --cookie "session=..."
-secskills test example.com --auth-token "$A" --auth-token-b "$B"   # BOLA/IDOR differential
-```
-
-Credentialed requests verify TLS. Against a self-signed target they fail unless you
-add `--insecure-auth`, which exposes those credentials to anyone on the network path.
+Treat all three like a credentials store.
 
 ## Next
 
-- [Usage & commands](usage.md) — every command, profiles, files, environment.
-- [Network mode](network.md) — scan an ASN or CIDR you own; results are ordinary findings.
-- [Reporting & compliance](reporting.md).
-- Website: <https://gleicon.github.io/secskills/>
+Pick a task in the [guides](guides/README.md):
+
+- [Penetration test of a web app or domain](guides/pentest-web-app.md)
+- [Exploring a target's attack surface](guides/explore-attack-surface.md)
+- [Scanning a network block (ASN/CIDR)](guides/scan-network-block.md)
+- [Reviewing source code](guides/review-source.md)
+- [Testing LLM apps](guides/test-llm-apps.md)
+
+Reference: [usage](usage.md) (every command), [reporting](reporting.md),
+[architecture](architecture.md).

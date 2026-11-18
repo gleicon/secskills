@@ -36,6 +36,8 @@ A network block is written as given to `discover` (`203.0.113.0/24`, `AS64500`)
 and is the target for every later command. `--workdir <dir>` reads a carried capture.
 
 Full reference: `secskills help`, `docs/usage.md`, <https://gleicon.github.io/secskills/usage.html>.
+Task walkthroughs (pentest, attack surface, ASN scanning, source, sandbox, LLM apps,
+monitoring): `docs/guides/`.
 
 ## Rules the agent must honor
 

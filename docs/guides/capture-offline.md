@@ -1,4 +1,4 @@
-# Running headless in a VM — capture now, process later
+# Capture near the network, analyze elsewhere
 
 Network mode is built so the expensive, network-facing work (sweeping a block,
 grabbing banners, probing exposure) happens in one place and the analysis
@@ -10,9 +10,8 @@ observations.
 
 Two properties make the split clean:
 
-- **No LLM, no agent.** The whole external pipeline is plain Go. The `llmproxy`
-  probe *tests* an LLM API router as a target; it is not a runtime dependency. You can run everything described here
-  with no model and no network beyond the targets.
+- **No LLM, no agent.** The whole pipeline is plain Go. Everything here runs with
+  no model and no network beyond the targets.
 - **No CGO.** `make dist` cross-compiles a single static binary per platform.
   Copy it to a VM; it needs no runtime, no shared libraries, no interpreter.
 
@@ -47,9 +46,11 @@ capture-203_0_113_0_24/
 ```
 
 After `process.sh` it also holds `candidates.jsonl`, the CVE-lead findings, and
-`report.md`; the run is saved under `~/.secskills-findings/<block>/`. The workdir is append-only and resumable: a kill mid-sweep
-keeps every observation already written (AC-7), so a capture can be stopped and
-restarted on a flaky VM without losing or corrupting data.
+`report.md`; the run is saved under `~/.secskills-findings/<block>/`.
+
+The workdir is append-only and resumable: a kill mid-sweep keeps every
+observation already written (AC-7), so a capture can be stopped and restarted on
+a flaky VM without losing or corrupting data.
 
 ## Build and package
 

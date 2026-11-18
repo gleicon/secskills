@@ -2,7 +2,7 @@
 
 How secskills assesses a network block (an ASN or CIDR you are authorized to
 test). Requirement and decision IDs are kept because the code cites them.
-Operator recipes are in [`docs/network.md`](docs/network.md); the engine spec
+Operator guide: [`docs/guides/scan-network-block.md`](docs/guides/scan-network-block.md); the engine spec
 is [`SPEC.md`](SPEC.md).
 
 ---

@@ -49,7 +49,7 @@ secskills feed kev && secskills feed epss && secskills feed nvd --product openss
 secskills cvematch 203.0.113.0/24                     # CVE leads as findings
 ```
 
-Hand to `/secskills-report` with the block as the target. Guide: `docs/network.md`.
+Hand to `/secskills-report` with the block as the target. Guide: `docs/guides/scan-network-block.md`.
 
 ## Free data sources and keys
 

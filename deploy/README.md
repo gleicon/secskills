@@ -49,5 +49,5 @@ secskills tickets 203.0.113.0/24      # with SECSKILLS_WORKDIR=./capture-203_0_1
 The report contains no credential values (key names only). It is sensitive
 engagement data: 0600, local, share only with the asset owner's admins.
 
-See `docs/offline-vm.md` for the full packaging rationale and the online/offline
+See `docs/guides/capture-offline.md` for the full packaging rationale and the online/offline
 feed split.

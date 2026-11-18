@@ -151,7 +151,7 @@ secskills report --pdf 203.0.113.0/24 --output block.pdf
 
 Re-run `cvematch` after refreshing feeds to close leads that no longer match.
 Capture on another machine and process offline with `make bundle` and `deploy/`
-([docs/offline-vm.md](docs/offline-vm.md)). Guide: [docs/network.md](docs/network.md).
+([docs/guides/capture-offline.md](docs/guides/capture-offline.md)). Guide: [docs/guides/scan-network-block.md](docs/guides/scan-network-block.md).
 Design: [SPEC-NETWORK.md](SPEC-NETWORK.md).
 
 Release history: [CHANGELOG.md](CHANGELOG.md).
@@ -195,13 +195,20 @@ Headless Chrome/Chromium is needed only for PDF and screenshots.
 
 ## Documentation
 
-- Website: <https://gleicon.github.io/secskills/> — [install](https://gleicon.github.io/secskills/install.html), [usage](https://gleicon.github.io/secskills/usage.html), [common cases](https://gleicon.github.io/secskills/cases.html), [safety](https://gleicon.github.io/secskills/safety.html)
+- Website: <https://gleicon.github.io/secskills/> — [install](https://gleicon.github.io/secskills/install.html), [usage](https://gleicon.github.io/secskills/usage.html), [guides](https://gleicon.github.io/secskills/guides.html), [safety](https://gleicon.github.io/secskills/safety.html)
 - [Getting started](docs/getting-started.md)
+- **[Guides](docs/guides/README.md)**: [web-app pentest](docs/guides/pentest-web-app.md) ·
+  [explore the attack surface](docs/guides/explore-attack-surface.md) ·
+  [scan an ASN/CIDR](docs/guides/scan-network-block.md) ·
+  [capture offline](docs/guides/capture-offline.md) ·
+  [source review](docs/guides/review-source.md) ·
+  [sandbox](docs/guides/test-in-sandbox.md) ·
+  [LLM apps](docs/guides/test-llm-apps.md) ·
+  [monitor and retest](docs/guides/monitor-and-retest.md)
 - [Usage & commands](docs/usage.md)
 - [Architecture](docs/architecture.md)
 - [Reporting & compliance](docs/reporting.md)
 - [Coverage matrix (skills × tools × OWASP × output)](docs/coverage-matrix.md)
-- [Network mode](docs/network.md) · [Headless capture on a VM](docs/offline-vm.md)
 - [Changelog](CHANGELOG.md)
 - [Security model](SECURITY.md)
 - Full command list: `secskills help`

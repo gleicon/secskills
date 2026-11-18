@@ -82,8 +82,8 @@ arguments (`secskills source --json ./repo`).
 
 For a block you own. The block, as written to `discover`, is the target for every
 command, and results are ordinary findings: `report`, `tickets`, `export`,
-`retest`, `override`, and `findings set` work on it. Guide: [network.md](network.md).
-Capture on another machine: [offline-vm.md](offline-vm.md).
+`retest`, `override`, and `findings set` work on it. Guide: [guides/scan-network-block.md](guides/scan-network-block.md).
+Capture on another machine: [guides/capture-offline.md](guides/capture-offline.md).
 
 | Command | Purpose |
 |---------|---------|
