@@ -64,8 +64,22 @@ secskills discover --asn AS64500     # every announced prefix; IPs outside the s
 ```
 
 The sweep is append-only and resumable: stop it and run the same command again
-without losing what was recorded. Tune load with `SECSKILLS_RATE` (requests per
-second, default 5) and `--workers` (default 20). Lower both for fragile networks.
+without losing what was recorded (it reads back `observations.jsonl`), so raising
+the rate mid-engagement costs nothing.
+
+**Throughput.** `SECSKILLS_RATE` (requests/second, default 5) is the bottleneck,
+not the machine or the link — one rate-gated process does the same 5 req/s
+anywhere. The default is deliberately gentle: a whole ASN of tens of thousands of
+addresses takes many hours at 5. Two ways to go faster:
+
+- **Raise the rate on one machine:** `SECSKILLS_RATE=25 secskills discover --asn
+  AS64500 --confirm --workers 50`. Roughly linear — 5→25 is about 5× faster.
+- **Shard across machines** (see [capture-offline.md](capture-offline.md)): each
+  host runs a slice with its own rate gate, so N hosts give N× throughput.
+
+Raise the rate in steps (25, then 50) on a block carrying live services, and
+watch for complaints: a higher rate hits your own production harder and in
+parallel. Lower both `SECSKILLS_RATE` and `--workers` for fragile networks.
 
 Each block, as written to `discover` (`203.0.113.0/24`, `AS64500`), is a target
 with its own workdir and findings store; use the same name in every later command.
@@ -92,6 +106,19 @@ secskills cvematch 203.0.113.0/24
 
 Each service whose banner version falls inside an NVD range becomes one finding
 listing its CVEs, KEV-listed ones first, then by EPSS.
+
+**What `cvematch` cannot see.** It keys on the version `enrich` reads from a
+service banner, so it only covers CVEs in software that *announces a version on
+the wire* — SSH, some web servers, some mail daemons. It misses:
+
+- **Application-runtime CVEs.** A bug in a language runtime or app framework
+  (for example an OpenJDK or deserialization RCE) lives in a code path, not a
+  listening-port banner. The runtime's patch level is never advertised, proxy or
+  not, so a network sweep will not attribute it per host. Confirm those host-side
+  (`java -version`, package inventory) or with an app-layer test, not here.
+- **Backported fixes.** A distribution can patch a CVE without changing the
+  version string, so a match is a *lead*, not a confirmed vulnerability — the
+  report labels these `version-inferred`. Verify the running build before acting.
 
 ## 6. Optional: default credentials on datastores
 
