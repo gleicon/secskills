@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.34.0] - 2026-11-23
+
+### Fixed
+
+- **Overlapping announced prefixes were swept repeatedly.** A RIPE/IRR ASN
+  lookup returns nested prefixes (a /21 and the /22, /23, /24 inside it), so a
+  host in the overlap was scanned once per covering prefix — observed ~3.6× on a
+  real ASN, multiplying scan and `enrich` traffic on the operator's own network.
+  `ResolveASNPrefixes` now collapses prefixes to their outermost cover before
+  sweeping, and prints the before/after count.
+- **Observation reads could double-count.** `probe.Load` now dedupes by
+  `ip:port` (first occurrence), so a resumable re-run or residual overlap no
+  longer inflates counts or re-banners the same service.
+- **Exposed `.git` and `.env` were rated MEDIUM.** A reachable `.env` (live
+  credentials) and `.git` (source + commit history) are now HIGH — the severity
+  rubric, `LeakFindings`, and the validated-primitive gate all agree, so they are
+  not demoted.
+
+### Changed
+
+- **`cvematch` caps CVE leads per service** to KEV-listed (always kept) plus the
+  top non-KEV by score (`--max-cves`, default 10), so one service matching
+  hundreds of version ranges no longer buries confirmed leaks or bloats the
+  report. Pass `--max-cves 0` for all.
+- **Wider `cpeVendor` map:** postgresql, redis, mongodb, elasticsearch, dovecot,
+  haproxy, lighttpd, tomcat, jetty now resolve to NVD ranges for CVE leads
+  (datastore *exposure* is still caught separately by leakcheck/dbcheck).
+
+
 ## [0.33.4] - 2026-11-18
 
 ### Fixed

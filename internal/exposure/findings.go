@@ -101,9 +101,16 @@ func LeakFindings(ls []LeakFinding) []finding.Finding {
 		ev := l.Evidence
 		switch l.Kind {
 		case "exposed-dotenv":
+			// A reachable .env serves live credentials — HIGH, not MEDIUM.
+			f.Severity = "HIGH"
 			if keys := dotenvKeys(l.Evidence); len(keys) > 0 {
 				ev += "\n[x] credential-like keys exposed (values redacted): " + strings.Join(keys, ", ")
 			}
+		case "exposed-vcs":
+			// A reachable .git exposes full source and history, routinely with
+			// secrets in past commits — HIGH.
+			f.Severity = "HIGH"
+			ev += "\n[x] version-control metadata exposed: source and commit history retrievable"
 		case "redis-unauth", "es-open-indices":
 			f.DetectorID = DetectorDatastore
 			f.Severity = "HIGH"

@@ -3,6 +3,7 @@ package exposure
 import (
 	"encoding/json"
 	"fmt"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -101,6 +102,57 @@ func parseIRRPrefixes(whoisOut string) []string {
 	return out
 }
 
+// collapsePrefixes drops any prefix whose network is already covered by a
+// shorter (or equal) prefix in the set, and removes exact duplicates. A RIPE/IRR
+// ASN lookup routinely announces nested prefixes (a /21 and the /22, /23, /24
+// inside it); without this a host inside the overlap is swept once per covering
+// prefix, multiplying scan and enrich traffic on the operator's own network. The
+// result keeps only the outermost covers, sorted by bits then address so the
+// order is deterministic (CI goldens depend on it). Unparseable entries are
+// dropped rather than failing the resolve.
+func collapsePrefixes(in []string) []string {
+	ps := make([]netip.Prefix, 0, len(in))
+	seen := map[netip.Prefix]bool{}
+	for _, s := range in {
+		p, err := netip.ParsePrefix(s)
+		if err != nil {
+			continue
+		}
+		p = p.Masked()
+		if seen[p] {
+			continue
+		}
+		seen[p] = true
+		ps = append(ps, p)
+	}
+	// Shortest-prefix (largest block) first; a cover is always seen before the
+	// prefixes it contains, so a single pass over kept covers suffices.
+	sort.Slice(ps, func(i, j int) bool {
+		if ps[i].Bits() != ps[j].Bits() {
+			return ps[i].Bits() < ps[j].Bits()
+		}
+		return ps[i].Addr().Less(ps[j].Addr())
+	})
+	kept := make([]netip.Prefix, 0, len(ps))
+	for _, p := range ps {
+		covered := false
+		for _, k := range kept {
+			if k.Bits() <= p.Bits() && k.Contains(p.Addr()) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			kept = append(kept, p)
+		}
+	}
+	out := make([]string, len(kept))
+	for i, k := range kept {
+		out[i] = k.String()
+	}
+	return out
+}
+
 // diffPrefixes returns prefixes added and removed going from old to cur.
 func diffPrefixes(old, cur []string) (added, removed []string) {
 	oset, cset := map[string]bool{}, map[string]bool{}
@@ -156,8 +208,9 @@ func ResolveASNPrefixes(dataDir, asn string) ([]string, string, error) {
 	path := asnPrefixCachePath(dataDir, number)
 	prev, fresh := loadPrefixCache(path)
 	if fresh {
-		fmt.Printf("[asn] %s: %d prefixes (cache, fetched %s)\n", canonical, len(prev.Prefixes), prev.FetchedAt.Format("2006-01-02 15:04"))
-		return prev.Prefixes, prev.Source, nil
+		collapsed := collapsePrefixes(prev.Prefixes)
+		fmt.Printf("[asn] %s: %d prefixes (cache, fetched %s); %d after collapsing overlaps\n", canonical, len(prev.Prefixes), prev.FetchedAt.Format("2006-01-02 15:04"), len(collapsed))
+		return collapsed, prev.Source, nil
 	}
 
 	prefixes, source := ripeFetchPrefixes(number)
@@ -182,8 +235,9 @@ func ResolveASNPrefixes(dataDir, asn string) ([]string, string, error) {
 	if b, err := json.MarshalIndent(c, "", "  "); err == nil {
 		os.WriteFile(path, b, 0o644)
 	}
-	fmt.Printf("[asn] %s: %d prefixes (%s)\n", canonical, len(prefixes), source)
-	return prefixes, source, nil
+	collapsed := collapsePrefixes(prefixes)
+	fmt.Printf("[asn] %s: %d prefixes (%s); %d after collapsing overlaps\n", canonical, len(prefixes), source, len(collapsed))
+	return collapsed, source, nil
 }
 
 // ripeFetchPrefixes queries RIPE Stat through the throttled fetch layer.

@@ -87,12 +87,21 @@ func AssessSeverity(f *Finding) (string, string) {
 		}
 		return "LOW", "unauthenticated operational endpoint returning only generic runtime data"
 	case "exposure-path":
-		// a reachable sensitive path (VCS/config/debug artifact) is MEDIUM by
-		// default; HIGH only when secret/credential content is actually observed.
-		if strings.Contains(ev, "[x] credential") || strings.Contains(ev, "secret") || strings.Contains(ev, "private key") {
+		// A reachable .env serves application credentials, and a reachable .git
+		// serves full source and commit history (routinely with secrets) — both
+		// are HIGH by what the path is, not only when a secret string is sniffed.
+		// Other sensitive paths (dir listing, server-status) stay MEDIUM unless
+		// secret/credential content is actually observed.
+		loc := strings.ToLower(f.Host + " " + f.Title)
+		switch {
+		case strings.Contains(ev, "[x] credential") || strings.Contains(ev, "secret") || strings.Contains(ev, "private key"):
 			return "HIGH", "unauthenticated exposure with secret/credential content observed"
+		case strings.Contains(loc, ".env") || strings.Contains(loc, "dotenv") || strings.Contains(loc, "environment file"):
+			return "HIGH", "unauthenticated exposure of an environment file (application credentials retrievable)"
+		case strings.Contains(loc, ".git") || strings.Contains(loc, "version-control") || strings.Contains(loc, "version control"):
+			return "HIGH", "unauthenticated exposure of version-control metadata (source and history retrievable)"
 		}
-		return "MEDIUM", "unauthenticated exposure of a sensitive path (VCS/config/debug artifact)"
+		return "MEDIUM", "unauthenticated exposure of a sensitive path (config/debug artifact)"
 	case "tls-deprecated":
 		return "MEDIUM", "confirmed weak transport config; exploitation requires on-path network position"
 	case "cors":
@@ -204,9 +213,15 @@ func HasValidatedPrimitive(f *Finding) bool {
 		return strings.Contains(ev, "[x] unauthenticated datastore access") ||
 			strings.Contains(ev, "[x] vendor default credential accepted")
 	case "metrics-exposed", "exposure-path":
+		// A confirmed retrieval of a .env (application credentials) or a .git
+		// tree (source + history) is itself the validated disclosure primitive,
+		// not merely a potential one — so these stay HIGH rather than being
+		// demoted to potential-HIGH/MEDIUM.
 		return strings.Contains(ev, "credential value confirmed") ||
 			strings.Contains(ev, "[x] bearer token / api key value") ||
-			strings.Contains(ev, "[x] private key")
+			strings.Contains(ev, "[x] private key") ||
+			strings.Contains(ev, "[x] credential-like keys exposed") ||
+			strings.Contains(ev, "[x] version-control metadata exposed")
 	}
 	return false
 }

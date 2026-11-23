@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -119,6 +120,12 @@ func Load(path string) ([]Observation, error) {
 	}
 	lines := strings.Split(string(data), "\n")
 	out := make([]Observation, 0, len(lines))
+	// Dedupe by ip:port, keeping the first occurrence. The store is append-only
+	// and resumable, and an ASN sweep of overlapping announced prefixes (a /21
+	// and the /24s inside it) can record the same service several times; without
+	// this, every reader (enrich re-banners, cvematch, counts) multiplies that
+	// duplication. Order is preserved so the result stays deterministic.
+	seen := make(map[string]bool, len(lines))
 	for i, ln := range lines {
 		if ln == "" {
 			continue
@@ -131,6 +138,11 @@ func Load(path string) ([]Observation, error) {
 			}
 			return nil, fmt.Errorf("observation store %s line %d: %w", path, i+1, err)
 		}
+		key := o.IP + ":" + strconv.Itoa(o.Port)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
 		out = append(out, o)
 	}
 	return out, nil

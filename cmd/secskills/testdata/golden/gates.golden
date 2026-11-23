@@ -27,7 +27,7 @@ error: authorization not confirmed
 
 $ secskills discover --asn AS64500
 == discover block: AS64500 (workdir <CACHE>/secskills/AS64500) ==
-[asn] AS64500: 1 prefixes (cache, fetched <TIME>)
+[asn] AS64500: 1 prefixes (cache, fetched <TIME>); 1 after collapsing overlaps
 [stderr]
 AUTHORIZATION REQUIRED — discover mode, target: 203.0.113.0
 

@@ -75,7 +75,7 @@ func corpus() []Fixture {
 			Title: "Prometheus metrics exposed unauthenticated", ProbeKind: "body-contains", Host: "https://h5.example.com", ProbeURL: "https://h5.example.com/metrics", Validation: "behavior-confirmed",
 			ObservedEvidence: "Observed sensitive classes (unauthenticated /metrics sample):\n  [x] internal hostname\n  [x] credential value confirmed\n"},
 		// --- exposure path --------------------------------------------------
-		{Name: "git-exposed", Class: "positive-simple", ExpectDetector: "http.exposure-path@1", ExpectSeverity: "MEDIUM",
+		{Name: "git-exposed", Class: "positive-simple", ExpectDetector: "http.exposure-path@1", ExpectSeverity: "HIGH",
 			Title: "Exposed path: /.git/config", ProbeKind: "status", Host: "https://h6.example.com", ProbeURL: "https://h6.example.com/.git/config", Validation: "behavior-confirmed"},
 		// --- component lead -------------------------------------------------
 		{Name: "component-lead", Class: "positive-simple", ExpectDetector: "component.banner-osv-correlation@1", ExpectSeverity: "LOW",

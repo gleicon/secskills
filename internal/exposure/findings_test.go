@@ -46,9 +46,9 @@ func TestNetworkFindingsFollowTheSeverityRubric(t *testing.T) {
 	}
 	got := byID(finding.LoadWorkFindings(wd))
 	want := map[string]string{
-		"NET-LEAK-203.0.113.10:80-exposed-vcs":    "MEDIUM", // exposure-path, no secret content
-		"NET-LEAK-203.0.113.10:80-exposed-dotenv": "MEDIUM", // credential keys, values unvalidated -> potential HIGH
-		"NET-LEAK-203.0.113.30:6379-redis-unauth": "HIGH",   // confirmed unauthenticated datastore
+		"NET-LEAK-203.0.113.10:80-exposed-vcs":    "HIGH", // reachable .git: source + history retrievable
+		"NET-LEAK-203.0.113.10:80-exposed-dotenv": "HIGH", // reachable .env: application credentials
+		"NET-LEAK-203.0.113.30:6379-redis-unauth": "HIGH", // confirmed unauthenticated datastore
 		"NET-DB-203.0.113.31:9200":                "HIGH",   // vendor default credential accepted
 		"NET-CVE-203.0.113.10:22":                 "LOW",    // version-inferred lead
 		"NET-CVE-203.0.113.10:80":                 "MEDIUM", // lead including a KEV-listed CVE
@@ -69,8 +69,8 @@ func TestNetworkFindingsFollowTheSeverityRubric(t *testing.T) {
 			t.Errorf("%s lacks key/detector/OWASP mapping: %+v", id, f)
 		}
 	}
-	if got["NET-LEAK-203.0.113.10:80-exposed-dotenv"].PotentialSeverity != "HIGH" {
-		t.Error("dotenv with credential keys should carry potential HIGH")
+	if got["NET-LEAK-203.0.113.10:80-exposed-dotenv"].Severity != "HIGH" {
+		t.Error("dotenv with credential keys is a confirmed credential disclosure -> HIGH")
 	}
 	vcs := got["NET-LEAK-203.0.113.10:80-exposed-vcs"]
 	if vcs.ProbeKind != "body-contains" || vcs.ProbeArg != "repositoryformatversion" {

@@ -91,6 +91,19 @@ var cpeVendor = map[string][2]string{
 	"caddy":     {"caddyserver", "caddy"},
 	"openresty": {"openresty", "openresty"},
 	"litespeed": {"litespeedtech", "litespeed_web_server"},
+	// Datastores and runtimes seen on real ASN sweeps but previously unmapped,
+	// so they produced no CVE leads. Banner-version matching still applies; a
+	// datastore's exposure is separately caught by leakcheck/dbcheck.
+	"postgresql":    {"postgresql", "postgresql"},
+	"postgres":      {"postgresql", "postgresql"},
+	"redis":         {"redis", "redis"},
+	"mongodb":       {"mongodb", "mongodb"},
+	"elasticsearch": {"elastic", "elasticsearch"},
+	"dovecot":       {"dovecot", "dovecot"},
+	"haproxy":       {"haproxy", "haproxy"},
+	"lighttpd":      {"lighttpd", "lighttpd"},
+	"tomcat":        {"apache", "tomcat"},
+	"jetty":         {"eclipse", "jetty"},
 }
 
 // deriveCPE builds a CPE 2.3 string for a product/version, or "" when the
