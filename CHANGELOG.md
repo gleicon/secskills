@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.35.0] - 2026-11-25
+
+### Added
+
+- **App-layer framework/runtime leads (`tech.framework-cve-lead@1`).** `test`
+  now recognizes frameworks and runtimes and, for a runtime whose patch level is
+  not on the wire, emits a LOW `version-inferred` lead — notably a `JSESSIONID`
+  Java servlet surface, which names the runtime-CVE risk (e.g. an unpatched
+  OpenJDK) that a banner scan cannot attribute. Leads are confirmations to make
+  host-side, never confirmed findings. Catalog-driven via a new `cve_lead_note`
+  field in `data/fingerprints.json`.
+
+### Fixed
+
+- **Run-id collisions dropped runs.** `RunID` was `date-HHMM-<hash>`; two saves
+  in the same second with the same finding count collided and one run file
+  overwrote the other, so `findings list` intermittently lost a line (a CI
+  flake). `RunID` now mixes in nanoseconds and random bytes, and `WriteRun`
+  retries if a file already exists, so runs never overwrite.
+
+
 ## [0.34.0] - 2026-11-23
 
 ### Fixed

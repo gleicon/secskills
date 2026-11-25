@@ -231,13 +231,13 @@ Verify: re-send the payload → returned inert/encoded or rejected, no interpret
 [exit 0]
 
 $ secskills fp list
-56 signatures, 8 favicon hashes (embedded seed + overlay <SANDBOX>/home/.secskills-fingerprints.json)
+59 signatures, 8 favicon hashes (embedded seed + overlay <SANDBOX>/home/.secskills-fingerprints.json)
 
 adc              Citrix NetScaler
 api              GraphQL
 api-docs         Swagger UI
 api-gateway      Kong
-app-server       gunicorn, uvicorn
+app-server       Apache Tomcat, Java Servlet Runtime, gunicorn, uvicorn
 cdn              Amazon CloudFront, Fastly, Netlify, Vercel
 cdn-waf          Akamai, Azure Front Door, Cloudflare
 ci-cd            Argo CD, GitLab, Jenkins
@@ -245,7 +245,7 @@ cms              WordPress
 code-quality     SonarQube
 dashboard        Apache Superset, Grafana, Kibana, Kubernetes Dashboard, Portainer
 db-admin         Adminer, phpMyAdmin
-framework        ASP.NET, Django, Express, Laravel, Next.js, Ruby on Rails, Spring
+framework        ASP.NET, Django, Express, Laravel, Next.js, Nuxt, Ruby on Rails, Spring
 identity         Keycloak
 language         PHP
 monitoring       Prometheus

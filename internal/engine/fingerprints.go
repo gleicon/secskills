@@ -27,6 +27,11 @@ type fpSignature struct {
 	Body        []string          `json:"body,omitempty"`
 	SecondStage string            `json:"second_stage,omitempty"`
 	Implies     []string          `json:"implies,omitempty"`
+	// CVELeadNote, when set, makes a match emit a version-inferred CVE lead
+	// (tech.framework-cve-lead@1): the framework/runtime is recognized but its
+	// patch level is not on the wire, so the finding is a lead to confirm
+	// host-side, never a confirmed vulnerability.
+	CVELeadNote string `json:"cve_lead_note,omitempty"`
 }
 
 type fpRegistry struct {
@@ -41,6 +46,7 @@ type fpMatch struct {
 	SecondStage string
 	Via         string // how it matched (header/cookie/body/favicon)
 	LowConf     bool   // favicon-only hints are low confidence
+	CVELeadNote string // non-empty -> emit a version-inferred framework CVE lead
 }
 
 var fpRegistryCache *fpRegistry
@@ -89,7 +95,7 @@ func matchFingerprints(hdr http.Header, body string, favIconHash int32) []fpMatc
 	}
 	for _, s := range reg.Signatures {
 		if via := sigMatches(s, hdr, lb, cookies); via != "" {
-			add(fpMatch{Name: s.Name, Category: s.Category, SecondStage: s.SecondStage, Via: via})
+			add(fpMatch{Name: s.Name, Category: s.Category, SecondStage: s.SecondStage, Via: via, CVELeadNote: s.CVELeadNote})
 		}
 	}
 	if favIconHash != 0 {

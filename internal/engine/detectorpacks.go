@@ -32,6 +32,10 @@ func RunDetectorPacks(wd, base string) []finding.Finding {
 			// technology-triggered second-stage: deepen on the fingerprinted service
 			out = append(out, runSecondStage(wd, base, f.Title)...)
 		}
+		// framework/runtime leads: recognized stacks whose patch level is not on
+		// the wire (e.g. a servlet container fronting an unknown JDK) — leads to
+		// confirm host-side, never confirmed findings.
+		out = append(out, frameworkCVELeads(wd, base, code, hdr, body)...)
 		if f := publicBucket(wd, base, code, hdr, body); f != nil {
 			out = append(out, *f)
 		}
@@ -126,6 +130,41 @@ func rateLimitProbe(wd, base string) *finding.Finding {
 // fingerprintService recognizes a technology via the data-driven fingerprint
 // registry (fingerprints.json + user overlay). It is INFORMATIONAL context and
 // names the deeper checks the second-stage pack (if any) will run.
+// frameworkCVELeads emits a version-inferred lead for every matched signature
+// that carries a CVELeadNote: the framework or runtime is recognized, but its
+// patch level is not observable on the wire (a servlet container does not
+// advertise its JDK build, proxy or not), so the lead must be confirmed
+// host-side. Severity is LOW and Validation is version-inferred — never a
+// confirmed finding. Deterministic order: findings sort downstream by key.
+func frameworkCVELeads(wd, base string, code int, hdr http.Header, body string) []finding.Finding {
+	fav, _ := faviconHash(base)
+	var out []finding.Finding
+	for _, m := range matchFingerprints(hdr, body, fav) {
+		if m.CVELeadNote == "" {
+			continue
+		}
+		ev := finding.CaptureEvidence(wd, "tech.framework-cve-lead@1", base, "http-response", "text/html", "GET "+base,
+			"redacted", []byte(fmt.Sprintf("status=%d matched=%s via=%s", code, m.Name, m.Via)))
+		out = append(out, finding.Finding{
+			Title:      "Framework/runtime surface: " + m.Name,
+			Host:       base,
+			Severity:   "LOW",
+			Status:     "open",
+			Confidence: "Unconfirmed",
+			Validation: "version-inferred",
+			ObservedEvidence: fmt.Sprintf("Recognized %s via %s (HTTP %d). %s Patch level is not observable on the wire, so this is a lead to confirm host-side (e.g. package/runtime inventory), not a confirmed vulnerability.",
+				m.Name, m.Via, code, m.CVELeadNote),
+			ImpactText:   "A recognized framework/runtime on the external surface may be running an unpatched build. The exposed banner cannot reveal the patch level; confirm the installed version before acting.",
+			EvidenceCmd:  "curl -skI " + netsec.ShellQuote(base),
+			ProbeKind:    "manual",
+			ProbeURL:     base,
+			EvidenceRefs: []string{ev},
+			DetectorID:   "tech.framework-cve-lead@1",
+		})
+	}
+	return out
+}
+
 func fingerprintService(wd, base string, code int, hdr http.Header, body string) *finding.Finding {
 	fav, _ := faviconHash(base)
 	matches := matchFingerprints(hdr, body, fav)

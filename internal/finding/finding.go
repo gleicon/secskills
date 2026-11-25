@@ -1,6 +1,7 @@
 package finding
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"os"
@@ -102,8 +103,14 @@ func StoreDir(target string) string {
 
 // RunID returns a new run id: UTC minute plus a short hash.
 func RunID(target string, count int) string {
-	h := sha256.Sum256([]byte(target + time.Now().UTC().Format(time.RFC3339) + fmt.Sprint(count)))
-	return time.Now().UTC().Format("20060102-1504") + "-" + fmt.Sprintf("%x", h[:2])
+	// Per-call entropy (nanoseconds + random bytes) so two saves in the same
+	// minute never collide on the id; otherwise the second overwrites the first
+	// and `findings list` loses a run — a clock-timing flake, not determinism.
+	now := time.Now().UTC()
+	var r [8]byte
+	rand.Read(r[:])
+	h := sha256.Sum256([]byte(target + now.Format(time.RFC3339Nano) + fmt.Sprint(count) + string(r[:])))
+	return now.Format("20060102-1504") + "-" + fmt.Sprintf("%x", h[:2])
 }
 
 // SeverityOrder ranks severities most-severe first; shared by every sort/collapse.

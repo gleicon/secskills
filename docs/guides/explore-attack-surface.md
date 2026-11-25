@@ -55,6 +55,17 @@ secskills fp add --name "Internal Portal" --category admin --header "X-Portal:1"
 secskills fp import technologies.json                               # Wappalyzer-format data
 ```
 
+## Frameworks and runtimes (app-layer leads)
+
+`test` recognizes web frameworks and runtimes from headers, cookies, and body
+markers (Express, Django, Rails, Laravel, Next.js, a `JSESSIONID` Java servlet
+surface, …). A recognized **runtime** whose patch level can't be read from the
+wire emits a `tech.framework-cve-lead@1` finding — LOW, `version-inferred`,
+explicitly a lead, not a confirmed vulnerability. The Java servlet case names the
+runtime-CVE risk (e.g. an unpatched OpenJDK) that a banner scan can't attribute.
+Confirm these host-side (package/runtime inventory); a reverse proxy that strips
+`Server`/`X-Powered-By` will hide the signal entirely.
+
 ## APIs and identity
 
 `test` looks for OpenAPI/Swagger documents, GraphQL endpoints with introspection

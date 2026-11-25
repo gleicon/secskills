@@ -106,7 +106,15 @@ func WriteRun(target, wd, runType string) (string, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
+	// Regenerate the id on the vanishingly rare chance the run file already
+	// exists, so a run is never silently overwritten (see RunID).
 	id := RunID(target, len(fs))
+	for attempt := 0; attempt < 8; attempt++ {
+		if _, err := os.Stat(filepath.Join(dir, "run-"+id+".json")); os.IsNotExist(err) {
+			break
+		}
+		id = RunID(target, len(fs))
+	}
 	for i := range fs {
 		if fs[i].FirstSeenRun == "" {
 			fs[i].FirstSeenRun = id

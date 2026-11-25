@@ -24,6 +24,11 @@ cat plan/plan.json                     # prefixes and address counts, no traffic
 counts addresses. A /24 is 256 addresses; a busy ASN can be tens of thousands.
 A prefix wider than /20 is skipped unless you pass `--allow-large`.
 
+Announced prefixes are often nested (a /21 and the /22, /23, /24 inside it).
+`discover`/`plan` collapse them to their outermost cover before sweeping and
+print `N prefixes … M after collapsing overlaps`, so each host is scanned once
+rather than once per covering prefix.
+
 ## 2. Write the scope
 
 ```yaml
@@ -105,7 +110,10 @@ secskills cvematch 203.0.113.0/24
 ```
 
 Each service whose banner version falls inside an NVD range becomes one finding
-listing its CVEs, KEV-listed ones first, then by EPSS.
+listing its CVEs, KEV-listed ones first, then by EPSS. To keep a service that
+matches hundreds of ranges from burying the confirmed leaks, each service keeps
+its KEV-listed CVEs plus the top non-KEV by score; raise or lift the cap with
+`--max-cves N` (`0` = all, default 10).
 
 **What `cvematch` cannot see.** It keys on the version `enrich` reads from a
 service banner, so it only covers CVEs in software that *announces a version on
@@ -144,7 +152,7 @@ Work in this order:
 | Priority | Finding | Severity | Why |
 |---|---|---|---|
 | 1 | Unauthenticated or default-credential datastore | HIGH | data is reachable now |
-| 2 | Exposed `.env` with credential-like keys, exposed `.git` | MEDIUM, potential HIGH | secrets and source are reachable |
+| 2 | Exposed `.env` (credentials) or exposed `.git` (source + history) | HIGH | secrets and source are reachable unauthenticated |
 | 3 | CVE lead with a KEV-listed CVE | MEDIUM | exploited in the wild |
 | 4 | Other CVE leads, by EPSS | LOW | version-inferred; validate first |
 | — | Datastores reachable at all (inventory section) | — | they should not face the internet |
