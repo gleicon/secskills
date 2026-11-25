@@ -40,13 +40,13 @@ Non-destructive by default; add --intrusive (+ --intrusive-confirm) for write/cr
 error: authorization not confirmed
 [exit 1]
 
-$ secskills discover --cidr 203.0.0.0/16 --confirm
-== discover block: 203.0.0.0/16 (workdir <CACHE>/secskills/203.0.0.0_16) ==
-[store] 0 observations -> <CACHE>/secskills/203.0.0.0_16/observations.jsonl ; 0 HTTP services -> live_hosts.json
+$ secskills discover --cidr 198.18.0.0/15 --confirm
+== discover block: 198.18.0.0/15 (workdir <CACHE>/secskills/198.18.0.0_15) ==
+[store] 0 observations -> <CACHE>/secskills/198.18.0.0_15/observations.jsonl ; 0 HTTP services -> live_hosts.json
 
 Next: secskills test <ip> --confirm  (per in-scope host)
 [stderr]
-[scan] skip 203.0.0.0/16: 203.0.0.0/16 has 65536 addresses (> /20 cap of 4096) — pass --allow-large to override
+[scan] skip 198.18.0.0/15: 198.18.0.0/15 has 131072 addresses (> /20 cap of 4096) — pass --allow-large to override
 [exit 0]
 
 $ secskills test example.com

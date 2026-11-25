@@ -364,7 +364,7 @@ func TestGoldenGates(t *testing.T) {
 	s.write(filepath.Join(s.cacheDir(), "secskills", "AS64500", "data", "asn-AS64500-prefixes.json"),
 		`{"asn":"AS64500","prefixes":["203.0.113.0/24"],"source":"ripe-stat","fetched_at":"`+time.Now().UTC().Format(time.RFC3339)+`"}`)
 	s.run("discover", "--asn", "AS64500")
-	s.run("discover", "--cidr", "203.0.0.0/16", "--confirm")
+	s.run("discover", "--cidr", "198.18.0.0/15", "--confirm")
 	s.run("test", "example.com")
 	s.run("sandbox", ".")
 	s.run("integrity", "snapshot", "https://example.com")

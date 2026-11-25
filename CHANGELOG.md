@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.35.1] - 2026-11-25
+
+### Changed
+
+- **No routable IPs in test scaffolding.** The oversized-block golden input moved
+  from `203.0.0.0/16` (routable APNIC space) to `198.18.0.0/15` (RFC 2544
+  benchmarking, non-routable). Repo now ships only RFC 5737 documentation
+  addresses, special-use reserved blocks used as SSRF-guard constants, and
+  `example.*` hostnames — no real IPs, domains, or engagement data anywhere.
+
 ## [0.35.0] - 2026-11-25
 
 ### Added
